@@ -1,0 +1,82 @@
+#!/usr/bin/perl -w
+
+# Copyright 2012 Kevin Ryde
+
+# This file is part of Math-PlanePath-Toothpick.
+#
+# Math-PlanePath-Toothpick is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as published
+# by the Free Software Foundation; either version 3, or (at your option) any
+# later version.
+#
+# Math-PlanePath-Toothpick is distributed in the hope that it will be
+# useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Math-PlanePath-Toothpick.  If not, see <http://www.gnu.org/licenses/>.
+
+
+use 5.004;
+use strict;
+use Test;
+plan tests => 3;
+
+use lib 't','xt';
+use MyTestHelpers;
+MyTestHelpers::nowarnings();
+use MyOEIS;
+
+use Math::PlanePath::ToothpickUpist;
+
+
+#------------------------------------------------------------------------------
+# A151566 - total cells leftist
+
+MyOEIS::compare_values
+  (anum => 'A151566',
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::ToothpickUpist->new;
+     my @got;
+     my $total = 0;
+     for (my $depth = 0; @got < $count; $depth++) {
+       push @got, $path->tree_depth_to_n($depth);
+     }
+     return \@got;
+   });
+
+#------------------------------------------------------------------------------
+# A060632,A151565 - cells added leftist
+
+MyOEIS::compare_values
+  (anum => 'A060632',
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::ToothpickUpist->new;
+     my @got;
+     for (my $depth = 0; @got < $count; $depth++) {
+       my $added = ($path->tree_depth_to_n($depth+1)
+                    - $path->tree_depth_to_n($depth));
+       push @got, $added;
+     }
+     return \@got;
+   });
+
+MyOEIS::compare_values
+  (anum => 'A151565',
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::ToothpickUpist->new;
+     my @got;
+     for (my $depth = 0; @got < $count; $depth++) {
+       my $added = ($path->tree_depth_to_n($depth+1)
+                    - $path->tree_depth_to_n($depth));
+       push @got, $added;
+     }
+     return \@got;
+   });
+
+#------------------------------------------------------------------------------
+exit 0;

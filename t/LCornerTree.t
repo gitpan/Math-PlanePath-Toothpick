@@ -1,0 +1,212 @@
+#!/usr/bin/perl -w
+
+# Copyright 2011, 2012 Kevin Ryde
+
+# This file is part of Math-PlanePath-Toothpick.
+#
+# Math-PlanePath-Toothpick is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as published
+# by the Free Software Foundation; either version 3, or (at your option) any
+# later version.
+#
+# Math-PlanePath-Toothpick is distributed in the hope that it will be
+# useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Math-PlanePath-Toothpick.  If not, see <http://www.gnu.org/licenses/>.
+
+use 5.004;
+use strict;
+use Test;
+plan tests => 46;
+
+use lib 't';
+use MyTestHelpers;
+MyTestHelpers::nowarnings();
+
+# uncomment this to run the ### lines
+#use Smart::Comments;
+
+require Math::PlanePath::LCornerTree;
+
+
+#------------------------------------------------------------------------------
+# VERSION
+
+{
+  my $want_version = 1;
+  ok ($Math::PlanePath::LCornerTree::VERSION, $want_version,
+      'VERSION variable');
+  ok (Math::PlanePath::LCornerTree->VERSION,  $want_version,
+      'VERSION class method');
+
+  ok (eval { Math::PlanePath::LCornerTree->VERSION($want_version); 1 },
+      1,
+      "VERSION class check $want_version");
+  my $check_version = $want_version + 1000;
+  ok (! eval { Math::PlanePath::LCornerTree->VERSION($check_version); 1 },
+      1,
+      "VERSION class check $check_version");
+
+  my $path = Math::PlanePath::LCornerTree->new;
+  ok ($path->VERSION,  $want_version, 'VERSION object method');
+
+  ok (eval { $path->VERSION($want_version); 1 },
+      1,
+      "VERSION object check $want_version");
+  ok (! eval { $path->VERSION($check_version); 1 },
+      1,
+      "VERSION object check $check_version");
+}
+
+
+#------------------------------------------------------------------------------
+# tree_n_to_depth()
+
+{
+  my @groups = ([ { parts => 1 },
+                  [ 0,  0 ],
+                  [ 1,  1 ],
+                  [ 2,  1 ],
+                  [ 3,  1 ],
+                  [ 4,  2 ],
+                  [ 5,  2 ],
+                  [ 6,  2 ],
+                  [ 7,  3 ],
+                  [ 8,  3 ],
+                  [ 15, 3 ],
+
+                  [ 16, 4 ],
+                  [ 17, 4 ],
+                  [ 18, 4 ],
+
+                  [ 19, 5 ],
+                ],
+                [ { parts => 4 },
+                  [ 0,  0 ],   # + 4*1
+                  [ 1,  0 ],   # + 4*3
+                  [ 2,  0 ],  # + 4*3
+                  [ 3,  0 ],  # + 4*9
+                  [ 4,  1 ],  # + 4*3
+                  [ 5,  1 ],
+                  [ 6,  1 ],,
+                ]);
+  foreach my $group (@groups) {
+    my ($options, @data) = @$group;
+    my $path = Math::PlanePath::LCornerTree->new (%$options);
+    foreach my $elem (@data) {
+      my ($depth, $want_n) = @$elem;
+      my $got_n = $path->tree_n_to_depth ($depth);
+      ok ($got_n, $want_n, "tree_n_to_depth() n=$depth ".join(',',%$options));
+    }
+  }
+}
+
+#------------------------------------------------------------------------------
+# tree_depth_to_n()
+
+{
+  my @groups = ([ { parts => 1 },
+                  [ 0,  0 ],   # + 1
+                  [ 1,  1 ],   # + 3
+                  [ 2,  4 ],   # + 3
+                  [ 3,  7 ],   # + 9
+                  [ 4,  16 ],  # + 3
+                  [ 5,  19 ],  # + 9
+                  [ 6,  28 ],  # + 9
+                  [ 7,  37 ],  # + 27
+                  [ 8,  64 ],  # 
+                ],
+                [ { parts => 4 },
+                  [ 0,  0 ],   # + 4*1
+                  [ 1,  4 ],   # + 4*3
+                  [ 2,  16 ],  # + 4*3
+                  [ 3,  28 ],  # + 4*9
+                  [ 4,  64 ],  # + 4*3
+                  [ 5,  76 ],
+                  [ 6, 112 ],
+                  [ 7, 148 ],
+                  [ 8, 256 ],
+                ]);
+  foreach my $group (@groups) {
+    my ($options, @data) = @$group;
+    my $path = Math::PlanePath::LCornerTree->new (%$options);
+    foreach my $elem (@data) {
+      my ($depth, $want_n) = @$elem;
+      my $got_n = $path->tree_depth_to_n ($depth);
+      ok ($got_n, $want_n, "tree_depth_to_n() depth=$depth");
+    }
+  }
+}
+
+
+exit 0;
+
+
+
+
+#------------------------------------------------------------------------------
+# tree_n_parent()
+{
+  my @data = ([ 1, undef ],
+
+              [ 2,  1 ],
+              [ 3,  1 ],
+              [ 4,  1 ],
+              [ 5,  1 ],
+
+              [ 6,  2 ],
+              [ 7,  3 ],
+              [ 8,  4 ],
+              [ 9,  5 ],
+
+              [ 10,  6 ],
+              [ 11,  6 ],
+              [ 12,  6 ],
+              [ 13,  7 ],
+              [ 14,  7 ],
+              [ 15,  7 ],
+             );
+  my $path = Math::PlanePath::LCornerTree->new;
+  foreach my $elem (@data) {
+    my ($n, $want_n_parent) = @$elem;
+    my $got_n_parent = $path->tree_n_parent ($n);
+    ok ($got_n_parent, $want_n_parent);
+  }
+}
+
+#------------------------------------------------------------------------------
+# tree_n_children()
+{
+  my @data = ([ 1, '2,3,4,5' ],
+
+              [ 2,  '6' ],
+              [ 3,  '7' ],
+              [ 4,  '8' ],
+              [ 5,  '9' ],
+
+              [ 6,  '10,11,12' ],
+              [ 7,  '13,14,15' ],
+              [ 8,  '16,17,18' ],
+              [ 9,  '19,20,21' ],
+             );
+  my $path = Math::PlanePath::LCornerTree->new;
+  foreach my $elem (@data) {
+    my ($n, $want_n_children) = @$elem;
+    my $got_n_children = join(',',$path->tree_n_children($n));
+    ok ($got_n_children, $want_n_children, "tree_n_children($n)");
+  }
+}
+
+#------------------------------------------------------------------------------
+# n_start, x_negative, y_negative
+
+{
+  my $path = Math::PlanePath::LCornerTree->new;
+  ok ($path->n_start, 1, 'n_start()');
+  ok ($path->x_negative, 1, 'x_negative()');
+  ok ($path->y_negative, 1, 'y_negative()');
+}
+
