@@ -20,11 +20,6 @@
 # A161415   added
 # http://www.polprimos.com/imagenespub/polca025.jpg
 #
-# A160117 peninsula
-# A160411   added
-# A160118 peninsula
-# A160796
-#
 #     9...............9
 #     .888.888.888.888.
 #     .878.878.878.878.
@@ -50,7 +45,7 @@ use strict;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 1;
+$VERSION = 2;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 *_divrem = \&Math::PlanePath::_divrem;

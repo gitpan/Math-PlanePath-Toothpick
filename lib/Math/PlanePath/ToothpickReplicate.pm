@@ -15,11 +15,16 @@
 # You should have received a copy of the GNU General Public License along
 # with Math-PlanePath-Toothpick.  If not, see <http://www.gnu.org/licenses/>.
 
+# block_order => 'AB123'
+# block_order => 'A1B32' is depth first and finite parts first,
+# in parts=1 where single infinite spine
+#
+# maybe tree methods same structure as ToothpickTree
+#
 
-# A139250 total cells
-#    a(2^k) = A007583(k) = (2^(2n+1) + 1)/3
-#    a(2^k-1) = A000969(2^k-2), A000969=floor (2*n+3)*(n+1)/3
-
+# cf A175262 odd binary length and middle digit 1
+#    A175263 odd binary length and middle digit 0
+#
 
 package Math::PlanePath::ToothpickReplicate;
 use 5.004;
@@ -28,7 +33,7 @@ use strict;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 1;
+$VERSION = 2;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 *_divrem = \&Math::PlanePath::_divrem;
@@ -582,7 +587,6 @@ toothpicks with no points at all in the 0,1,2,3 lower blocks.
 The full parts=all form is four quarters, each advancing by a replication
 level each time.
 
-
 The initial N=0,1,2 make the centre, and then each quadrant is extended in
 turn by blocks.
 
@@ -686,27 +690,64 @@ right three quadrants.
 # math-image --path=ToothpickReplicate,parts=3 --all --output=numbers --size=80x16
 
 =pod
-
-    ..--30--  --32--  --24--  --22--..          4
+                                                                              
+    ..--29--  --31--  --23--  --21--..          4
          |       |       |       |
-        29--26--31      23--18--21              3
+        28--25--30      22--17--20              3
          |   |               |   |
-            25---7--  ---5--17                  2
+            24---7--  ---5--16                  2
          |   |   |       |   |   |
-        28--27-  6---1---4 -19--20              1
+        27--26-  6---1---4 -18--19              1
          |       |   |   |       |
                      0                     <- Y=0
                      |   |       |
-                   --2---3 -16--17             -1
+                   --2---3 -14--15             -1
                          |   |   |
-                    12---8---9                 -2
+                    10---8---9                 -2
                      |       |   |
-                  --13--  --14--15             -3
+                  --11--  --12--13             -3
                                  |
                                 ...            -4
-
                      ^
     -4  -3  -2  -1  X=0  1   2   3   4
+
+N=1,4,5,6,7,16,etc above the X axis have an odd number of bits when written
+in binary.  For example N=6 is binary "110" which is 3 digits.  Conversely
+N=0,2,3,8,etc below the X axis have an even number of digits.  For example
+N=8 is "1000" which is 4 digits.
+
+   odd bit       odd bit
+   length     |  length     
+              |
+     "11"     |  "10"            high two bits of N,
+              |                  at odd bit position
+    ----------+----------
+              |
+              |  "01" 
+              |
+              |  even bit length
+
+This occurs because each quadrant contains (4^k-1)*2/3 many points on each
+doubling.  Three of them plus A and B make 3*(4^k-1)*2/3+2 = 2*4^k at each
+doubling, so with the origin as N=0 each replication level starts
+
+    Nlevel_start = 2*4^k
+    Nlast_below  = 2*4^k + 3*(4^k-1)*2/3+2 - 1
+                 = 2*4^k + 2*4^k-1
+
+=cut
+
+# 4^k + 3*(4^k-1)*2/3+2 - 1
+#  = 4^k + (4^k-1)*2+2 - 1
+#  =  4^k + 2*4^k-2+2 - 1
+#  =  4^k + 2*4^k - 1
+
+=pod
+
+For example k=1 has Nlevel_start = 2*4^1 = 8 and runs through to Nlast_below
+= 2*4^1 + 2*4^1-1 = 15.  In binary this is "1000" through "1111" which are
+all length 4.  The first quadrant then runs 32 to 47 which is binary "10000"
+to 101111", and the second quadrant 48 to 63 "110000" to "111111"..
 
 =head1 FUNCTIONS
 
@@ -721,6 +762,18 @@ See L<Math::PlanePath/FUNCTIONS> for behaviour common to all path classes.
 Create and return a new path object.  C<parts> can be 1, 2, 3 or 4.
 
 =back
+
+=head1 OEIS
+
+Entreis in Sloane's Online Encyclopedia of Integer Sequences related to this
+path include
+
+    http://oeis.org/A053738    (etc)
+
+    parts=3
+      A053738   N of points with Y>0, being odd bit length
+                 also N of parts=3 when taking X,Y points by parts=2 order
+      A053754   N of points with Y<=0, being even bit length
 
 =head1 SEE ALSO
 

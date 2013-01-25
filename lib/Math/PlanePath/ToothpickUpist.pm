@@ -1,4 +1,4 @@
-# Copyright 2012 Kevin Ryde
+# Copyright 2012, 2013 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -24,7 +24,7 @@ use 5.004;
 use strict;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 1;
+$VERSION = 2;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 *_divrem_mutate = \&Math::PlanePath::_divrem_mutate;
@@ -40,9 +40,11 @@ use Math::PlanePath::Base::Digits
 # uncomment this to run the ### lines
 # use Smart::Comments;
 
+
+use constant default_n_start => 0;
 use constant class_x_negative => 1;
 use constant class_y_negative => 0;
-use constant default_n_start => 0;
+use constant tree_num_children_maximum => 2;
 
 #------------------------------------------------------------------------------
 sub new {
@@ -129,12 +131,12 @@ sub xy_to_n {
   return _right_xy_to_n ($self, $x,$y, $lowbit);
 }
 
-# with X,Y in the align="right" style, 
+# with X,Y in the align="right" style,
 #
 #  |
 sub _right_xy_to_n {
   my ($self, $x, $y, $lowbit) = @_;
-  ### _right_xy_to_n() ...
+  ### _right_xy_to_n(): "x=$x y=$y lowbit=$lowbit"
 
   unless ($x >= 0 && $x <= $y && $y >= 0) {
     ### outside horizontal row range ...
@@ -306,7 +308,13 @@ sub tree_n_to_depth {
 }
 sub tree_depth_to_n {
   my ($self, $depth) = @_;
+  ### tree_depth_to_n(): $depth
   if ($depth >= 0) {
+    # $depth==+infinity becomes nan from divrem, prefer to return N=+infinity
+    # for +inf depth
+    if (is_infinite($depth)) {
+      return $depth;
+    }
     my $lowbit = _divrem_mutate($depth,2);
     return _right_xy_to_n($self,0,$depth, $lowbit);
   } else {
@@ -411,21 +419,24 @@ It's a 90-degree rotated version of the "leftist" pattern from part 7
 
 David Applegate, Omar E. Pol, N.J.A. Sloane, "The Toothpick Sequence and
 Other Sequences from Cellular Automata", Congressus Numerantium, volume 206
-(2010), 157-191,
+(2010), pages 157-191.
 
 http://www.research.att.com/~njas/doc/tooth.pdf
 
 =back
 
-As per ToothpickTree (L<Math::PlanePath::ToothpickTree>) each point is a
-toothpick of length 2, starting from a vertical toothpick at the origin
-X=0,Y=0.  Then the pattern grows by adding a toothpick at each exposed end,
-so long as it would not cause two toothpicks to overlap (an end can touch,
-but they cannot overlap).  The variation here is that vertical toothpicks
-can only grow up,
+As per ToothpickTree (L<Math::PlanePath::ToothpickTree>) each point is
+considered a toothpick of length 2, starting from a vertical toothpick at
+the origin X=0,Y=0.  Then the pattern grows by adding a toothpick at each
+exposed end, so long as it would not cause two toothpicks to overlap (an end
+can touch, but they cannot overlap).  The variation here is that vertical
+toothpicks can only grow up, so nothing is added at the bottom end of a
+vertical.
 
-    ..---8---..     ..---9---..
-         |               |
+    ...                      ...
+     |                        |
+    10---8---11     12---9---13
+     |   |               |    |
          6---4--- ---5---7
          |   |       |   |
              2---1---3
@@ -441,26 +452,26 @@ respectively left and right.
 =head2 Sierpinski Triangle
 
 X<Sierpinski, Waclaw>As described in the paper the pattern is a version of
-the Sierpinski triangle where each row is doubled.  The vertical toothpicks,
-which are on even points X==Ymod2 are the Sierpinski triangle pattern, and
-the horizontal toothpicks on odd points X!=Ymod2 are a second copy,
-positioned one up (Y+1).
+the Sierpinski triangle with each row doubled.  The vertical toothpicks,
+which are on "even" points X==Ymod2 are the Sierpinski triangle pattern, and
+the horizontal toothpicks on "odd" points X!=Ymod2 are a second copy of the
+triangle, positioned up one at Y+1.
 
-      5                                  h               h 
-      4   v               v                h   h   h   h   
-      3     v   v   v   v                    h       h     
-      2       v       v         plus           h   h       
-      1         v   v                            h         
-    Y=0           v                     
+      5                                    h               h
+      4     v               v                h   h   h   h
+      3       v   v   v   v                    h       h
+      2         v       v         plus           h   h
+      1           v   v                            h
+    Y=0             v
 
     gives
 
-      5    ..h..           ..h..
-      4      v h   h   h   h v         ToothpickUpist
-      3        v h v   v h v      
-      2          v h   h v        
-      1            v h v          
-    Y=0              v            
+      5   ..h..           ..h..
+      4     v h   h   h   h v         ToothpickUpist
+      3       v h v   v h v
+      2         v h   h v
+      1           v h v
+    Y=0             v
 
 =head1 FUNCTIONS
 
@@ -487,11 +498,6 @@ Every vertical toothpick has a single child above it.  The horizontal
 toothpicks have either 0, 1 or 2 children according to the Sierpinski
 triangle pattern.  (See L<Math::PlanePath::SierpinskiTriangle/N to Number of
 Children>).
-
-=item C<$num = $path-E<gt>tree_n_num_children($n)>
-
-Return the number of children of C<$n>, or return C<undef> if C<$nE<lt>0>
-(ie. before the start of the path).
 
 =item C<$n_parent = $path-E<gt>tree_n_parent($n)>
 
@@ -529,8 +535,13 @@ path include,
 
     http://oeis.org/A151566    etc
 
-    A151566    total cells at depth=n
-    A151565    cells added depth=n
+    A151566    total cells at depth=n (tree_depth_to_n())
+    A060632    cells added at depth=n (A151565 same)
+
+    A160742    total*2
+    A160744    total*3
+    A160745    added*3
+    A160746    total*4
 
 =head1 SEE ALSO
 
@@ -544,7 +555,7 @@ http://user42.tuxfamily.org/math-planepath/index.html
 
 =head1 LICENSE
 
-Copyright 2012 Kevin Ryde
+Copyright 2012, 2013 Kevin Ryde
 
 Math-PlanePath-Toothpick is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License as published by

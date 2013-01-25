@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2012, 2013 Kevin Ryde
+# Copyright 2013 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -21,90 +21,29 @@
 use 5.004;
 use strict;
 use Test;
-plan tests => 7;
+plan tests => 4;
 
-use lib 't','xt';
+use lib 't','xt','devel/lib';
 use MyTestHelpers;
 MyTestHelpers::nowarnings();
 use MyOEIS;
 
-use Math::PlanePath::ToothpickUpist;
+use Math::PlanePath::ToothpickByCells;
 
+# uncomment this to run the ### lines
+#use Smart::Comments '###';
 
-#------------------------------------------------------------------------------
-# A160745 - added*3
-
-MyOEIS::compare_values
-  (anum => 'A160745',
-   func => sub {
-     my ($count) = @_;
-     my $path = Math::PlanePath::ToothpickUpist->new;
-     my @got;
-     for (my $depth = 0; @got < $count; $depth++) {
-       my $added = ($path->tree_depth_to_n($depth+1)
-                    - $path->tree_depth_to_n($depth));
-       push @got, 3 * $added;
-     }
-     return \@got;
-   });
+my $max_count = undef;
 
 #------------------------------------------------------------------------------
-# A160742 - total*2
+# A170890 - downwedge2 total cells
 
 MyOEIS::compare_values
-  (anum => 'A160742',
+  (anum => 'A170888',
+   max_count => $max_count,
    func => sub {
      my ($count) = @_;
-     my $path = Math::PlanePath::ToothpickUpist->new;
-     my @got;
-     my $total = 0;
-     for (my $depth = 0; @got < $count; $depth++) {
-       push @got, 2 * $path->tree_depth_to_n($depth);
-     }
-     return \@got;
-   });
-
-#------------------------------------------------------------------------------
-# A160744 - total*3
-
-MyOEIS::compare_values
-  (anum => 'A160744',
-   func => sub {
-     my ($count) = @_;
-     my $path = Math::PlanePath::ToothpickUpist->new;
-     my @got;
-     my $total = 0;
-     for (my $depth = 0; @got < $count; $depth++) {
-       push @got, 3 * $path->tree_depth_to_n($depth);
-     }
-     return \@got;
-   });
-
-#------------------------------------------------------------------------------
-# A160746 - total*4
-
-MyOEIS::compare_values
-  (anum => 'A160746',
-   func => sub {
-     my ($count) = @_;
-     my $path = Math::PlanePath::ToothpickUpist->new;
-     my @got;
-     my $total = 0;
-     for (my $depth = 0; @got < $count; $depth++) {
-       push @got, 4 * $path->tree_depth_to_n($depth);
-     }
-     return \@got;
-   });
-
-
-#------------------------------------------------------------------------------
-# A151566 - total cells leftist
-
-MyOEIS::compare_values
-  (anum => 'A151566',
-   func => sub {
-     my ($count) = @_;
-     my $path = Math::PlanePath::ToothpickUpist->new;
+     my $path = Math::PlanePath::ToothpickByCells->new (parts => 'downwedge2');
      my @got;
      my $total = 0;
      for (my $depth = 0; @got < $count; $depth++) {
@@ -114,14 +53,15 @@ MyOEIS::compare_values
    });
 
 #------------------------------------------------------------------------------
-# A060632,A151565 - cells added leftist
+# A170891 - downwedge2 added
 
 MyOEIS::compare_values
-  (anum => 'A060632',
+  (anum => 'A170889',
+   max_count => $max_count,
    func => sub {
      my ($count) = @_;
-     my $path = Math::PlanePath::ToothpickUpist->new;
-     my @got;
+     my $path = Math::PlanePath::ToothpickByCells->new (parts => 'downwedge2');
+     my @got = (0);
      for (my $depth = 0; @got < $count; $depth++) {
        my $added = ($path->tree_depth_to_n($depth+1)
                     - $path->tree_depth_to_n($depth));
@@ -130,11 +70,102 @@ MyOEIS::compare_values
      return \@got;
    });
 
+#------------------------------------------------------------------------------
+# A170888 - outwedge total cells
+
 MyOEIS::compare_values
-  (anum => 'A151565',
+  (anum => 'A170888',
+   max_count => $max_count,
    func => sub {
      my ($count) = @_;
-     my $path = Math::PlanePath::ToothpickUpist->new;
+     my $path = Math::PlanePath::ToothpickByCells->new (parts => 'outwedge');
+     my @got;
+     my $total = 0;
+     for (my $depth = 0; @got < $count; $depth++) {
+       push @got, $path->tree_depth_to_n($depth);
+     }
+     return \@got;
+   });
+
+#------------------------------------------------------------------------------
+# A170889 - outwedge added
+
+MyOEIS::compare_values
+  (anum => 'A170889',
+   max_count => $max_count,
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::ToothpickByCells->new (parts => 'outwedge');
+     my @got = (0);
+     for (my $depth = 0; @got < $count; $depth++) {
+       my $added = ($path->tree_depth_to_n($depth+1)
+                    - $path->tree_depth_to_n($depth));
+       push @got, $added;
+     }
+     return \@got;
+   });
+
+#------------------------------------------------------------------------------
+# A170886 - outwedge2 total cells
+
+MyOEIS::compare_values
+  (anum => 'A170886',
+   max_count => $max_count,
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::ToothpickByCells->new (parts => 'outwedge2');
+     my @got;
+     my $total = 0;
+     for (my $depth = 0; @got < $count; $depth++) {
+       push @got, $path->tree_depth_to_n($depth);
+     }
+     return \@got;
+   });
+
+#------------------------------------------------------------------------------
+# A170887 - outwedge2 added
+
+MyOEIS::compare_values
+  (anum => 'A170887',
+   max_count => $max_count,
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::ToothpickByCells->new (parts => 'outwedge2');
+     my @got = (0);
+     for (my $depth = 0; @got < $count; $depth++) {
+       my $added = ($path->tree_depth_to_n($depth+1)
+                    - $path->tree_depth_to_n($depth));
+       push @got, $added;
+     }
+     return \@got;
+   });
+
+#------------------------------------------------------------------------------
+# A160406 - wedge total cells
+
+MyOEIS::compare_values
+  (anum => 'A160406',
+   max_count => $max_count,
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::ToothpickByCells->new (parts => 'wedge');
+     my @got;
+     my $total = 0;
+     for (my $depth = 0; @got < $count; $depth++) {
+       push @got, $path->tree_depth_to_n($depth);
+     }
+     return \@got;
+   });
+
+#------------------------------------------------------------------------------
+# A160407 - wedge added
+
+MyOEIS::compare_values
+  (anum => 'A160407',
+   max_count => $max_count,
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::ToothpickByCells->new (parts => 'wedge');
      my @got;
      for (my $depth = 0; @got < $count; $depth++) {
        my $added = ($path->tree_depth_to_n($depth+1)

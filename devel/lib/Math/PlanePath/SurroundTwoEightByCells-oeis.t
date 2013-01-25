@@ -21,90 +21,28 @@
 use 5.004;
 use strict;
 use Test;
-plan tests => 7;
+plan tests => 4;
 
 use lib 't','xt';
 use MyTestHelpers;
 MyTestHelpers::nowarnings();
 use MyOEIS;
 
-use Math::PlanePath::ToothpickUpist;
+use Math::PlanePath::SurroundTwoEightByCells;
 
+# uncomment this to run the ### lines
+#use Smart::Comments '###';
 
-#------------------------------------------------------------------------------
-# A160745 - added*3
-
-MyOEIS::compare_values
-  (anum => 'A160745',
-   func => sub {
-     my ($count) = @_;
-     my $path = Math::PlanePath::ToothpickUpist->new;
-     my @got;
-     for (my $depth = 0; @got < $count; $depth++) {
-       my $added = ($path->tree_depth_to_n($depth+1)
-                    - $path->tree_depth_to_n($depth));
-       push @got, 3 * $added;
-     }
-     return \@got;
-   });
+my $path = Math::PlanePath::SurroundTwoEightByCells->new;
 
 #------------------------------------------------------------------------------
-# A160742 - total*2
+# A151731 - 2of8 total cells
 
 MyOEIS::compare_values
-  (anum => 'A160742',
+  (anum => 'A151731',
    func => sub {
      my ($count) = @_;
-     my $path = Math::PlanePath::ToothpickUpist->new;
-     my @got;
-     my $total = 0;
-     for (my $depth = 0; @got < $count; $depth++) {
-       push @got, 2 * $path->tree_depth_to_n($depth);
-     }
-     return \@got;
-   });
-
-#------------------------------------------------------------------------------
-# A160744 - total*3
-
-MyOEIS::compare_values
-  (anum => 'A160744',
-   func => sub {
-     my ($count) = @_;
-     my $path = Math::PlanePath::ToothpickUpist->new;
-     my @got;
-     my $total = 0;
-     for (my $depth = 0; @got < $count; $depth++) {
-       push @got, 3 * $path->tree_depth_to_n($depth);
-     }
-     return \@got;
-   });
-
-#------------------------------------------------------------------------------
-# A160746 - total*4
-
-MyOEIS::compare_values
-  (anum => 'A160746',
-   func => sub {
-     my ($count) = @_;
-     my $path = Math::PlanePath::ToothpickUpist->new;
-     my @got;
-     my $total = 0;
-     for (my $depth = 0; @got < $count; $depth++) {
-       push @got, 4 * $path->tree_depth_to_n($depth);
-     }
-     return \@got;
-   });
-
-
-#------------------------------------------------------------------------------
-# A151566 - total cells leftist
-
-MyOEIS::compare_values
-  (anum => 'A151566',
-   func => sub {
-     my ($count) = @_;
-     my $path = Math::PlanePath::ToothpickUpist->new;
+     my $path = Math::PlanePath::SurroundTwoEightByCells->new;
      my @got;
      my $total = 0;
      for (my $depth = 0; @got < $count; $depth++) {
@@ -114,14 +52,13 @@ MyOEIS::compare_values
    });
 
 #------------------------------------------------------------------------------
-# A060632,A151565 - cells added leftist
+# A151732 - 2of8 cells added
 
 MyOEIS::compare_values
-  (anum => 'A060632',
+  (anum => 'A151732',
    func => sub {
      my ($count) = @_;
-     my $path = Math::PlanePath::ToothpickUpist->new;
-     my @got;
+     my @got = (0);
      for (my $depth = 0; @got < $count; $depth++) {
        my $added = ($path->tree_depth_to_n($depth+1)
                     - $path->tree_depth_to_n($depth));
@@ -130,16 +67,34 @@ MyOEIS::compare_values
      return \@got;
    });
 
+#------------------------------------------------------------------------------
+# A151733 - 2of8 total cells / 2
+
 MyOEIS::compare_values
-  (anum => 'A151565',
+  (anum => 'A151733',
    func => sub {
      my ($count) = @_;
-     my $path = Math::PlanePath::ToothpickUpist->new;
+     my $path = Math::PlanePath::SurroundTwoEightByCells->new;
      my @got;
+     my $total = 0;
+     for (my $depth = 0; @got < $count; $depth++) {
+       push @got, $path->tree_depth_to_n($depth) / 2;
+     }
+     return \@got;
+   });
+
+#------------------------------------------------------------------------------
+# A151734 - 2of8 cells added / 2
+
+MyOEIS::compare_values
+  (anum => 'A151734',
+   func => sub {
+     my ($count) = @_;
+     my @got = (0);
      for (my $depth = 0; @got < $count; $depth++) {
        my $added = ($path->tree_depth_to_n($depth+1)
                     - $path->tree_depth_to_n($depth));
-       push @got, $added;
+       push @got, $added / 2;
      }
      return \@got;
    });

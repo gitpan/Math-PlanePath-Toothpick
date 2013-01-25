@@ -1,4 +1,4 @@
-# Copyright 2012 Kevin Ryde
+# Copyright 2012, 2013 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -88,6 +88,18 @@
 # total = (len*len-1)*2/3 + 2
 
 
+#  |     |     |
+#  * -*- * -*- *
+#  |     |     |
+#     |     |
+# -*- o -*- * -*-
+#     |     |
+#  |     |     |
+#  * -*- * -*- *
+#  |     |     |
+#
+
+
 package Math::PlanePath::ToothpickTree;
 use 5.004;
 use strict;
@@ -96,7 +108,7 @@ use strict;
 *min = \&Math::PlanePath::_min;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 1;
+$VERSION = 2;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -149,6 +161,7 @@ sub rsquared_minimum {
           : $self->{'parts'} == 2 ? 1   # X=0,Y=1
           : 0);
 }
+use constant tree_num_children_maximum => 2;
 
 #------------------------------------------------------------------------------
 
@@ -218,6 +231,17 @@ sub n_to_xy {
   ### $depth
   ### remainder n: $n
 
+  # $hdx,$hdy is the dx,dy offsets which is "horizontal".  Initially this is
+  # hdx=1,hdy=0 so horizontal along the X axis, but subsequent blocks rotate
+  # around or mirror to point other directions.
+  #
+  # $vdx,$vdy is similar dx,dy which is "vertical".  Initially vdx=0,vdy=1
+  # so vertical along the Y axis.
+  #
+  # $mirror is true if in a "mirror image" block.  The difference is that in
+  # a plain block points are numbered around anti-clockwise, but when
+  # mirrored they're numbered clockwise.
+  #
   my $x = 0;
   my $y = 0;
   my $hdx = 1;
@@ -342,6 +366,7 @@ sub n_to_xy {
       ### assert: $n < $add
 
     } else {
+      # not $mirror
       if ($depth+1 < $pow) {
         my $add = _depth_to_quarter_added([$depth+1],[1],$zero);
         ### add in part1: $add
@@ -772,87 +797,20 @@ sub _n0_to_depth_and_rem {
   ### remainder: $n - $n_depth
 
   return ($depth, $n - $n_depth);
-
-  # # if ($parts == 2) {
-  # #   if ($n < 1) {
-  # #     return (1, $n, \@added);
-  # #   }
-  # #   $n -= 1;
-  # # } elsif ($parts >= 3) {
-  # #   if ($n < 1) {
-  # #     return (0, $n, \@added);
-  # #   }
-  # #   $n -= 1;
-  # #   if ($n < 3) {
-  # #     return (1, $n, \@added);
-  # #   }
-  # #   $n -= 1;
-  # # }
-  #
-  # my $zero = $n*0;
-  # $parts += $zero;
-  # my @added = ('x',       # 0
-  #              'x',       # 1
-  #              $parts,    # 2     A
-  #              $parts);   # 3     B only
-  #
-  # if ($n < $parts) {
-  #   ### first point ...
-  #   return (2, $n, \@added);
-  # }
-  # $n -= $parts;
-  #
-  # if ($n < $parts) {
-  #   ### second point ...
-  #   return (3, $n, \@added);
-  # }
-  # $n -= $parts;
-  #
-  # for (my $dbase = 4; ; $dbase *= 2) {
-  #   ### at: "n=$n  dbase=$dbase addedlen=".scalar(@added)
-  #
-  #   push @added, $parts;     # A
-  #   if ($n < $parts) {
-  #     ### stop at A, added: join(',',@added)
-  #     return ($dbase, $n, \@added);
-  #   }
-  #   $n -= $parts;
-  #   {
-  #     my $add = 2*$parts;
-  #     push @added, $add;     # B+1
-  #     if ($n < $add) {
-  #       return ($dbase+1, $n, \@added);
-  #     }
-  #     $n -= $add;
-  #   }
-  #
-  #   for my $i (2 .. $dbase-2) {
-  #     my $add = $added[$i+1] + 2*$added[$i];
-  #     push @added, $add;
-  #     if ($n < $add) {
-  #       return ($dbase+$i, $n, \@added);
-  #     }
-  #     $n -= $add;
-  #   }
-  #
-  #   {
-  #     my $add = 2*$added[$dbase-1];
-  #     push @added, $add;     # last of up,diag, no lower
-  #     if ($n < $add) {
-  #       return (2*$dbase-1, $n, \@added);
-  #     }
-  #     $n -= $add;
-  #   }
-  #
-  #   ### assert: scalar(@added) == 2*$dbase
-  # }
 }
 
+# First unsorted @pending
+#   depth=119 parts=4 pow=64   119
+#   depth=119 parts=4 pow=32   56,55
+#   depth=119 parts=4 pow=16   25,24,23
+#   depth=119 parts=4 pow=8    10,9,8,7     <- list crosses pow=8 boundary
+#   depth=119 parts=4 pow=4    3,2,7
+#   depth=119 parts=4 pow=2    3
 
 # T(2^k+rem) = T(2^k) + T(rem) + 2T(rem-1)   rem>=1
 #
-my @parts_to_n_offset     = (undef, 0,1,2,3);
-my @parts_to_depth_offset = (undef, 2,1,1,0);
+my @parts_depth_to_n_offset = (undef, 0,1,2,3);
+my @parts_depth_adjust = (undef, 2,1,1,0);  # to give parts=4 style numbering
 
 sub tree_depth_to_n {
   my ($self, $depth) = @_;
@@ -866,6 +824,8 @@ sub tree_depth_to_n {
     return $depth;  # 0,1, for any $parts
   }
 
+  my $parts = $self->{'parts'};
+
   # Adjust $depth so it's parts=4 style counting from the origin X=0,Y=0 as
   # depth=0.  So for example parts=1 is adjusted $depth+=2 since its depth=0
   # is at X=1,Y=1 which is 2 levels down.
@@ -873,8 +833,7 @@ sub tree_depth_to_n {
   # The parts=4 style means that depth=2^k is the "A" point of a new
   # replication.
   #
-  my $parts = $self->{'parts'};
-  $depth += $parts_to_depth_offset[$parts];
+  $depth += $parts_depth_adjust[$parts];
 
   my ($pow,$exp) = round_down_pow ($depth, 2);
   if (is_infinite($exp)) {
@@ -883,21 +842,15 @@ sub tree_depth_to_n {
   ### $pow
   ### $exp
 
-  # powtotal[i] = 4*powtotal[i-1] + 2, starting from powtotal[1]=2.
-  # T[depth] = powtotal[depth] when depth=2^i.
-  # Could calculate this as powtotal[i] = (4^i-1)*2/3 when required.
+  # initial toothpicks not counted by the blocks crunching
+  #   parts=1   0
+  #   parts=2   1 middle X=0,Y=1
+  #   parts=3   2 = 1 origin + 1 above
+  #   parts=4   3 = 1 origin + 1 above + 1 below
+  # hence begin N=parts-1
+  #
   my $zero = $depth*0;
-  my $n = $zero;
-  my @powtotal = (undef);  # powtotal[0] is not used
-  {
-    my $t = 2 + $zero;
-    push @powtotal, $t;
-    foreach (1 .. $exp) {
-      $t = 4*$t + 2;
-      push @powtotal, $t;
-    }
-    ### @powtotal
-  }
+  my $n = $parts-1 + $zero;
 
   # @pending is a list of depth values.
   # @mult is the multiple of T[depth] desired for that @pending entry.
@@ -923,87 +876,80 @@ sub tree_depth_to_n {
     ### @mult
     ### $exp
     ### $pow
-    ### powtotal: $powtotal[$exp]
 
     my @new_pending;
     my @new_mult;
+    my $tpow;
 
-    # if (join(',',@pending) ne join(',',reverse sort {$a<=>$b} @pending)) {
-    #   print " ",join(',',@pending),"\n";
+    # if (1||join(',',@pending) ne join(',',reverse sort {$a<=>$b} @pending)) {
+    #   # print "depth=$depth parts=$parts pow=$pow   ",join(',',@pending),"\n";
+    #   print "mult  ",join(',',@mult),"\n";
     # }
 
     foreach my $depth (@pending) {
       my $mult = shift @mult;
       ### assert: $depth >= 2
+      ### assert: $depth < 2*$pow
 
-      if ($depth == 2) {
-        ### depth==2 total=0 ...
-        next;
-      }
-      if ($depth == 3) {
-        ### depth==3 total=1 ...
-        $n += $mult;
+      if ($depth <= 3) {
+        if ($depth == 3) {
+          ### depth==3 total=1 ...
+          $n += $mult;
+        } else {
+          ### depth==2 total=0 ...
+        }
         next;
       }
 
       if ($depth < $pow) {
+        # Smaller than $pow, keep unchanged.  Cannot stop processing
+        # @pending on finding one $depth<$pow because @pending is not quite
+        # sorted and therefore might have a later $depth>=$pow.
         push @new_pending, $depth;
         push @new_mult, $mult;
         next;
-
-        # Cannot stop here since @pending isn't necessarily sorted into
-        # descending order.
-        # @pending = (@new_pending, $depth, @pending);
-        # @mult = (@new_mult, $mult, @mult);
-        # $pow /= 2;
-        # print "$pow   ",join(',',@pending),"\n";
-        # next OUTER;
       }
-
       my $rem = $depth - $pow;
 
       ### $depth
       ### $mult
       ### $rem
-      ### assert: $rem >= 0 && $rem <= $pow
+      ### assert: $rem >= 0 && $rem < $pow
 
-      if ($rem >= $pow) {
-        ### twice pow: $powtotal[$exp+1]
-        $n += $powtotal[$exp+1] * $mult;
-        next;
-      }
-
-      $n += $mult * $powtotal[$exp];
+      my $basemult = $mult;  # multiple of T(2^k) base part
 
       if ($rem == 0) {
-        ### rem==0, so just the powtotal ...
+        ### rem==0, so just the T(2^k) part ...
 
       } elsif ($rem == 1) {
-        ### rem==1 A of each part ...
+        ### rem==1 "A" ...
         $n += $mult;
-
-        # } elsif ($rem < 3) {
-        #   ### rem==2 A+B+1 of each part ...
-        #   $n += 3 * $mult;
 
       } else {
         ### rem >= 2, formula ...
-        # T(pow+rem) = T(pow) + T(rem) + 2T(rem-1) + 2
-        $rem += 1;
+        # T(pow+rem) = T(pow) + T(rem+1) + 2T(rem) + 2
         $n += 2*$mult;
 
-        if (@new_pending && $new_pending[-1] == $rem) {
-          # print "rem=$rem ",join(',',@new_pending),"\n";
+        $rem += 1;   # for rem+1
+        if ($rem == $pow) {
+          ### rem==pow-1 so rem+1==pow is an extra T(2^k) ...
+          $basemult += $mult;
+        } elsif (@new_pending && $new_pending[-1] == $rem) {
+          ### combine rem+1 here with rem of previous ...
           $new_mult[-1] += $mult;
         } else {
           push @new_pending, $rem;
           push @new_mult, $mult;
         }
-        if ($rem -= 1) {
+        if ($rem -= 1) {  # for rem
           push @new_pending, $rem;
           push @new_mult, 2*$mult;
         }
       }
+
+      # T(2^k) = (4^(k-1)-1)*2/3 = (pow*pow-4)/6
+      $tpow ||= ($pow*$pow-4)/6;
+      $n += $basemult * $tpow;
     }
     @pending = @new_pending;
     @mult = @new_mult;
@@ -1011,37 +957,8 @@ sub tree_depth_to_n {
   }
 
   ### return: $n
-  return $n + $parts_to_n_offset[$parts];
-
-  # $parts_depth_offset[$parts];
-  # my @parts_depth_offset = (undef, 0, 1, 2, 3);
+  return $n
 }
-
-
-# sub _UNTESTED__n_to_xy {
-#   my ($n) = @_;
-#
-#   my $zero = $n*0;
-#   my @added = ($zero, 1+$zero, 2+$zero, 4+$zero);
-#
-#   for (my $len = 4; $len <= 16; $len *= 2) {
-#     ### at: "n=$n len=$len"
-#     push @added, $len;
-#     if ($n < $len) {
-#       return ($len, $n);
-#     }
-#     $n -= $len;
-#
-#     for my $i (1 .. $len-1) {
-#       my $add = $added[$i+1] + 2*$added[$i];
-#       push @added, $add;
-#       if ($n < $add) {
-#         return ($len+$i, $n);
-#       }
-#       $n -= $add;
-#     }
-#   }
-# }
 
 
 # $depth numbered from origin in parts=4 style.
@@ -1153,23 +1070,24 @@ sub _depth_to_quarter_added {
 1;
 __END__
 
-
-# --37--    36--                  --35--  --34--
-#    |       |                       |       |
-#   31--25--30                      29--24--28        5
-#        |                               |
-#       22--20--  --19--  --18--  --17--21            4
-#        |   |       |       |       |   |
-#   32--26- 15---9--14      13---8--12 -23--27        3
-#    |       |   |               |   |       |
-# --38--         6---4--  ---3---5        --33--      2
-#            |   |   |       |   |   |
-#           16--10-  2---0---1 --7--11                1
-#            |       |       |       |
-#                                                <- Y=0
-#       -----------------------------------
-#                    ^
-#   -4  -3  -2  -1  X=0  1   2   3   4
+# Bigger sample of parts=2 ...
+#
+#    --37--    36--                  --35--  --34--      6
+#       |       |                       |       |
+#      31--25--30                      29--24--28        5
+#           |                               |
+#          22--20--  --19--  --18--  --17--21            4
+#           |   |       |       |       |   |
+#      32--26- 15---9--14      13---8--12 -23--27        3
+#       |       |   |               |   |       |
+#    --38--         6---4--  ---3---5        --33--      2
+#               |   |   |       |   |   |
+#              16--10-  2---0---1 --7--11                1
+#               |       |       |       |
+#                                                   <- Y=0
+#    ---------------------------------------------
+#                           ^
+#      -5  -4  -3  -2  -1  X=0  1   2   3   4   6
 
 
 =for stopwords eg Ryde Math-PlanePath-Toothpick Nstart Nend
@@ -1187,7 +1105,7 @@ Math::PlanePath::ToothpickTree -- toothpick pattern by growth levels
 =head1 DESCRIPTION
 
 X<Applegate, David>X<Pol, Omar E.>X<Sloane, Neil>This is the "toothpick"
-sequence expanding through the plane by non-overlapping line segments, as
+sequence which expands through the plane by non-overlapping line segments as
 per
 
 =over
@@ -1209,61 +1127,75 @@ level.
 
 =pod
 
-    --49--                          --48--           5
-       |                               |
-      44--38--  --37--  --36--  --35--43             4
-       |   |       |       |       |   |
-    --50- 27--17--26      25--16--24 -47--           3
-           |   |               |   |
-              12---8--  ---7--11                     2
-           |   |   |       |   |   |
-          28--18-  4---1---3 -15--23                 1
-           |       |   |   |       |
-                       0                        <- Y=0
-           |       |   |   |       |
-          29--19-  5---2---6 -22--34                -1
-           |   |   |       |   |   |
-              13---9--  --10--14                    -2
-           |   |               |   |
-    --51- 30--20--31      32--21--33 -54--          -3
-       |   |       |       |       |   |
-      45--39--  --40--  --41--  --42--46            -4
-       |                               |
-    --52--                          --53--          -5
+    --49---                         --48---            5
+       |                               |   
+      44--38--  --37--  --36--  --35--43               4
+       |   |       |       |       |   |   
+    --50- 27--17--26      25--16--24 -47---            3
+           |   |               |   |       
+              12---8--- ---7--11                       2
+           |   |   |       |   |   |       
+          28--18-- 4---1---3 -15--23                   1
+           |       |   |   |       |       
+                       0                          <- Y=0
+           |       |   |   |       |       
+          29--19-  5---2---6 -22--34                  -1
+           |   |   |       |   |   |       
+              13---9--  --10--14                      -2
+           |   |   |       |   |   |       
+    --51- 30--20--31      32--21--33 -54---           -3
+       |   |       |       |       |   |   
+      45--39--- --40--- --41--- --42--46              -4
+       |                               |   
+    --52---                         --53---           -5
+
                        ^
       -4   -3 -2  -1  X=0  1   2   3   4
 
 Each X,Y point is the centre of a toothpick of length 2.  The first
 toothpick is vertical at the origin X=0,Y=0.
 
-A toothpick is added at each exposed end and perpendicular to that end.  So
-N=1 and N=2=3 are added to the ends of the initial N=0 toothpick.  Then
-points N=4,5,6,7 are added at the four ends of those two.
+A toothpick is added at each exposed end, and perpendicular to that end.  So
+N=1 and N=2 are added to the two ends of the initial N=0 toothpick.  Then
+points N=3,4,5,6 are added at the four ends of those.
 
-                                                   ---8--- ---7---
-                                  |       |           |       |
-                ---1---           4---1---3           4---1---3
-    |              |              |   |   |           |   |   |
-    0      ->      0       ->         0        ->         0
-    |              |              |   |   |           |   |   |
-                ---2---           5---2---6           5---2---6
-                                  |       |           |       |
-                                                   ---9--- --10---
+                                               ---8--- ---7---
+                              |       |           |       |
+             ---1---          4---1---3           4---1---3
+    |           |             |   |   |           |   |   |
+    0   ->      0       ->        0        ->         0
+    |           |             |   |   |           |   |   |
+             ---2---          5---2---6           5---2---6
+                              |       |           |       |
+                                               ---9--- --10---
 
-Toothpicks are not added if they would overlap, which means no toothpick
-where the ends of N=3,N=6 and N=4,N=5 meet, at X=1,Y=0 and X=-1,Y=0
-respectively.
+Toothpicks are not added if they would overlap, which means no toothpick at
+X=1,Y=0 where the ends of N=3 and N=6 meet , and likewise not at X=-1,Y=0
+where N=4 and N=5 meet.
 
-The end of a toothpick can touch an existing toothpick.  The first time this
-happens is N=15 where its left end touches N=3.
+The end of a new toothpick is allowed to touch an existing toothpick.  The
+first time this happens is N=15 where its left end touches N=3.
 
 The way each toothpick is perpendicular to the previous means that at even
-depth the toothpicks are vertical and odd depth they're horizontal (treating
-the initial N=0 as depth=0).  It also means that "even" points X==Y mod 2
-are vertical and "odd" points X!=Y mod 2 are horizontal.
+depth the toothpicks are vertical and odd depth they're horizontal.  The
+initial N=0 is depth=0.  It also means that "even" points X==Y mod 2 are
+vertical and "odd" points X!=Y mod 2 are horizontal.
 
-See L<Math::PlanePath::ToothpickReplicate> for a digit-based replication
-instead of by growth levels..
+=head2 Cellular Automaton
+
+The toothpick rule can also be expressed as growing into a cell which has
+just one of two vertical or horizontal neighbours.
+
+          Point            Grow
+    ------------------   ------------------------------------------
+    X==Y mod 2, "even"   turn ON if 1 of 2 horizontal neighbours ON
+    X!=Y mod 2, "odd"    turn ON if 1 of 2 vertical neighbours ON
+
+For example X=0,Y=1 which is N=1 turns ON because it has a single vertical
+neighbour (the origin X=0,Y=0).  But the cell X=1,Y=0 never turns ON because
+initially its two vertical are OFF and then later at depth=3 they're both
+ON.  Only when there's exactly one of the two neighbours (in the relevant
+direction) does the cell turn ON.
 
 =head2 Replication
 
@@ -1286,17 +1218,21 @@ with an extra two toothpicks "A" and "B" in the middle.
     |   /        |    v       |
     +----------------------------
 
-Toothpick "A" is at a power-of-2 X=2^k,Y=2^k and toothpick "B" is above it.
-The B toothpick leading to blocks 2 and 3 mean that they're one level behind
-block 1 in the replication.
+Toothpick "A" is at an X=2^k,Y=2^k power-of-2 and toothpick "B" is above it.
+The B toothpick leading to blocks 2 and 3 means block 1 is one growth level
+ahead of blocks 2 and 3 in the replication.
 
-In the portion shown above the first quadrant N=3,N=7 is block 0 and those
-two repeat as N=15,N=23 block 1, and N=24,N=35 block 2, and N=25,36 block 3.
+In the diagram above, in the first quadrant N=3,N=7 is block 0 and those two
+repeat as N=15,N=23 block 1, and N=24,N=35 block 2, and N=25,36 block 3.
 The rotation for block 1 can be seen.  The mirroring for block 3 can be seen
-at the next level, as for instance in the L</One Quadrant> form below.
+at the next level (the diagram of the L</One Quadrant> form below extends to
+there).
 
 The initial N=3,N=7 can be thought of as an "A,B" middle pair with empty
 blocks before and surrounding.
+
+See L<Math::PlanePath::ToothpickReplicate> for a digit-based replication
+instead of by growth levels.
 
 =head2 Level Ranges
 
@@ -1320,7 +1256,7 @@ example N=35,36,37,38 across the top above.
 The number of points visited approaches 2/3 of the plane, as can be seen by
 the "A" points count as a fraction of the area (positive and negative),
 
-    N of "A"   (8*4^k + 1)/3      8/3 * 4^k
+    N to "A"   (8*4^k + 1)/3      8/3 * 4^k
     -------- = -------------   -> --------- = 2/3
     Area X*Y   (2*2^k)*(2*2^k)    4   * 4^k
 
@@ -1342,11 +1278,11 @@ four quadrants of the full pattern.
         |                            |       |
         |                           47--44--46
         |                                |   |
-      8 | --41--  --40--  --29--  --38--42
+      8 | --41--  --40--  --39--  --38--42
         |    |       |       |       |   |   |
       7 |   36--28--35      34--27--33 -43--45
         |    |   |               |   |       |
-      6 |     --22--18-    -17--21          ...
+      6 |       22--18--  --17--21          ...
         |        |   |       |   |   |
       5 | --37--29- 15--12--14 -26--32
         |                |   |       |
@@ -1364,12 +1300,12 @@ four quadrants of the full pattern.
 
 The "A" toothpick at X=2^k,Y=2^k is
 
-    N of "A" = (2*4^k - 2)/3           N=2,10,42,etc
-             = 222...222 in base 4
+    N of "A" = (2*4^k - 2)/3 = 2,10,42,etc
+             = "222...222" in base 4
 
-Because the repeating part starts from N=0, so there's no initial centre
-toothpicks like the full pattern, the repetition is a plain 4*N+2 and
-hence a 222..222 in base 4.
+The repeating part starts from N=0 here so there's no initial centre
+toothpicks like the full pattern.  This means the repetition is a plain
+4*N+2 and hence a N="222..222" in base 4.
 
 =head2 Half Plane
 
@@ -1404,8 +1340,8 @@ plane.
 =head2 Three Parts
 
 Option C<parts =E<gt> 3> is the three replications which occur from an
-X=2^k,Y=2^k point, but continued on indefinitely confined to the upper and
-right three quadrants.
+X=2^k,Y=2^k point, continued on indefinitely confined to the upper and right
+three quadrants.
 
 =cut
 
@@ -1436,9 +1372,22 @@ right three quadrants.
                      ^
     -4  -3  -2  -1  X=0  1   2   3   4
 
-Notice that the bottom right quarter is rotated by 90 degrees, as per the
-"block 1" growth from a power-of-2 corner.  This means it's not the same as
-in parts=4.  The two upper parts are the same as parts=2 and parts=4.
+The bottom right quarter is rotated by 90 degrees as per the "block 1"
+growth from a power-of-2 corner.  This means it's not the same as the bottom
+right of parts=4.  The two upper parts are the same as in parts=4 and
+parts=2.
+
+As noted by David Applegate and Omar Pol in OEIS A153006, the three parts
+replication means that N at the last level of a power-of-2 level is a
+triangular number, ie.
+
+    depth=2^k-1
+    N(depth) = (2^k-1)*2^k/2 = triangular number depth*(depth+1)/2
+    at X=(depth-1)/2, Y=-(depth+1)/2
+
+For depth=2^3-1=7 begins at N=7*8/2=28 and is at the lower right corner
+X=(7-1)/2=3, Y=-(7+1)/2=-4.  If the depth is not such a 2^k-1 then the
+Ndepth start of the level is less than the triangular depth*(depth+1)/2.
 
 =head1 FUNCTIONS
 
@@ -1470,20 +1419,91 @@ are numbered means that two children are consecutive N values.
 
 =item C<$n_parent = $path-E<gt>tree_n_parent($n)>
 
-Return the parent node of C<$n>, or C<undef> if C<$n E<lt>= 0> (the start of
-the path).
+Return the parent node of C<$n>, or C<undef> if no parent due to C<$n E<lt>=
+0> (the start of the path).
 
 =item C<$depth = $path-E<gt>tree_n_to_depth($n)>
 
 =item C<$n = $path-E<gt>tree_depth_to_n($depth)>
 
-Return the depth of point C<$n>, or the first C<$n> at given C<$depth>.
+Return the depth of point C<$n>, or first C<$n> at given C<$depth>,
+respectively.
 
-The first point N=0 is at depth=0 in all the "parts" forms.  The way parts=1
+The first point N=0 is depth=0 in all the "parts" forms.  The way parts=1
 and parts=2 don't start at the origin means their depth at a given X,Y
-differs by 2 or by 1 from the full pattern at the same point.
+differs by 2 or 1 respectively from the full pattern at the same point.
 
 =back
+
+=head1 FORMULAS
+
+=head2 Depth to N
+
+The first N at given depth is given by the formulas in the paper by
+Applegate, Pol and Sloane above.  The first N is the total count of
+toothpicks in the preceding levels.
+
+    depth = pow + rem
+        where pow=2^k and 0 <= rem < 2^k
+
+    Mquad(depth) = (4^k-4)/6          # 4^k = pow*pow
+                /  0   if rem=0       # for depth=pow
+             + |   1   if rem=1       # the "A" toothpick
+               \   Ndepth(rem+1) + 2*Ndepth(rem) + 2  if rem>=2
+
+    parts=1   Ndepth = Nquad(depth+2)
+    parts=2   Ndepth = 2*Nquad(depth+1) + 1
+    parts=3   Ndepth = 3*Nquad(depth+1) + 2
+    parts=4   Ndepth = 4*Nquad(depth) + 3
+
+Nquad is the total points of a single quadrant with depth numbered in the
+style of parts=4.  For example depth=8 gives Nquad=(4^3-4)/6=10 which is the
+N at X=4,Y=4.
+
+Ndepth is then the Nquad with depth adjusted for whether the respective
+parts=1,2,3,4 begin with depth=0 at the origin or 1 or 2, plus the initial
+1, 2 or 3 points not in the Nquad replications.
+
+The (4^k-4)/6 part is the total points in a 2*depth x 2*depth block, similar
+to L</Level Ranges> above but a single quadrant.  It's a value "222..22" in
+base-4, with k-1 many "2"s.  For example depth=8=2^3 has k=3 so k-1=2 many
+"2"s for value "22" base-4 is 10.
+
+The breakdown of depth to Ndepth(rem+1) + 2*Ndepth(rem) is the important
+part of the formula.  It knocks out the high bit of depth and spreads to an
+adjacent pair rem+1,rem.  This can be handled by keeping a list of pending
+depth values desired and knocking them down with the biggest necessary
+pow=2^k, then reduce to pow=2^(k-1), etc.
+
+Because rem+1,rem are adjacent successive reductions make a list like
+d+2,d+1,d then d+3,d+2,d+1,d etc.  But when the list crosses a 2^k then some
+are reduced and others remain.  When that happens the list is no longer
+successive values, only mostly so.  When breaking to rem+1,rem it's enough
+to check whether rem+1 is equal to the "rem" from the previous breakdown and
+if so coalesce with that pending entry.
+
+The factor of 2 in 2*Ndepth(rem) can be handled by keeping a desired
+multiplier with each pending depth.  Ndepth(rem+1) copies the current
+multiplier, and 2*Ndepth(rem) doubles the current.  When coalescing with a
+previous entry then add to its multiplier.
+
+If the pending list is a list of successive integers then the rem+1,rem
+breakdown and coalesce increases that list by just one value, keeping the
+list to log2(depth) many entries (the number of bits in depth).  But as
+noted above that's not so when the list crosses a 2^k boundary.  It's then
+behaves like two lists and each grow by one entry.  But in any case the list
+doesn't become huge.
+
+=head2 N to Depth
+
+The current C<tree_n_to_depth()> does a binary search for depth by calling
+C<tree_depth_to_n()> on a successively narrower range.  Is there a better
+approach?
+
+Some intermediate values in the depth-to-N might be re-used by such repeated
+calls, but it's not clear how many would be re-used and how many would be
+needed only once.  The current code doesn't retain any such intermediates,
+so large N can be handled without using a lot of memory.
 
 =head1 OEIS
 
@@ -1549,7 +1569,7 @@ http://user42.tuxfamily.org/math-planepath/index.html
 
 =head1 LICENSE
 
-Copyright 2012 Kevin Ryde
+Copyright 2012, 2013 Kevin Ryde
 
 This file is part of Math-PlanePath-Toothpick.
 

@@ -26,6 +26,179 @@ use List::Util 'min', 'max';
 
 
 {
+  # ascii art with toothpick lines
+
+  require Image::Base::Text;
+  require Math::PlanePath::ToothpickTree;
+
+  my $run = sub {
+    my ($path, $n_hi) = @_;
+
+    my $width = 78;
+    my $height = 40;
+    my $x_lo = -$width/2;
+    my $y_lo = -$height/2;
+
+    my $x_hi = $x_lo + $width - 1;
+    my $y_hi = $y_lo + $height - 1;
+    my $image = Image::Base::Text->new (-width => $width,
+                                        -height => $height);
+    my $plot = sub {
+      my ($x,$y,$char) = @_;
+      $x -= $x_lo;
+      $y -= $y_lo;
+      return if $x < 0 || $y < 0 || $x >= $width || $y >= $height;
+      $image->xy ($x,$height-1-$y,$char);
+    };
+    my $plot_get = sub {
+      my ($x,$y,$char) = @_;
+      $x -= $x_lo;
+      $y -= $y_lo;
+      return ' ' if $x < 0 || $y < 0 || $x >= $width || $y >= $height;
+      return $image->xy($x, $height-1-$y);
+    };
+    my $plot_nooverwrite = sub {
+      my ($x,$y,$char) = @_;
+      if ($plot_get->($x,$y) eq ' ') {
+        $plot->($x,$y,$char);
+      }
+    };
+
+    print "n_hi $n_hi\n";
+    for my $n ($path->n_start .. $n_hi) {
+      my ($x,$y) = $path->n_to_xy($n);
+      my $odd = ($x+$y) & 1;
+      $x *= 4;
+      $y *= 2;
+      my $str = "$n";
+      $plot->($x+1, $y, $str);
+      if ($n < 10) {
+      } else {
+        $plot->($x,   $y, substr($str,0,1));
+        $plot->($x+1, $y, substr($str,1,1));
+      }
+      if ($odd) {
+        $plot_nooverwrite->($x-2, $y, '-');
+        $plot_nooverwrite->($x-1, $y, '-');
+        $plot_nooverwrite->($x, $y, '-');
+        $plot_nooverwrite->($x+2, $y, '-');
+        $plot_nooverwrite->($x+3, $y, '-');
+        $plot_nooverwrite->($x+4, $y, '-');
+      } else {
+        $plot_nooverwrite->($x+1, $y-1, '|');
+        $plot_nooverwrite->($x+1, $y+1, '|');
+      }
+    }
+    $image->save('/dev/stdout');
+  };
+
+  {
+    my $path = Math::PlanePath::ToothpickTree->new;
+    $run->($path, 54);
+  }
+  {
+    my $path = Math::PlanePath::ToothpickTree->new (parts => 1);
+    $run->($path, 47);
+  }
+  {
+    my $path = Math::PlanePath::ToothpickTree->new (parts => 2);
+    $run->($path, 22);
+  }
+  {
+    my $path = Math::PlanePath::ToothpickTree->new (parts => 3);
+    $run->($path, 32);
+  }
+
+  require Math::PlanePath::ToothpickReplicate;
+  {
+    my $path = Math::PlanePath::ToothpickReplicate->new;
+    $run->($path, 43);
+  }
+  {
+    my $path = Math::PlanePath::ToothpickReplicate->new (parts => 1);
+    $run->($path, 42);
+  }
+  {
+    my $path = Math::PlanePath::ToothpickReplicate->new (parts => 2);
+    $run->($path, 53);
+  }
+  {
+    my $path = Math::PlanePath::ToothpickReplicate->new (parts => 3);
+    $run->($path, 31);
+  }
+
+  exit 0;
+}
+
+{
+  # http://user42.tuxfamily.org/temporary/ 
+  chdir "$ENV{HOME}/tux/web/temporary" or die;
+
+  system ('math-image --path=ToothpickTree,parts=4 --all --scale=5 --size=200x200 --png >toothpick-squares.png') == 0
+    or die;
+  system ('math-image --path=ToothpickTree,parts=4 --values=PlanePathCoord,coordinate_type=IsNonLeaf,planepath=ToothpickTree --scale=5 --size=200x200 --png >toothpick-nonleaf.png') == 0
+    or die;
+
+  # system ('math-image --path=ToothpickTree,parts=1 --values=LinesTree --scale=7 --size=450x458 --figure=circle --png >toothpick-tree.png') == 0
+  #   or die;
+  system ('ls -l *.png');
+  system ('xzgv toothpick-squares.png toothpick-nonleaf.png');
+  exit 0;
+}
+{
+  # http://user42.tuxfamily.org/temporary/ 
+
+  chdir "$ENV{HOME}/tux/web/temporary" or die;
+
+  system ('math-image --path=ToothpickTree,parts=1 --values=LinesTree --scale=14 --size=452x464 --figure=circle --png >toothpick-dots.png') == 0
+    or die;
+  system ('math-image --path=ToothpickTree,parts=1 --values=LinesTree --scale=14 --size=452x464 --figure=point --png >toothpick-lines.png') == 0
+    or die;
+
+  # system ('math-image --path=ToothpickTree,parts=1 --values=LinesTree --scale=7 --size=450x458 --figure=circle --png >toothpick-tree.png') == 0
+  #   or die;
+  system ('ls -l *.png');
+  system ('xzgv toothpick-*.png');
+  exit 0;
+}
+
+{
+  # count including endpoints
+
+  require Math::PlanePath::ToothpickTree;
+  my $path = Math::PlanePath::ToothpickTree->new (parts => 2);
+  my $prev = -999;
+  my $count = 0;
+  for (my $depth = 0; $depth <= 20; $depth++) {
+    my $total = 0;
+    my $n_end = $path->tree_depth_to_n_end($depth);
+    foreach my $n ($path->n_start .. $n_end) {
+      $total += 3;
+      foreach my $c ($path->tree_n_children($n)) {
+        if ($n <= $n_end) {
+          $total--;  # no double-counting of child midpoint
+        }
+      }
+    }
+    print "$total,";
+  }
+  print "\n";
+  exit 0;
+}
+
+{
+  # tree_depth_to_n() not sorted
+  require Math::PlanePath::ToothpickTree;
+  my $path = Math::PlanePath::ToothpickTree->new (parts => 4);
+  foreach (119 .. 1000) {
+    $path->tree_depth_to_n($_);
+  }
+  exit 0;
+}
+
+
+
+{
   # tree_n_to_depth()
   require Math::PlanePath::ToothpickTree;
   my $path = Math::PlanePath::ToothpickTree->new (parts => 2);

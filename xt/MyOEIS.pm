@@ -1,4 +1,4 @@
-# Copyright 2010, 2011, 2012 Kevin Ryde
+# Copyright 2010, 2011, 2012, 2013 Kevin Ryde
 
 # MyOEIS.pm is shared by several distributions.
 #
@@ -166,7 +166,8 @@ sub compare_values {
   my $func = $option{'func'} || croak "Missing func parameter";
   my ($bvalues, $lo, $filename) = MyOEIS::read_values
     ($anum,
-     max_count => $option{'max_count'});
+     max_count => $option{'max_count'},
+     max_value => $option{'max_value'});
   my $diff;
   if ($bvalues) {
     if (my $fixup = $option{'fixup'}) {
@@ -185,6 +186,7 @@ sub compare_values {
       MyTestHelpers::diag ("got:     ",join_values($got));
     }
   }
+  require Test;
   local $Test::TestLevel = $Test::TestLevel + 1;
   Test::skip (! $bvalues, $diff, undef, "$anum");
 }

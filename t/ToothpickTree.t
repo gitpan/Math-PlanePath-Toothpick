@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2011, 2012 Kevin Ryde
+# Copyright 2011, 2012, 2013 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -36,7 +36,7 @@ require Math::PlanePath::ToothpickTree;
 # VERSION
 
 {
-  my $want_version = 1;
+  my $want_version = 2;
   ok ($Math::PlanePath::ToothpickTree::VERSION, $want_version,
       'VERSION variable');
   ok (Math::PlanePath::ToothpickTree->VERSION,  $want_version,
@@ -282,7 +282,7 @@ require Math::PlanePath::ToothpickTree;
   }
 }
 
-foreach my $parts (4 .. 4) {
+foreach my $parts (1 .. 4) {
   my $path = Math::PlanePath::ToothpickTree->new (parts => $parts);
   my $bad = 0;
   my %seen;
@@ -537,8 +537,8 @@ exit 0;
 # parts=4 vs pointwise calculation
 
 {
-  my @dir_to_dx = (1,0,-1,0);
-  my @dir_to_dy = (0,1,0,-1);
+  my @dir4_to_dx = (1,0,-1,0);
+  my @dir4_to_dy = (0,1,0,-1);
 
   my @endpoints_x = (0);
   my @endpoints_y = (0);
@@ -559,8 +559,8 @@ exit 0;
       my $y = $endpoints_y[$i];
       my $dir = ($endpoints_dir[$i] - 1) & 3;  # -90
       foreach (-1, 1) {
-        my $x = $x + $dir_to_dx[$dir];
-        my $y = $y + $dir_to_dy[$dir];
+        my $x = $x + $dir4_to_dx[$dir];
+        my $y = $y + $dir4_to_dy[$dir];
         my $key = "$x,$y";
         unless ($xy_to_n{$key}) {
           $extend{$key}++;

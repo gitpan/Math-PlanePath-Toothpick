@@ -37,6 +37,55 @@ use Math::PlanePath::ToothpickTree;
 
 
 #------------------------------------------------------------------------------
+# A153007 triangular n(n+1)/2 subtract toothpick total parts=3
+
+MyOEIS::compare_values
+  (anum => 'A153007',
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::ToothpickTree->new (parts => 3);
+     my $n = $path->n_start;
+     my @got;
+     for (my $depth = 0; @got < $count; $depth++) {
+       push @got, $depth*($depth+1)/2 - $path->tree_depth_to_n($depth);
+     }
+     return \@got;
+   });
+
+# at depth=2^k-1 have diff==0
+# triangular = 2^k*(2^k-1)/2 = 1,6,28,120,496,...
+{
+  my $path = Math::PlanePath::ToothpickTree->new (parts => 3);
+  require Math::BigInt;
+  for (my $i = 0; $i < 128; $i++) {
+    my $depth = Math::BigInt->new(1)->blsft($i)->bsub(1);  # 2^i-1
+    my $n = $path->tree_depth_to_n($depth);
+    my $diff = $depth*($depth+1)/2 - $n;
+    ok ($diff, 0);
+    my ($x,$y) = $path->n_to_xy($n);
+    ok ($x, ($depth-1)/2,  "X at depth=$depth");
+    ok ($y, -($depth+1)/2, "Y at depth=$depth");
+  }
+}
+
+#------------------------------------------------------------------------------
+# A139250 - parts=4 total cells
+
+MyOEIS::compare_values
+  (anum => 'A139250',
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::ToothpickTree->new;
+     my @got;
+     my $total = 0;
+     for (my $depth = 0; @got < $count; $depth++) {
+       push @got, $path->tree_depth_to_n($depth);
+     }
+     return \@got;
+   });
+
+
+#------------------------------------------------------------------------------
 # A152978 - parts=1 added
 
 MyOEIS::compare_values
@@ -169,34 +218,6 @@ MyOEIS::compare_values
 
 
 #------------------------------------------------------------------------------
-# A153007 triangular n(n+1)/2 - toothpick total parts=3
-
-MyOEIS::compare_values
-  (anum => 'A153007',
-   func => sub {
-     my ($count) = @_;
-     my $path = Math::PlanePath::ToothpickTree->new (parts => 3);
-     my $n = $path->n_start;
-     my @got;
-     for (my $depth = 0; @got < $count; $depth++) {
-       push @got, $depth*($depth+1)/2 - $path->tree_depth_to_n($depth);
-     }
-     return \@got;
-   });
-
-# at depth=2^k-1 have diff==0
-# triangular = 2^k*(2^k-1)/2
-{
-  my $path = Math::PlanePath::ToothpickTree->new (parts => 3);
-  require Math::BigInt;
-  for (my $i = 0; $i < 128; $i++) {
-    my $depth = Math::BigInt->new(1)->blsft($i)->bsub(1);
-    my $diff = $depth*($depth+1)/2 - $path->tree_depth_to_n($depth);
-    ok ($diff, 0);
-  }
-}
-
-#------------------------------------------------------------------------------
 # A162797 difference parallel-opposite
 
 MyOEIS::compare_values
@@ -316,23 +337,6 @@ MyOEIS::compare_values
          }
        }
        push @got, scalar(keys %seen);
-     }
-     return \@got;
-   });
-
-
-#------------------------------------------------------------------------------
-# A139250 - parts=4 total cells
-
-MyOEIS::compare_values
-  (anum => 'A139250',
-   func => sub {
-     my ($count) = @_;
-     my $path = Math::PlanePath::ToothpickTree->new;
-     my @got;
-     my $total = 0;
-     for (my $depth = 0; @got < $count; $depth++) {
-       push @got, $path->tree_depth_to_n($depth);
      }
      return \@got;
    });

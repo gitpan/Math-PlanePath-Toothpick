@@ -1,4 +1,4 @@
-# Copyright 2012, 2013 Kevin Ryde
+# Copyright 2012 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -16,11 +16,17 @@
 # with Math-PlanePath-Toothpick.  If not, see <http://www.gnu.org/licenses/>.
 
 
-# Tie::CArray
-# Tie::Array::Pack  with pack()
-# Tie::Array::Pack
+# hexagons one of six
+# A151723 total
+# A151724 added
+# A170898 added/6
+# A169780 1/6 wedge total
+# A170905 1/6 wedge added
+# A169778 1/6 wedge added/2
 
-package Math::PlanePath::SurroundOneEightByCells;
+
+
+package Math::PlanePath::SurroundOneSixByCells;             
 use 5.004;
 use strict;
 use Carp;
@@ -46,15 +52,7 @@ use Math::PlanePath::SquareSpiral;
 use constant n_start => 0;
 
 use constant parameter_info_array =>
-  [ { name            => 'parts',
-      share_key       => 'parts_surroundoneeight',
-      display         => 'Parts',
-      type            => 'enum',
-      default         => 4,
-      choices         => ['4','1','octant','3mid','3side','side'],
-      description     => 'Which parts of the plane to fill.',
-    },
-    { name      => 'start',
+  [ { name      => 'start',
       share_key => 'start_upstarplus',
       display   => 'Start',
       type      => 'enum',
@@ -62,100 +60,29 @@ use constant parameter_info_array =>
       choices   => ['one','two','three','four'],
     },
   ];
-use constant class_x_negative => 1;
-use constant class_y_negative => 1;
-{
-  my %x_negative = (4       => 1,
-                    1       => 0,
-                    octant  => 0,
-                    '3mid'  => 1,
-                    '3side' => 1,
-                    side    => 0,
-                   );
-  sub x_negative {
-    my ($self) = @_;
-    return $x_negative{$self->{'parts'}};
-  }
-}
-{
-  my %x_minimum = (4       => undef,
-                   1       => 0,
-                   octant  => undef,
-                   '3side' => undef,
-                   '3mid'  => undef,
-                   side    => 0,
-                  );
-  sub x_minimum {
-    my ($self) = @_;
-    return $x_minimum{$self->{'parts'}};
-  }
-}
-{
-  my %y_negative = (4       => 1,
-                    1       => 0,
-                    octant  => 0,
-                    '3mid'  => 1,
-                    '3side' => 1,
-                    side    => 0,
-                   );
-  sub y_negative {
-    my ($self) = @_;
-    return $y_negative{$self->{'parts'}};
-  }
-}
-{
-  my %y_minimum = (4       => undef,
-                   1       => 0,
-                    octant => 0,
-                   '3mid'  => undef,
-                   '3side' => undef,
-                   side    => 1,
-                  );
-  sub y_minimum {
-    my ($self) = @_;
-    return $y_minimum{$self->{'parts'}};
-  }
-}
+
 
 sub new {
   my $self = shift->SUPER::new(@_);
   $self->{'sq'} = Math::PlanePath::SquareSpiral->new (n_start => 0);
 
-  my $parts = ($self->{'parts'} ||= '4');
   my $start = ($self->{'start'} ||= 'one');
   my @n_to_x;
   my @n_to_y;
-  if ($parts eq 'Xside') {
-    @n_to_x = (0, 1);
-    @n_to_y = (1, 1);
-    $self->{'endpoints_dir'} = [ 4, 4 ];
-  } elsif ($parts eq '3mid') {
+  if ($start eq 'one') {
     @n_to_x = (0);
     @n_to_y = (0);
-    $self->{'endpoints_dir'} = [ 2 ];  # for numbering
-  } elsif ($parts eq '3side') {
-    @n_to_x = (0);
-    @n_to_y = (0);
-    $self->{'endpoints_dir'} = [ 2 ];  # for numbering
+  } elsif ($start eq 'two') {
+    @n_to_x = (0, -1);
+    @n_to_y = (0, 0);
+  } elsif ($start eq 'three') {
+    @n_to_x = (0, -1, -1);
+    @n_to_y = (0, 0, -1);
+  } elsif ($start eq 'four') {
+    @n_to_x = (0, -1, -1, 0);
+    @n_to_y = (0, 0, -1, -1);
   } else {
-    @n_to_x = (0);
-    @n_to_y = (0);
-    $self->{'endpoints_dir'} = [ 4 ];
- 
- # } elsif ($start eq 'two') {
- #    @n_to_x = (0, -1);
- #    @n_to_y = (0, 0);
- #    $self->{'endpoints_dir'} = [ 0, 4 ];
- #  } elsif ($start eq 'three') {
- #    @n_to_x = (0, -1, -1);
- #    @n_to_y = (0, 0, -1);
- #    $self->{'endpoints_dir'} = [ 0, 6, 2 ];
- #  } elsif ($start eq 'four') {
- #    @n_to_x = (0, -1, -1, 0);
- #    @n_to_y = (0, 0, -1, -1);
- #    $self->{'endpoints_dir'} = [ 0, 2, 4, 6 ];
- #  } else {
-    # croak "Unrecognised parts: ",$parts;
+    croak "Unrecognised start: ",$start;
   }
   $self->{'n_to_x'} = \@n_to_x;
   $self->{'n_to_y'} = \@n_to_y;
@@ -177,17 +104,15 @@ sub new {
   return $self;
 }
 
-my @surround_dx = (1, 1, 0, -1, -1, -1,  0,  1);
-my @surround_dy = (0, 1, 1,  1,  0, -1, -1, -1);
+my @surround_dx = (2, 1,-1, -2, -1,  1);
+my @surround_dy = (0, 1, 1,  0, -1, -1);
 
 sub _extend {
   my ($self) = @_;
   ### _extend() ...
 
-  my $parts = $self->{'parts'};
   my $sq = $self->{'sq'};
   my $endpoints = $self->{'endpoints'};
-  my $endpoints_dir = $self->{'endpoints_dir'};
   my $xy_to_n = $self->{'xy_to_n'};
   my $n_to_x = $self->{'n_to_x'};
   my $n_to_y = $self->{'n_to_y'};
@@ -196,67 +121,25 @@ sub _extend {
   ### endpoints count: scalar(@$endpoints)
 
   my @new_endpoints;
-  my @new_endpoints_dir;
   my @new_x;
   my @new_y;
 
   foreach my $endpoint_sn (@$endpoints) {
-    my $dir = shift @$endpoints_dir;
     my ($x,$y) = $sq->n_to_xy($endpoint_sn);
     ### endpoint: "$x,$y"
 
   SURROUND: foreach my $i (0 .. $#surround_dx) {
-      my $dir = ($dir+4 + $i) & 7;
-      my $x = $x + $surround_dx[$dir];
-      my $y = $y + $surround_dy[$dir];
-      if ($parts eq '1') {
-        if ($x < 0 || $y < 0) { next; }
-      }
-      # if ($parts eq 'side') {
-      #   if ($x < 0 || $y < 0) { next; }
-      # }
-      # } elsif ($parts eq '3side') {
-      #   if ($x < 0 && $y < 0) { next; }
-      # } elsif ($parts eq 'octant') {
-      #   if ($x < 0 || $y < 0 || $y > $x) { next; }
-
+      my $x = $x + $surround_dx[$i];
+      my $y = $y + $surround_dy[$i];
       ### consider: "$x,$y"
       my $sn = $sq->xy_to_n($x,$y);
-      if (defined $xy_to_n->[$sn]) {
-        ### already occupied ...
-        next;
-      }
 
       my $count = 0;
       foreach my $j (0 .. $#surround_dx) {
         my $x = $x + $surround_dx[$j];
         my $y = $y + $surround_dy[$j];
-        if ($parts eq '1') {
-          # if ($x < -1 || $y < -1   # treating rest as occupied
-          #     || ($y > 2 && $x < 0)
-          #     || ($x > 2 && $y < 0)) { next SURROUND; }
-          $x = abs($x);    # treating as quarter of parts=4
-          $y = abs($y);
-        }
-        if ($parts eq 'octant') {
-          if ($x < 0 || $y < ($x >= 3 ? 0 : -1) || $y > $x+2) { next SURROUND; }
-        }
-        if ($parts eq '3mid') {
-          if ($x < 0 && $y < 0) { next SURROUND; }
-        }
-        if ($parts eq '3side') {
-          if ($x < 0 && $y <= 0) { next SURROUND; }
-        }
-        if ($parts eq 'side') {
-          if ($x <= ($y >= 4 ? 0 : -1) || $y < ($x >= 3 ? 0 : -1)) { next SURROUND; }
-          # if ($x < -2 || $y < -2   # treating rest as occupied
-          #     || ($y > 3 && $x <= 0)
-          #     || ($y > 1 && $x < 0)
-          #     || ($x > 2 && $y < 0)) { next SURROUND; }
-          # if ($x < 0 || $y < 0) { next SURROUND; }
-        }
         my $sn = $sq->xy_to_n($x,$y);
-        ### count: "$x,$y at sn=$sn is ".($xy_to_n->[$sn] // 'undef')
+        ### check: "$x,$y at sn=$sn is ".($xy_to_n->[$sn] // 'undef')
         if (defined($xy_to_n->[$sn])) {
           if ($count++) {
             ### two or more surround ...
@@ -265,7 +148,6 @@ sub _extend {
         }
       }
       push @new_endpoints, $sn;
-      push @new_endpoints_dir, $dir;
       push @new_x, $x;
       push @new_y, $y;
     }
@@ -280,12 +162,11 @@ sub _extend {
   push @$n_to_y, @new_y;
 
   $self->{'endpoints'} = \@new_endpoints;
-  $self->{'endpoints_dir'} = \@new_endpoints_dir;
 }
 
 sub n_to_xy {
   my ($self, $n) = @_;
-  ### SurroundOneEightByCells n_to_xy(): $n
+  ### SurroundOneSixByCells n_to_xy(): $n
 
   if ($n < 0) { return; }
   if (is_infinite($n)) { return ($n,$n); }
@@ -317,7 +198,7 @@ sub n_to_xy {
 
 sub xy_to_n {
   my ($self, $x, $y) = @_;
-  ### SurroundOneEightByCells xy_to_n(): "$x, $y"
+  ### SurroundOneSixByCells xy_to_n(): "$x, $y"
 
   my ($depth,$exp) = round_down_pow (max($x,$y), 2);
   $depth *= 2;
@@ -344,7 +225,7 @@ sub xy_to_n {
 # not exact
 sub rect_to_n_range {
   my ($self, $x1,$y1, $x2,$y2) = @_;
-  ### SurroundOneEightByCells rect_to_n_range(): "$x1,$y1  $x2,$y2"
+  ### SurroundOneSixByCells rect_to_n_range(): "$x1,$y1  $x2,$y2"
 
   $x1 = round_nearest ($x1);
   $y1 = round_nearest ($y1);
@@ -397,12 +278,10 @@ sub tree_n_children {
   ### $y
 
   my $depth = $self->tree_n_to_depth($n) + 1;
-  return
-    sort {$a<=>$b}
-      grep { $self->tree_n_to_depth($_) == $depth }
-        map { $self->xy_to_n_list($x + $surround_dx[$_],
-                                  $y + $surround_dy[$_]) }
-          0 .. $#surround_dx;
+  return grep { $self->tree_n_to_depth($_) == $depth }
+    map { $self->xy_to_n_list($x + $surround_dx[$_],
+                              $y + $surround_dy[$_]) }
+      0 .. $#surround_dx;
 }
 sub tree_n_parent {
   my ($self, $n) = @_;
@@ -426,3 +305,135 @@ sub tree_n_parent {
 
 1;
 __END__
+
+=for stopwords eg Ryde Math-PlanePath-Toothpick Nstart Nend
+
+=head1 NAME
+
+Math::PlanePath::SurroundOneSixByCells -- automaton growing to cells with one of eight neighbours
+
+=head1 SYNOPSIS
+
+ use Math::PlanePath::SurroundOneSixByCells;
+ my $path = Math::PlanePath::SurroundOneSixByCells->new;
+ my ($x, $y) = $path->n_to_xy (123);
+
+=head1 DESCRIPTION
+
+I<In progress ...>
+
+This is a 1 of 6 growth cellular automaton ...
+
+=cut
+
+# math-image --path=SurroundOneSixByCells --output=numbers --all --size=65x11
+
+=pod
+
+           5
+
+           4
+
+           3
+
+           2
+
+           1
+
+      <- Y=0
+
+          -1
+
+          -2
+
+          -3
+
+          -4
+
+          -5
+                       ^
+      -4   -3 -2  -1  X=0  1   2   3   4
+
+=head1 FUNCTIONS
+
+See L<Math::PlanePath/FUNCTIONS> for behaviour common to all path classes.
+
+=over 4
+
+=item C<$path = Math::PlanePath::SurroundOneSixByCells-E<gt>new ()>
+
+Create and return a new path object.
+
+=back
+
+=cut
+
+# =head2 Tree Methods
+#
+# =over
+#
+# =item C<@n_children = $path-E<gt>tree_n_children($n)>
+#
+# Return the children of C<$n>, or an empty list if C<$n> has no children
+# (including when C<$n E<lt> 1>, ie. before the start of the path).
+#
+# The children are the new toothpicks added at the ends of C<$n> in the next
+# depth.  This can be none, one or two points.
+#
+# =cut
+#
+# #   For example N=8 has a single
+# # child 12, N=24 has no children, or N=2 has two children 4,5.  The way points
+# # are numbered means when there's two children they're consecutive N values.
+#
+# =item C<$num = $path-E<gt>tree_n_num_children($n)>
+# 
+# Return the number of children of C<$n>, or return C<undef> if C<$nE<lt>1>
+# (ie. before the start of the path).
+#
+# =item C<$n_parent = $path-E<gt>tree_n_parent($n)>
+#
+# Return the parent node of C<$n>, or C<undef> if C<$n E<lt>= 1> (the start of
+# the path).
+#
+# =back
+
+=head1 OEIS
+
+This cellular automaton is in Sloane's Online Encyclopedia of Integer
+Sequences as
+
+    http://oeis.org/A151723    (etc)
+
+    A151723   total cells at given depth
+    A151724   added cells at given depth
+
+=head1 SEE ALSO
+
+L<Math::PlanePath>,
+L<Math::PlanePath::UlamWarburton>
+
+=head1 HOME PAGE
+
+http://user42.tuxfamily.org/math-planepath/index.html
+
+=head1 LICENSE
+
+Copyright 2012 Kevin Ryde
+
+This file is part of Math-PlanePath-Toothpick.
+
+Math-PlanePath-Toothpick is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 3, or (at your option) any later
+version.
+
+Math-PlanePath-Toothpick is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+more details.
+
+You should have received a copy of the GNU General Public License along with
+Math-PlanePath-Toothpick.  If not, see <http://www.gnu.org/licenses/>.
+
+=cut

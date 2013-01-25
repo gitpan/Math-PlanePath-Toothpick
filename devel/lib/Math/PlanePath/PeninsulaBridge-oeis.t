@@ -28,21 +28,22 @@ use MyTestHelpers;
 MyTestHelpers::nowarnings();
 use MyOEIS;
 
-use Math::PlanePath::SurroundOneEightByCells;
+use Math::PlanePath::PeninsulaBridge;
 
 # uncomment this to run the ### lines
 #use Smart::Comments '###';
 
-my $path = Math::PlanePath::SurroundOneEightByCells->new;
+my $max_count = undef;
 
 #------------------------------------------------------------------------------
-# 151725 - 1of8 total cells
+# A160117 - peninsula/bridge total cells
 
 MyOEIS::compare_values
-  (anum => '151725',
+  (anum => 'A160117',
+   max_count => $max_count,
    func => sub {
      my ($count) = @_;
-     my $path = Math::PlanePath::SurroundOneEightByCells->new;
+     my $path = Math::PlanePath::PeninsulaBridge->new;
      my @got;
      my $total = 0;
      for (my $depth = 0; @got < $count; $depth++) {
@@ -52,13 +53,15 @@ MyOEIS::compare_values
    });
 
 #------------------------------------------------------------------------------
-# 151726 - 1of8 cells added
+# A160411 - peninsula/bridge added
 
 MyOEIS::compare_values
-  (anum => '151726',
+  (anum => 'A160411',
+   max_count => $max_count,
    func => sub {
      my ($count) = @_;
-     my @got = (0);
+     my $path = Math::PlanePath::PeninsulaBridge->new;
+     my @got;
      for (my $depth = 0; @got < $count; $depth++) {
        my $added = ($path->tree_depth_to_n($depth+1)
                     - $path->tree_depth_to_n($depth));

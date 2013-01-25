@@ -16,6 +16,16 @@
 # with Math-PlanePath-Toothpick.  If not, see <http://www.gnu.org/licenses/>.
 
 
+# Is 4 fused SierpinskiTriangle
+
+# A160720,A160721 diagonal adjacent and not nearer the origin
+#     differs from A147562 ulam-warbuton first at depth=8
+
+# 3 fused SierpinskiTriangle
+# A160722 total cells = 3*A006046(n) - 2*n, subtracting 2 fused sides
+# A160723 added cells
+# http://www.polprimos.com/imagenespub/polca722.jpg
+
 package Math::PlanePath::UlamWarburtonAway;
 use 5.004;
 use strict;
@@ -24,7 +34,7 @@ use strict;
 *min = \&Math::PlanePath::_min;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 1;
+$VERSION = 2;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -61,8 +71,8 @@ sub new {
   return $self;
 }
 
-my @dir_to_dx = (1,-1,-1, 1);
-my @dir_to_dy = (1, 1,-1,-1);
+my @dir4diag_to_dx = (1,-1,-1, 1);
+my @dir4diag_to_dy = (1, 1,-1,-1);
 
 sub _extend {
   my ($self) = @_;
@@ -81,8 +91,8 @@ sub _extend {
     my $dir = $endpoints_dir->[$i];
     foreach my $ddir (-1, 0, 1) {
       my $new_dir = ($dir + $ddir) & 3;
-      my $dx = $dir_to_dx[$new_dir];
-      my $dy = $dir_to_dy[$new_dir];
+      my $dx = $dir4diag_to_dx[$new_dir];
+      my $dy = $dir4diag_to_dy[$new_dir];
       my $new_x = $x + $dx;
       my $new_y = $y + $dy;
       if ($new_x**2 + $new_y**2 < $x**2 + $y**2) {
@@ -482,11 +492,6 @@ Create and return a new path object.
 Return the children of C<$n>, or an empty list if C<$n> has no children
 (including when C<$n E<lt> 0>, ie. before the start of the path).
 
-The children are the new toothpicks added at the ends of C<$n> in the next
-level.  There can be 0, 1 or 2 points.  For example N=8 has a single child
-12, or N=24 has no children, or N=2 has two children 4,5.  The way points
-are numbered means when there's two children they're consecutive N values.
-
 =item C<$n_parent = $path-E<gt>tree_n_parent($n)>
 
 Return the parent node of C<$n>, or C<undef> if C<$n E<lt>= 0> (the start of
@@ -501,8 +506,8 @@ Sequences as
 
     http://oeis.org/A160720    (etc)
 
-    A160720   total cells at given depth
-    A160721   added cells at given depth
+    A160720   total cells at depth=n
+    A160721   added cells at depth=n
 
 =head1 SEE ALSO
 

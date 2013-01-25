@@ -1,4 +1,4 @@
-# Copyright 2012 Kevin Ryde
+# Copyright 2012, 2013 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -23,7 +23,7 @@ use strict;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 1;
+$VERSION = 2;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 *_divrem = \&Math::PlanePath::_divrem;
@@ -71,6 +71,7 @@ sub y_negative {
   my ($self) = @_;
   return ($self->{'parts'} >= 3);
 }
+use constant tree_num_children_maximum => 3;
 
 sub new {
   my $self = shift->SUPER::new(@_);
@@ -780,9 +781,9 @@ Create and return a new path object.  C<parts> can be 1, 2, 3 or 4.
 Return the children of C<$n>, or an empty list if C<$n> has no children
 (including when C<$n E<lt> 0>, ie. before the start of the path).
 
-There are either 0 or 3 children.  The children of a corner C<$n> are the
-three cells adjacent to it which turn to "on" at the next depth.
-A non-corner has no children.
+X<3-tree>There are either 0 or 3 children.  Such a tree is sometimes called
+a "3-tree".  The children of a corner C<$n> are the three cells adjacent to
+it which turn to "on" at the next depth.  A non-corner has no children.
 
 =back
 
@@ -833,7 +834,7 @@ http://user42.tuxfamily.org/math-planepath/index.html
 
 =head1 LICENSE
 
-Copyright 2012 Kevin Ryde
+Copyright 2012, 2013 Kevin Ryde
 
 This file is part of Math-PlanePath-Toothpick.
 

@@ -72,7 +72,7 @@
 
 
 
-#
+# Snowflake E
 #
 #       \   /
 #        \ /
@@ -204,7 +204,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 1;
+$VERSION = 2;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -213,6 +213,9 @@ use Math::PlanePath::Base::Generic
   'round_nearest';
 use Math::PlanePath::Base::Digits
   'round_down_pow';
+
+# uncomment this to run the ### lines
+# use Smart::Comments;
 
 
 use constant n_start => 0;
@@ -234,14 +237,19 @@ use constant parameter_info_array =>
     },
   ];
 
-my @dir_to_dx = (0,-1,-1, 0, 1, 1);
-my @dir_to_dy = (2, 1,-1,-2,-1, 1);
+my @dir6_to_dx = (0,-1,-1, 0, 1, 1);
+my @dir6_to_dy = (2, 1,-1,-2,-1, 1);
 
 sub new {
   my $self = shift->SUPER::new(@_);
   $self->{'horiz'} = 0;
   $self->{'start'} ||= 'right';
   $self->{'shape'} ||= 'E';
+
+  if ($self->{'shape'} eq 'Y' && $self->{'start'} eq 'snowflake') {
+    $self->{'start'} = 'right';
+  }    
+
   if ($self->{'shape'} eq 'E') {
     $self->{'rotate_list'} = [ -1, 0, 1 ];
   } elsif ($self->{'shape'} eq 'V') {
@@ -251,6 +259,7 @@ sub new {
   } else {
     croak "Unrecognised shape: ",$self->{'shape'};
   }
+
   my @initial_dir;
   if ($self->{'start'} eq 'right') {
     @initial_dir = (0);
@@ -263,8 +272,8 @@ sub new {
   foreach my $dir (@initial_dir) {
     foreach my $rotate (@{$self->{'rotate_list'}}) {
       my $dir = ($dir + $rotate) % 6;
-      my $ox = $dir_to_dx[$dir];
-      my $oy = $dir_to_dy[$dir];
+      my $ox = $dir6_to_dx[$dir];
+      my $oy = $dir6_to_dy[$dir];
       push @{$self->{'endpoints_x'}}, $ox;
       push @{$self->{'endpoints_y'}}, $oy;
       push @{$self->{'endpoints_dir'}}, $dir;
@@ -279,7 +288,7 @@ sub new {
   $self->{'n_to_x'} = [ (0) x scalar(@initial_dir) ];
   $self->{'n_to_y'} = [ (0) x scalar(@initial_dir) ];
   $self->{'depth_to_n'} = [ 0 ];
-  $self->{'n_to_level'} = [ 0 ];
+  $self->{'n_to_depth'} = [ 0 ];
   $self->{'depth'} = 0;
   return $self;
 }
@@ -292,8 +301,8 @@ sub _extend {
   my $edges = $self->{'edges'};
   # foreach my $edge (keys %$edges) {
   #   my ($x,$y,$dir) = split /,/, $edge;
-  #   my $ox = $x + $dir_to_dx[$dir];
-  #   my $oy = $y + $dir_to_dy[$dir];
+  #   my $ox = $x + $dir6_to_dx[$dir];
+  #   my $oy = $y + $dir6_to_dy[$dir];
   #   my $odir = ($dir + 3) % 6;
   #   my $okey = "$ox,$oy,$odir";
   #   exists $edges->{$okey} or die "Oops, missing $okey opposite of $edge";;
@@ -336,8 +345,8 @@ sub _extend {
     foreach my $rotate (@{$self->{'rotate_list'}}) {
       my $dir = ($dir + $rotate) % 6;
       $new_edge{"$x,$y,$dir"}++;
-      my $ox = $x + $dir_to_dx[$dir];
-      my $oy = $y + $dir_to_dy[$dir];
+      my $ox = $x + $dir6_to_dx[$dir];
+      my $oy = $y + $dir6_to_dy[$dir];
       my $odir = ($dir + 3) % 6;
       $new_edge{"$ox,$oy,$odir"}++;
     }
@@ -369,7 +378,6 @@ sub _extend {
 
   my $n_to_x = $self->{'n_to_x'};
   my $n_to_y = $self->{'n_to_y'};
-  my $n_to_level = $self->{'n_to_level'};
   my $depth_to_n = $self->{'depth_to_n'};
   my $depth = scalar(@$depth_to_n);
 
@@ -384,7 +392,7 @@ sub _extend {
     my $dir = $endpoints_dir->[$i];
 
     if ($no_extend[$i]) {
-      # no extend at this level, but maybe later
+      # no extend at this depth, but maybe later
       push @new_endpoints_x, $x;
       push @new_endpoints_y, $y;
       push @new_endpoints_dir, $dir;
@@ -394,14 +402,13 @@ sub _extend {
     $xy_to_n->{"$x,$y"} = scalar(@$n_to_x);
     push @$n_to_x, $x;
     push @$n_to_y, $y;
-    push @$n_to_level, $depth;
 
     foreach my $rotate (@{$self->{'rotate_list'}}) {
       my $dir = ($dir + $rotate) % 6;
       my $key = "$x,$y,$dir";
       $edges->{$key} = 1;
-      my $ox = $x + $dir_to_dx[$dir];
-      my $oy = $y + $dir_to_dy[$dir];
+      my $ox = $x + $dir6_to_dx[$dir];
+      my $oy = $y + $dir6_to_dy[$dir];
       my $odir = ($dir + 3) % 6;
       $edges->{"$ox,$oy,$odir"} = 1;
       push @new_endpoints_x, $ox;
@@ -412,8 +419,11 @@ sub _extend {
   }
 
   if ($self->{'depth_to_n'}->[-1] == scalar(@$n_to_x)) {
+ use Smart::Comments;
+    ### $self
     ### $endpoints_x
-    die "Oops, no points added";
+no Smart::Comments;
+    die "Oops, no points added, depth=$depth";
   }
 
   # print "$depth added ",scalar(@$n_to_x) - $self->{'depth_to_n'}->[-1],
@@ -486,14 +496,14 @@ sub xy_to_n {
   return $self->{'xy_to_n'}->{"$x,$y"};
 }
 
-# T(level) = 4 * T(level-1) + 2
-# T(level) = 2 * (4^level - 1) / 3
-# total = T(level) + 2
-# N = (4^level - 1)*2/3
-# 4^level - 1 = 3*N/2
-# 4^level = 3*N/2 + 1
+# T(depth) = 4 * T(depth-1) + 2
+# T(depth) = 2 * (4^depth - 1) / 3
+# total = T(depth) + 2
+# N = (4^depth - 1)*2/3
+# 4^depth - 1 = 3*N/2
+# 4^depth = 3*N/2 + 1
 #
-# len=2^level
+# len=2^depth
 # total = (len*len-1)*2/3 + 2
 
 # not exact
@@ -512,50 +522,6 @@ sub rect_to_n_range {
   return (0, 2*($x*$x + 3*$y*$y));
 }
 
-sub tree_n_children {
-  my ($self, $n) = @_;
-  ### tree_n_children(): $n
-
-  my ($x,$y) = $self->n_to_xy($n)
-    or return undef;
-  ### $x
-  ### $y
-
-  my @n = map { $self->xy_to_n($x+$dir_to_dx[$_],$y+$dir_to_dy[$_]) } 0 .. 5;
-  my $n_to_level = $self->{'n_to_level'};
-  my $want_level = $n_to_level->[$n] + 1;
-  ### $want_level
-
-  ### @n
-  ### levels: map {defined $_ && $n_to_level->[$_]} @n
-
-  @n = sort {$a<=>$b}
-    grep {defined $_ && $n_to_level->[$_] == $want_level}
-      @n;
-  ### found: @n
-  return @n;
-}
-
-sub tree_n_parent {
-  my ($self, $n) = @_;
-
-  my ($x,$y) = $self->n_to_xy($n)
-    or return undef;
-  my $n_to_level = $self->{'n_to_level'};
-  my $want_level = $n_to_level->[$n] - 1;
-  ### $want_level
-
-  foreach my $dir (0 .. 5) {
-    if (defined (my $n = $self->xy_to_n($x+$dir_to_dx[$dir],
-                                        $y+$dir_to_dy[$dir]))) {
-      if ($n_to_level->[$n] == $want_level) {
-        return $n;
-      }
-    }
-  }
-  return undef;
-}
-
 sub tree_depth_to_n {
   my ($self, $depth) = @_;
   if ($depth < 0) {
@@ -569,6 +535,67 @@ sub tree_depth_to_n {
     _extend($self);
   }
   return $depth_to_n->[$depth];
+}
+sub tree_n_to_depth {
+  my ($self, $n) = @_;
+
+  if ($n < 0) {
+    return undef;
+  }
+  if (is_infinite($n)) {
+    return $n;
+  }
+  my $depth_to_n = $self->{'depth_to_n'};
+  for (my $depth = 1; ; $depth++) {
+    while ($depth > $#$depth_to_n) {
+      _extend($self);
+    }
+    if ($n < $depth_to_n->[$depth]) {
+      return $depth-1;
+    }
+  }
+}
+
+sub tree_n_children {
+  my ($self, $n) = @_;
+  ### tree_n_children(): $n
+
+  my ($x,$y) = $self->n_to_xy($n)
+    or return;
+  ### $x
+  ### $y
+
+  my @n = map { $self->xy_to_n($x+$dir6_to_dx[$_],$y+$dir6_to_dy[$_]) }
+    0 .. $#dir6_to_dx;
+  my $child_depth = $self->tree_n_to_depth($n) + 1;
+  ### $child_depth
+
+  ### @n
+  # ### depths: map {defined $_ && $n_to_depth->[$_]} @n
+
+  @n = sort {$a<=>$b}
+    grep {defined $_ && $self->tree_n_to_depth($_) == $child_depth}
+      @n;
+  ### found: @n
+  return @n;
+}
+sub tree_n_parent {
+  my ($self, $n) = @_;
+
+  my ($x,$y) = $self->n_to_xy($n)
+    or return undef;
+  my $parent_depth = $self->tree_n_to_depth($n) - 1;
+  ### $parent_depth
+
+  foreach my $dir (0 .. $#dir6_to_dx) {
+    if (defined (my $n = $self->xy_to_n($x+$dir6_to_dx[$dir],
+                                        $y+$dir6_to_dy[$dir]))) {
+      if ($self->tree_n_to_depth($n) == $parent_depth) {
+        return $n;
+      }
+    }
+  }
+  return undef;
 }
 
 1;
