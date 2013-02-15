@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2011, 2012 Kevin Ryde
+# Copyright 2011, 2012, 2013 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -33,7 +33,7 @@ require Math::PlanePath::ToothpickReplicate;
 # VERSION
 
 {
-  my $want_version = 2;
+  my $want_version = 3;
   ok ($Math::PlanePath::ToothpickReplicate::VERSION, $want_version,
       'VERSION variable');
   ok (Math::PlanePath::ToothpickReplicate->VERSION,  $want_version,

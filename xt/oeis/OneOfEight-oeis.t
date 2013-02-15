@@ -35,11 +35,11 @@ use Math::PlanePath::Base::Digits 'round_down_pow';
 # use Smart::Comments '###';
 
 
-my $class = 'Math::PlanePath::SurroundOneEight';
-# my $class = 'Math::PlanePath::SurroundOneEightByCells';
+my $class = 'Math::PlanePath::OneOfEight';
+# my $class = 'Math::PlanePath::OneOfEightByCells';
 eval "require $class" or die;
 
-my $max_count = ($class eq 'Math::PlanePath::SurroundOneEightByCells'
+my $max_count = ($class eq 'Math::PlanePath::OneOfEightByCells'
                  ? 100   # small when ByCells
                  : undef);
 
@@ -66,6 +66,7 @@ sub log2_floor {
   return $exp;
 }
 
+# Return the number of points at $depth.
 sub path_tree_depth_to_width {
   my ($path, $depth) = @_;
   if (defined (my $n = $path->tree_depth_to_n($depth))
@@ -76,6 +77,42 @@ sub path_tree_depth_to_width {
   }
 }
 
+
+#------------------------------------------------------------------------------
+
+# V1(n) = oct(n+1) + 3*oct(n) + 2*oct(n-1)
+#          - 3n - 2*floor(log(n+1) - (ispow2(n+1) ? 3 : 4)
+#
+sub my_3side_from_octant {
+  my ($depth) = @_;
+  ### my_3side_from_octant(): $depth
+  if ($depth == 0) { return 0; }
+  if ($depth == 1) { return 1; }
+  if ($depth == 2) { return 4; }
+
+  return my_octant($depth+1) + 3*my_octant($depth) + 2*my_octant($depth-1)
+    - 3*$depth
+      - log2_floor($depth+1)
+        - log2_floor($depth)
+          - 4;
+
+  # return my_octant($depth+1) + 3*my_octant($depth) + 2*my_octant($depth-1)
+  #   - 3*$depth - 2*log2_floor($depth+1)
+  #     - (is_pow2($depth+1) ? 3 : 4);
+}
+
+MyOEIS::compare_values
+  (anum => 'A170879',
+   name => 'my_3side_from_octant()',
+   func => sub {
+     my ($count) = @_;
+     my $path = make_path('3side');
+     my @got;
+     for (my $depth = 0; @got < $count; $depth++) {
+       push @got, my_3side_from_octant($depth);
+     }
+     return \@got;
+   });
 
 #------------------------------------------------------------------------------
 
@@ -91,10 +128,11 @@ sub path_tree_depth_to_width {
 #     - floor(log(n+1)) - floor(log(n))
 #   = oct(n+1) + 3*oct(n) + 2*oct(n-1) - 3n - 7
 #     - 2*floor(log(n+1)) + (ispow2(n+1) ? 1 : 0)
+#
+# V1=A170879 from V2=A170880
 # V1(n) = (V2(n) + V2(n-1) + 1)/2
 
 {
-  # V1=A170879 from V2=A170880
   # eg V2 (44+63+1)/2=54
   require Math::NumSeq::OEIS::File;
   my $V1seq = Math::NumSeq::OEIS::File->new(anum=>'A170879');
@@ -168,36 +206,7 @@ MyOEIS::compare_values
    });
 
 #------------------------------------------------------------------------------
-
-# V1(n) = oct(n+1) + 3*oct(n) + 2*oct(n-1) - 3n - 2*floor(log(n+1) - 4
-#         + (ispow2(n+1) ? 1 : 0)
-#
-sub my_3side_from_octant {
-  my ($depth) = @_;
-  ### my_3side_from_octant(): $depth
-  if ($depth == 0) { return 0; }
-  if ($depth == 1) { return 1; }
-  if ($depth == 2) { return 4; }
-  return my_octant($depth+1) + 3*my_octant($depth) + 2*my_octant($depth-1)
-    - 3*$depth - 2*log2_floor($depth+1) - 4
-      + (is_pow2($depth+1) ? 1 : 0);
-}
-
-MyOEIS::compare_values
-  (anum => 'A170879',
-   name => 'my_3side_from_octant()',
-   func => sub {
-     my ($count) = @_;
-     my $path = make_path('3side');
-     my @got;
-     for (my $depth = 0; @got < $count; $depth++) {
-       push @got, my_3side_from_octant($depth);
-     }
-     return \@got;
-   });
-
-#------------------------------------------------------------------------------
-# my_total()
+# my_total()  A151725
 
 # total(n) = 8*octant(n)-4n-7
 # oct(n) = (total(n)+4n+7)/8
@@ -225,6 +234,11 @@ MyOEIS::compare_values
 # V(2^k)     = (16*4^k + 24*k - 7) / 9
 # V(2^k + r) = V(2^k) + 2*V(r) + V(r+1) - 8*floor(log2(r+1)) + 1
 # for k>=0 and 2^k > r >= 1
+#
+# eg. V(11) = V(8) + 2*V(3) + V(4) - 8*floor(log2(4)) + 1
+#           = 121 + 2*13 + 33 - 8*2 + 1 = 165
+# eg. V(13) = V(8) + 2*V(5) + V(6) - 8*floor(log2(6)) + 1
+#           = 121 + 2*37 + 57 - 8*2 + 1 = 237
 #
 sub my_total {
   my ($depth) = @_;
@@ -282,7 +296,7 @@ sub my_octant {
   ### my_octant(): $depth
   die if $depth < 0;
   if ($depth == 0) { return 0; }
-  if ($depth == 1) { return 1; }
+  # if ($depth == 1) { return 1; }
 
   my ($pow,$exp) = round_down_pow ($depth, 2);
   my $rem = $depth - $pow;
@@ -290,12 +304,12 @@ sub my_octant {
   if ($rem == 0) {
     return $f;
   }
-  if ($rem == 1) {
-    return $f + 1;
-  }
-  if ($rem == 2) {
-    return $f + 4;
-  }
+  # if ($rem == 1) {
+  #   return $f + 1;
+  # }
+  # if ($rem == 2) {
+  #   return $f + 4;
+  # }
   return ($f                  # pow
           + 2 * my_octant($rem)  # extend+upper
           + my_octant($rem+1)    # lower
@@ -309,6 +323,9 @@ BEGIN {
   Memoize::memoize('my_octant');
 }
 
+#------------------------------------------------------------------------------
+# total from octant
+
 # V(n) = 8*oct(n) - 4*n - 7   for n>=2
 #
 sub my_total_from_octant {
@@ -319,7 +336,7 @@ sub my_total_from_octant {
   return 8*$o - 4*$depth - 7;
 }
 {
-  # my_octant() vs my_total()
+  # my_total_from_octant() vs my_total()
   for (my $depth = 0; $depth < 1024; $depth++) {
     my $t = my_total($depth);
     my $ot = my_total_from_octant($depth);
@@ -373,7 +390,7 @@ MyOEIS::compare_values
 
 {
   # v2_formula() vs path parts=3mid width
-  my $limit = ($class eq 'Math::PlanePath::SurroundOneEightByCells'
+  my $limit = ($class eq 'Math::PlanePath::OneOfEightByCells'
                ? 64   # small when ByCells
                : 32768);
   my $path = make_path('3mid');
@@ -389,7 +406,7 @@ MyOEIS::compare_values
 }
 {
   # v2_formula() vs path parts=1 width at 2^k offset
-  my $limit = ($class eq 'Math::PlanePath::SurroundOneEightByCells'
+  my $limit = ($class eq 'Math::PlanePath::OneOfEightByCells'
                ? 64   # small when ByCells
                : 32768);
   my $offset = $limit;
@@ -457,10 +474,13 @@ MyOEIS::compare_values
 #------------------------------------------------------------------------------
 # A151747 v1 3side added
 # 0, 1, 3, 5, 8, 9, 11, 17, 21, 15
-# [1] 1,
-# [2] 3,  5,
-# [4] 8,  9,  11, 17,
-# [8] 21, 15, 11, 18, 25, 29, 39, 54,
+# [1]  1,
+# [2]  3,  5,
+# [4]  8,  9,  11, 17,
+# [8]  21, 15, 11, 18, 25, 29, 39, 54,
+# [16] 53, 27, 11, 18, 25, 29, 39, 55, ...
+#
+# cf A170881 (3*n+1)*2^(n-2)+1 first column  1, 3, 8, 21, 53, 129, ...
 
 MyOEIS::compare_values
   (anum => 'A151747',
@@ -493,7 +513,7 @@ MyOEIS::compare_values
 # sub v1_from_sides {
 #   my ($n) = @_;
 #   die;
-#   my $added = Math::PlanePath::SurroundOneEight::_depth_to_added
+#   my $added = Math::PlanePath::OneOfEight::_depth_to_added
 #     (-1,[$n-1,$n-2],[1,2],0);
 #   if (is_pow2($n)) {
 #     $added += 1;  # log2_extras in block2
@@ -577,7 +597,7 @@ MyOEIS::compare_values
 #      my ($depth,$exp) = round_down_pow($count,2);
 #      $depth *= 2;
 #      for ( ; @got < $count; $depth++) {
-#        push @got, Math::PlanePath::SurroundOneEight::_depth_to_added(-1,[$depth+1,$depth],[1,2],0);
+#        push @got, Math::PlanePath::OneOfEight::_depth_to_added(-1,[$depth+1,$depth],[1,2],0);
 #      }
 #      return \@got;
 #    });
@@ -601,7 +621,7 @@ MyOEIS::compare_values
 
 
 #------------------------------------------------------------------------------
-# "v1" added 3side
+# "v1" 3side added
 # 0 1 3 5 8 9 11 17 21 15
 #
 # A151747
@@ -652,7 +672,7 @@ MyOEIS::compare_values
    });
 
 #------------------------------------------------------------------------------
-# "v" added by formula
+# "v" total added by formula
 
 # n=0 v=0 so first depth to depth+1 at n=1 v=1
 sub v_formula {
@@ -685,7 +705,7 @@ MyOEIS::compare_values
 
 {
   # v_formula() vs path parts=4 width at 2^k offset
-  my $limit = ($class eq 'Math::PlanePath::SurroundOneEightByCells'
+  my $limit = ($class eq 'Math::PlanePath::OneOfEightByCells'
                ? 64   # small when ByCells
                : 32768);
   my $offset = $limit;
@@ -739,7 +759,7 @@ MyOEIS::compare_values
    });
 
 #------------------------------------------------------------------------------
-# 151726 - "v" parts=4 added
+# 151726 - "v" total parts=4 added
 
 MyOEIS::compare_values
   (anum => 'A151726',
@@ -770,7 +790,7 @@ MyOEIS::compare_values
 #    });
 
 
-if ($class eq 'Math::PlanePath::SurroundOneEight') {
+if ($class eq 'Math::PlanePath::OneOfEight') {
   MyOEIS::compare_values
       (anum => 'A151726',
        name => '_depth_to_octant_added() * 8 - 4',
@@ -778,7 +798,7 @@ if ($class eq 'Math::PlanePath::SurroundOneEight') {
          my ($count) = @_;
          my @got = (0,1,8);
          for (my $depth = 2; @got < $count; $depth++) {
-           my $oadd = Math::PlanePath::SurroundOneEight::_depth_to_octant_added([$depth],[1],0);
+           my $oadd = Math::PlanePath::OneOfEight::_depth_to_octant_added([$depth],[1],0);
            push @got, 8*$oadd - 4;
          }
          return \@got;
@@ -787,7 +807,7 @@ if ($class eq 'Math::PlanePath::SurroundOneEight') {
 
 
 #------------------------------------------------------------------------------
-# A151727 added endless row
+# A151727 parts=4 added endless row
 # 4,20,20,44,28,60,76,92,28,60,84,116
 # 4,24,44,88,116
 
@@ -808,7 +828,7 @@ MyOEIS::compare_values
 
 
 #------------------------------------------------------------------------------
-# A151729 "v2", added endless row 3/4 centre and sides div 8
+# A151729 "v2", 3mid added endless row, div 8
 
 MyOEIS::compare_values
   (anum => 'A151729',

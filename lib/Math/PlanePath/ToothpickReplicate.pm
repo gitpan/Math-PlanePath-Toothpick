@@ -1,4 +1,4 @@
-# Copyright 2012 Kevin Ryde
+# Copyright 2012, 2013 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -33,7 +33,7 @@ use strict;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 2;
+$VERSION = 3;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 *_divrem = \&Math::PlanePath::_divrem;
@@ -505,7 +505,7 @@ sub xy_to_n {
 1;
 __END__
 
-=for stopwords eg Ryde Math-PlanePath-Toothpick Nstart Nend
+=for stopwords eg Ryde Math-PlanePath-Toothpick OEIS
 
 =head1 NAME
 
@@ -519,7 +519,7 @@ Math::PlanePath::ToothpickReplicate -- toothpick pattern by replication
 
 =head1 DESCRIPTION
 
-This is the "toothpick" pattern of the ToothpickTree path arranged as a
+This is the "toothpick" pattern of the C<ToothpickTree> path numbered as a
 self-similar replicating pattern.
 
 =cut
@@ -550,74 +550,6 @@ self-similar replicating pattern.
 
                     ^
        -3  -2  -1  X=0  1   2   3   4
-
-=head2 Replication
-
-The points visited are the same as L<Math::PlanePath::ToothpickTree>, but in
-a self-similar order.  The pattern within each quarter repeats at 2^level
-size blocks.
-
-    +------------+------------+
-    |            |            |
-    |  block 3       block 2  |
-    |   mirror        same    |
-    |                         |
-    |          --B--          |
-    |            |            |
-    +----------  A         ---+
-    |            |            |
-    |  block 0       block 1  |
-    |            |   rot +90  |
-    |            |            |
-    |            |            |
-    +------------+------------+
-
-In the parts=quarter above
-
-    N=1 to N=10     "0" block
-    N=11            "A" middle point
-    N=12            "B" middle point
-    N=13 to N=22    "1" block, rotated +90 degrees
-    N=23 to N=32    "2" block, same layout as the "0" block
-    N=33 to N=42    "3" block, mirror image of "0" block
-
-The very first points N=1 and N=2 are effectively the "A" and "B" middle
-toothpicks with no points at all in the 0,1,2,3 lower blocks.
-
-The full parts=all form is four quarters, each advancing by a replication
-level each time.
-
-The initial N=0,1,2 make the centre, and then each quadrant is extended in
-turn by blocks.
-
-    +------------+------------A
-    |            |            |
-    |  block 3       block 2  |      in each quadrant
-    |   mirror        same    |
-    |     ^            ^      |
-    |      \   --B--  /       |
-    |       \    |   /        |
-    +----------  A         ---+
-    |            |            |
-    |  block 0       block 1  |
-    |     ^      |  \ rot +90 |
-    |    /       |   \        |
-    |   /        |    v       |
-    +------------+------------+
-
-Block 0 is the existing part.  Then toothpick A and B are counted, followed
-by replications of block 0 in blocks 1,2,3.  For example in the first
-quadrant
-
-    N=11      toothpick "A"
-    N=12      toothpick "B"
-    N=13,14   block 1 \
-    N=15,16   block 2 |  replicating block 0 N=3,N=4
-    N=17,18   block 3 /
-
-Each such replication doubles the size in a quadrant, so the "A" toothpick
-is on a power-of-2 X=2^k,Y=2^k.  For example N=11 at X=2,Y=2 and N=43 at
-X=4,Y=4.
 
 =head2 One Quadrant
 
@@ -650,6 +582,74 @@ Option C<parts =E<gt> 1> selects a single quadrant of replications.
     Y=0 |
         +-----------------------------------
         X=0  1   2   3   4   5   6   7   8
+
+=head2 Replication
+
+The points visited are the same as L<Math::PlanePath::ToothpickTree>, but in
+a self-similar order.  The pattern within each quarter repeats at 2^level
+size blocks.
+
+    +------------+------------+
+    |            |            |
+    |  block 3       block 2  |
+    |   mirror        same    |
+    |                         |
+    |          --B--          |
+    |            |            |
+    +----------  A         ---+
+    |            |            |
+    |  block 0       block 1  |
+    |            |   rot +90  |
+    |            |            |
+    |            |            |
+    +------------+------------+
+
+In the parts=1 above (L</One Quadrant>),
+
+    N=1 to N=10     "0" block
+    N=11            "A" middle point
+    N=12            "B" middle point
+    N=13 to N=22    "1" block, rotated +90 degrees
+    N=23 to N=32    "2" block, same layout as the "0" block
+    N=33 to N=42    "3" block, mirror image of "0" block
+
+The very first points N=1 and N=2 are effectively the "A" and "B" middle
+toothpicks with no points at all for the 0,1,2,3 sub-blocks.
+
+The full parts=4 form (the default) is four quarters, each advancing by a
+replication level each time.
+
+The initial N=0,1,2 make the centre, and then each quadrant is extended in
+turn by blocks.
+
+    +------------+------------A
+    |            |            |
+    |  block 3       block 2  |      in each quadrant
+    |   mirror        same    |
+    |     ^            ^      |
+    |      \   --B--  /       |
+    |       \    |   /        |
+    +----------  A         ---+
+    |            |            |
+    |  block 0       block 1  |
+    |     ^      |  \ rot +90 |
+    |    /       |   \        |
+    |   /        |    v       |
+    +------------+------------+
+
+Block 0 is the existing part.  Then toothpick A and B are counted, followed
+by replications of block 0 in blocks 1,2,3.  For example in the first
+quadrant
+
+    N=11      toothpick "A"
+    N=12      toothpick "B"
+    N=13,14   block 1 \
+    N=15,16   block 2 |  replicating block 0 N=3,N=4
+    N=17,18   block 3 /
+
+Each such replication doubles the size in a quadrant, so the "A" toothpick
+is on a power-of-2 X=2^k,Y=2^k.  For example N=11 at X=2,Y=2 and N=43 at
+X=4,Y=4.
 
 =head2 Half Plane
 
@@ -747,7 +747,7 @@ doubling, so with the origin as N=0 each replication level starts
 For example k=1 has Nlevel_start = 2*4^1 = 8 and runs through to Nlast_below
 = 2*4^1 + 2*4^1-1 = 15.  In binary this is "1000" through "1111" which are
 all length 4.  The first quadrant then runs 32 to 47 which is binary "10000"
-to 101111", and the second quadrant 48 to 63 "110000" to "111111"..
+to 101111", and the second quadrant 48 to 63 "110000" to "111111".
 
 =head1 FUNCTIONS
 
@@ -765,7 +765,7 @@ Create and return a new path object.  C<parts> can be 1, 2, 3 or 4.
 
 =head1 OEIS
 
-Entreis in Sloane's Online Encyclopedia of Integer Sequences related to this
+Entries in Sloane's Online Encyclopedia of Integer Sequences related to this
 path include
 
     http://oeis.org/A053738    (etc)
@@ -779,6 +779,7 @@ path include
 
 L<Math::PlanePath>,
 L<Math::PlanePath::ToothpickTree>,
+L<Math::PlanePath::LCornerReplicate>,
 L<Math::PlanePath::UlamWarburton>
 
 =head1 HOME PAGE
@@ -787,7 +788,7 @@ http://user42.tuxfamily.org/math-planepath/index.html
 
 =head1 LICENSE
 
-Copyright 2012 Kevin Ryde
+Copyright 2012, 2013 Kevin Ryde
 
 This file is part of Math-PlanePath-Toothpick.
 

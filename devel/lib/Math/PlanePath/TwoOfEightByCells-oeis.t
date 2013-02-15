@@ -28,12 +28,12 @@ use MyTestHelpers;
 MyTestHelpers::nowarnings();
 use MyOEIS;
 
-use Math::PlanePath::SurroundTwoEightByCells;
+use Math::PlanePath::TwoOfEightByCells;
 
 # uncomment this to run the ### lines
 #use Smart::Comments '###';
 
-my $path = Math::PlanePath::SurroundTwoEightByCells->new;
+my $path = Math::PlanePath::TwoOfEightByCells->new;
 
 #------------------------------------------------------------------------------
 # A151731 - 2of8 total cells
@@ -42,7 +42,7 @@ MyOEIS::compare_values
   (anum => 'A151731',
    func => sub {
      my ($count) = @_;
-     my $path = Math::PlanePath::SurroundTwoEightByCells->new;
+     my $path = Math::PlanePath::TwoOfEightByCells->new;
      my @got;
      my $total = 0;
      for (my $depth = 0; @got < $count; $depth++) {
@@ -74,7 +74,7 @@ MyOEIS::compare_values
   (anum => 'A151733',
    func => sub {
      my ($count) = @_;
-     my $path = Math::PlanePath::SurroundTwoEightByCells->new;
+     my $path = Math::PlanePath::TwoOfEightByCells->new;
      my @got;
      my $total = 0;
      for (my $depth = 0; @got < $count; $depth++) {

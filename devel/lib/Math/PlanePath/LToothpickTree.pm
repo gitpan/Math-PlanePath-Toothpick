@@ -1,4 +1,4 @@
-# Copyright 2012 Kevin Ryde
+# Copyright 2012, 2013 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -22,7 +22,7 @@
 # L-toothpick A172310 A172311 A172312 A172313
 
 
-package Math::PlanePath::LToothpickTree;             
+package Math::PlanePath::LToothpickTree;
 use 5.004;
 use strict;
 use Carp;
@@ -30,7 +30,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 2;
+$VERSION = 3;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -457,7 +457,7 @@ sub tree_n_parent {
       }
     }
   }
-  die "Oops, parent of n=$n not found";
+  # die "Oops, parent of n=$n not found";
   return undef;
 }
 
@@ -525,34 +525,34 @@ non-overlapping line segments (toothpicks).
 
 =pod
 
-                                
-                                
-                                
-               \   / \   /      
-                \ /   \ /       
-                 4     3----    
-  \   /           \   /    /    
-   \ /             \ /    /     
-    1----           1----2----  
-                          \     
-                           \    
-                                
-                                
-                                
-        \   /       \   /          
-         \ /         \ /           
-     -----8           7----        
-     \     \   / \   /             
-      \     \ /   \ /              
-  -----9-----4     3----           
-      /       \   /    /    /      
-     /         \ /    /    /       
-                1----2----6----    
-                      \    \       
-                       \    \      
-                        5----      
-                       / \         
-                      /   \        
+
+
+
+               \   / \   /
+                \ /   \ /
+                 4     3----
+  \   /           \   /    /
+   \ /             \ /    /
+    1----           1----2----
+                          \
+                           \
+
+
+
+        \   /       \   /
+         \ /         \ /
+     -----8           7----
+     \     \   / \   /
+      \     \ /   \ /
+  -----9-----4     3----
+      /       \   /    /    /
+     /         \ /    /    /
+                1----2----6----
+                      \    \
+                       \    \
+                        5----
+                       / \
+                      /   \
 
 
 =cut
@@ -605,7 +605,7 @@ Create and return a new path object.
 # # are numbered means when there's two children they're consecutive N values.
 #
 # =item C<$num = $path-E<gt>tree_n_num_children($n)>
-# 
+#
 # Return the number of children of C<$n>, or return C<undef> if C<$nE<lt>1>
 # (ie. before the start of the path).
 #
@@ -627,7 +627,7 @@ http://user42.tuxfamily.org/math-planepath/index.html
 
 =head1 LICENSE
 
-Copyright 2012 Kevin Ryde
+Copyright 2012, 2013 Kevin Ryde
 
 This file is part of Math-PlanePath-Toothpick.
 

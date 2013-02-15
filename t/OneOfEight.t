@@ -20,7 +20,7 @@
 use 5.004;
 use strict;
 use Test;
-plan tests => 376;
+plan tests => 98;
 
 use lib 't';
 use MyTestHelpers;
@@ -29,28 +29,28 @@ MyTestHelpers::nowarnings();
 # uncomment this to run the ### lines
 #use Smart::Comments;
 
-require Math::PlanePath::SurroundOneEight;
+require Math::PlanePath::OneOfEight;
 
 
 #------------------------------------------------------------------------------
 # VERSION
 
 {
-  my $want_version = 2;
-  ok ($Math::PlanePath::SurroundOneEight::VERSION, $want_version,
+  my $want_version = 3;
+  ok ($Math::PlanePath::OneOfEight::VERSION, $want_version,
       'VERSION variable');
-  ok (Math::PlanePath::SurroundOneEight->VERSION,  $want_version,
+  ok (Math::PlanePath::OneOfEight->VERSION,  $want_version,
       'VERSION class method');
 
-  ok (eval { Math::PlanePath::SurroundOneEight->VERSION($want_version); 1 },
+  ok (eval { Math::PlanePath::OneOfEight->VERSION($want_version); 1 },
       1,
       "VERSION class check $want_version");
   my $check_version = $want_version + 1000;
-  ok (! eval { Math::PlanePath::SurroundOneEight->VERSION($check_version); 1 },
+  ok (! eval { Math::PlanePath::OneOfEight->VERSION($check_version); 1 },
       1,
       "VERSION class check $check_version");
 
-  my $path = Math::PlanePath::SurroundOneEight->new;
+  my $path = Math::PlanePath::OneOfEight->new;
   ok ($path->VERSION,  $want_version, 'VERSION object method');
 
   ok (eval { $path->VERSION($want_version); 1 },
@@ -279,7 +279,7 @@ require Math::PlanePath::SurroundOneEight;
                );
   foreach my $group (@groups) {
     my ($options, @data) = @$group;
-    my $path = Math::PlanePath::SurroundOneEight->new (%$options);
+    my $path = Math::PlanePath::OneOfEight->new (%$options);
     foreach my $elem (@data) {
       my ($n, $x,$y) = @$elem;
 
@@ -300,7 +300,7 @@ require Math::PlanePath::SurroundOneEight;
 }
 
 foreach my $parts (4 .. 4) {
-  my $path = Math::PlanePath::SurroundOneEight->new (parts => $parts);
+  my $path = Math::PlanePath::OneOfEight->new (parts => $parts);
   my $bad = 0;
   my %seen;
   foreach my $n (0 .. 50) {
@@ -322,7 +322,7 @@ foreach my $parts (4 .. 4) {
 # _depth_to_added()
 
 # {
-#   my $path = Math::PlanePath::SurroundOneEight->new (parts => 1);
+#   my $path = Math::PlanePath::OneOfEight->new (parts => 1);
 # 
 #   my $bad = 0;
 #   my $depth = 0;
@@ -330,7 +330,7 @@ foreach my $parts (4 .. 4) {
 #     my $n = $path->tree_depth_to_n($depth-2);
 #     my $next_n = $path->tree_depth_to_n($depth-1);
 #     my $want_add = $next_n - $n;
-#     my $got_add = Math::PlanePath::SurroundOneEight::_depth_to_added([$depth],[1],0);
+#     my $got_add = Math::PlanePath::OneOfEight::_depth_to_added([$depth],[1],0);
 # 
 #     if ($got_add != $want_add) {
 #       MyTestHelpers::diag ("_depth_to_quarter_added($depth) got $got_add want $want_add");
@@ -449,7 +449,7 @@ foreach my $parts (4 .. 4) {
 #                );
 #   foreach my $group (@groups) {
 #     my ($options, @data) = @$group;
-#     my $path = Math::PlanePath::SurroundOneEight->new (%$options);
+#     my $path = Math::PlanePath::OneOfEight->new (%$options);
 #     foreach my $elem (@data) {
 #       my ($depth, $want_n) = @$elem;
 #       my $got_n = $path->tree_depth_to_n ($depth);
@@ -463,7 +463,7 @@ foreach my $parts (4 .. 4) {
 # # tree_n_to_depth()
 # 
 # foreach my $parts (1 .. 4) {
-#   my $path = Math::PlanePath::SurroundOneEight->new (parts => $parts);
+#   my $path = Math::PlanePath::OneOfEight->new (parts => $parts);
 # 
 #   my $bad = 0;
 #   my $depth = 0;
@@ -508,7 +508,7 @@ foreach my $parts (4 .. 4) {
 #               [ 14,  7 ],
 #               [ 15,  7 ],
 #              );
-#   my $path = Math::PlanePath::SurroundOneEight->new;
+#   my $path = Math::PlanePath::OneOfEight->new;
 #   foreach my $elem (@data) {
 #     my ($n, $want_n_parent) = @$elem;
 #     my $got_n_parent = $path->tree_n_parent ($n);
@@ -531,7 +531,7 @@ foreach my $parts (4 .. 4) {
 #               [ 8,  '16,17,18' ],
 #               [ 9,  '19,20,21' ],
 #              );
-#   my $path = Math::PlanePath::SurroundOneEight->new;
+#   my $path = Math::PlanePath::OneOfEight->new;
 #   foreach my $elem (@data) {
 #     my ($n, $want_n_children) = @$elem;
 #     my $got_n_children = join(',',$path->tree_n_children($n));
@@ -543,7 +543,7 @@ foreach my $parts (4 .. 4) {
 # # n_start, x_negative, y_negative
 # 
 # {
-#   my $path = Math::PlanePath::SurroundOneEight->new;
+#   my $path = Math::PlanePath::OneOfEight->new;
 #   ok ($path->n_start, 1, 'n_start()');
 #   ok ($path->x_negative, 1, 'x_negative()');
 #   ok ($path->y_negative, 1, 'y_negative()');
@@ -612,7 +612,7 @@ foreach my $parts (4 .. 4) {
 #   }
 # 
 # 
-#   my $path = Math::PlanePath::SurroundOneEight->new (parts => 4);
+#   my $path = Math::PlanePath::OneOfEight->new (parts => 4);
 #   my $n = 0;
 #   my $bad = 0;
 #   foreach (0 .. 20) {

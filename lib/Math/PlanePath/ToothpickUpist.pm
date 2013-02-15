@@ -16,6 +16,10 @@
 # with Math-PlanePath-Toothpick.  If not, see <http://www.gnu.org/licenses/>.
 
 
+#
+# A151567 four copies of leftist toothpicks
+#   becomes 2*left(n)+2*left(n+1)-4n-1  undoubling diagonals
+#
 # A151565 ,1,1,2,2,2,2, 4, 4, 2, 2,4,4,4,4,8,8,2,2,4,4,4,4,8,8,4,4,8,8,8,8,16,
 # A151566 ,0,1,2,4,6,8,10,14,18,20,22,26,30,34,38,46,54,56,58,62,66,70,74,82,90
 
@@ -24,7 +28,7 @@ use 5.004;
 use strict;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 2;
+$VERSION = 3;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 *_divrem_mutate = \&Math::PlanePath::_divrem_mutate;
@@ -375,11 +379,11 @@ sub _n0_to_depthbits {
 1;
 __END__
 
-=for stopwords eg Ryde Sierpinski Nlevel ie Ymin Ymax SierpinskiArrowheadCentres OEIS Online rowpoints Nleft Math-PlanePath-Toothpick Gould's Nend bitand CellularRule Noffset
+=for stopwords eg Ryde Sierpinski Nlevel ie Ymin Ymax SierpinskiArrowheadCentres OEIS Online rowpoints Nleft Math-PlanePath-Toothpick Gould's Nend bitand CellularRule Noffset Applegate Automata Congressus Numerantium
 
 =head1 NAME
 
-Math::PlanePath::ToothpickUpist -- self-similar triangular path traversal
+Math::PlanePath::ToothpickUpist -- self-similar triangular tree traversal
 
 =head1 SYNOPSIS
 
@@ -425,17 +429,17 @@ http://www.research.att.com/~njas/doc/tooth.pdf
 
 =back
 
-As per ToothpickTree (L<Math::PlanePath::ToothpickTree>) each point is
+As per C<ToothpickTree> (L<Math::PlanePath::ToothpickTree>) each point is
 considered a toothpick of length 2, starting from a vertical toothpick at
 the origin X=0,Y=0.  Then the pattern grows by adding a toothpick at each
 exposed end, so long as it would not cause two toothpicks to overlap (an end
 can touch, but they cannot overlap).  The variation here is that vertical
-toothpicks can only grow up, so nothing is added at the bottom end of a
+toothpicks can only grow up, so nothing is ever added at the bottom end of a
 vertical.
 
-    ...                      ...
-     |                        |
-    10---8---11     12---9---13
+    ...     ...     ...      ...
+     |       |       |        |
+    10---8--11      12---9---13
      |   |               |    |
          6---4--- ---5---7
          |   |       |   |
@@ -451,11 +455,11 @@ respectively left and right.
 
 =head2 Sierpinski Triangle
 
-X<Sierpinski, Waclaw>As described in the paper the pattern is a version of
-the Sierpinski triangle with each row doubled.  The vertical toothpicks,
-which are on "even" points X==Ymod2 are the Sierpinski triangle pattern, and
-the horizontal toothpicks on "odd" points X!=Ymod2 are a second copy of the
-triangle, positioned up one at Y+1.
+X<Sierpinski, Waclaw>As described in the paper above the pattern is a
+version of the Sierpinski triangle with each row doubled.  Vertical
+toothpicks are on "even" points X==Ymod2 and make the Sierpinski triangle
+pattern.  Horizontal toothpicks are on "odd" points X!=Ymod2 and are a
+second copy of the triangle, positioned up one at Y+1.
 
       5                                    h               h
       4     v               v                h   h   h   h
@@ -464,14 +468,14 @@ triangle, positioned up one at Y+1.
       1           v   v                            h
     Y=0             v
 
-    gives
+                         gives ToothpickUpist
 
-      5   ..h..           ..h..
-      4     v h   h   h   h v         ToothpickUpist
-      3       v h v   v h v
-      2         v h   h v
-      1           v h v
-    Y=0             v
+                     5   ..h..           ..h..
+                     4     v h   h   h   h v       
+                     3       v h v   v h v
+                     2         v h   h v
+                     1           v h v
+                   Y=0             v
 
 =head1 FUNCTIONS
 

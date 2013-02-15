@@ -16,40 +16,17 @@
 # with Math-PlanePath-Toothpick.  If not, see <http://www.gnu.org/licenses/>.
 
 
-# Cell ON at 1 of 2 vertically on odd cells X!=Y mod 2
-#         at 1 of 2 horizontally on even cells X=Y mod 2
-# is same as ToothpickTree.
-#
-# wedge
-# A160406 total cells
-# A160407 added
-# poltp406.jpg
-# A170886 Similar to A160406, always staying outside the wedge, but starting
-# with a toothpick whose midpoint touches the vertex of the wedge.
-#
-# outwedge    diagonal stair step only
-# A170888 total cells
-# A170889 added
-# A170888 Similar to A160406, always staying outside the wedge, but starting
-# with a vertical half-toothpick which protrudes from the vertex of the
-# wedge.
-#
-# outwedge2   extra at left end of wedge region
-# A170886 total cells
-# A170887 added
-# A170886 Similar to A160406, always staying outside the wedge, but starting
-# with a toothpick whose midpoint touches the vertex of the wedge.
+# hexagons one of six
+# A151723 total
+# A151724 added
+# A170898 added/6
+# A169780 1/6 wedge total
+# A170905 1/6 wedge added
+# A169778 1/6 wedge added/2
 
-# A170890 Similar to A160406, always staying outside the wedge, but starting with a horizontal half-toothpick which protrudes from the vertex of the wedge.
-# A170891 First differences of A170890.
 
-# A170892 Similar to A160406, always staying outside the wedge, but starting with a vertical toothpick whose endpoint touches the vertex of the wedge.
-# A170893 First differences of A170892.
 
-# A170894 Similar to A160406, always staying outside the wedge, but starting with a horizontal toothpick whose endpoint touches the vertex of the wedge.
-# A170895 First differences of A170894.
-
-package Math::PlanePath::ToothpickByCells;
+package Math::PlanePath::OneOfSixByCells;
 use 5.004;
 use strict;
 use Carp;
@@ -57,7 +34,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 2;
+$VERSION = 3;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -75,14 +52,12 @@ use Math::PlanePath::SquareSpiral;
 use constant n_start => 0;
 
 use constant parameter_info_array =>
-  [ { name      => 'parts',
-      share_key => 'parts_upstarplus',
-      display   => 'Parts',
+  [ { name      => 'start',
+      share_key => 'start_upstarplus',
+      display   => 'Start',
       type      => 'enum',
       default   => 'one',
-      choices   => ['one','two','three','cross','octant',
-                    'wedge','outwedge','outwedge2','outwedge3',
-                    'downwedge','downwedge2'],
+      choices   => ['one','two','three','four'],
     },
   ];
 
@@ -91,32 +66,23 @@ sub new {
   my $self = shift->SUPER::new(@_);
   $self->{'sq'} = Math::PlanePath::SquareSpiral->new (n_start => 0);
 
-  my $parts = ($self->{'parts'} ||= 'one');
+  my $start = ($self->{'start'} ||= 'one');
   my @n_to_x;
   my @n_to_y;
-  my @endpoint_dirs;
-  if ($parts eq 'one' || $parts eq 'octant'
-      || $parts eq 'wedge'
-      || $parts eq 'outwedge' || $parts eq 'outwedge2' || $parts eq 'outwedge3'
-      || $parts eq 'downwedge' || $parts eq 'downwedge2'
-     ) {
+  if ($start eq 'one') {
     @n_to_x = (0);
     @n_to_y = (0);
-    @endpoint_dirs = (2);
-  } elsif ($parts eq 'two') {
-    @n_to_x = (0, -2);
+  } elsif ($start eq 'two') {
+    @n_to_x = (0, -1);
     @n_to_y = (0, 0);
-    @endpoint_dirs = (2, 0);
-  } elsif ($parts eq 'three') {
+  } elsif ($start eq 'three') {
     @n_to_x = (0, -1, -1);
     @n_to_y = (0, 0, -1);
-    @endpoint_dirs = (2, 3, 0);
-  } elsif ($parts eq 'cross') {
-    @n_to_x = (0, -1, 1, 0);
-    @n_to_y = (0, 0, 0, -2);
-    @endpoint_dirs = (2, 3, 0, 1);
+  } elsif ($start eq 'four') {
+    @n_to_x = (0, -1, -1, 0);
+    @n_to_y = (0, 0, -1, -1);
   } else {
-    croak "Unrecognised parts: ",$parts;
+    croak "Unrecognised start: ",$start;
   }
   $self->{'n_to_x'} = \@n_to_x;
   $self->{'n_to_y'} = \@n_to_y;
@@ -130,7 +96,6 @@ sub new {
     push @endpoints, $sn;
   }
   $self->{'endpoints'} = \@endpoints;
-  $self->{'endpoint_dirs'} = \@endpoint_dirs;
   $self->{'xy_to_n'} = \@xy_to_n;
 
   ### xy_to_n: $self->{'xy_to_n'}
@@ -139,8 +104,8 @@ sub new {
   return $self;
 }
 
-my @surround_dx = (0, 0, 1, -1);
-my @surround_dy = (1, -1, 0, 0);
+my @surround_dx = (2, 1,-1, -2, -1,  1);
+my @surround_dy = (0, 1, 1,  0, -1, -1);
 
 sub _extend {
   my ($self) = @_;
@@ -151,10 +116,8 @@ sub _extend {
   my $xy_to_n = $self->{'xy_to_n'};
   my $n_to_x = $self->{'n_to_x'};
   my $n_to_y = $self->{'n_to_y'};
-  my $parts = $self->{'parts'};
 
-  my $depth = scalar(@{$self->{'depth_to_n'}});
-  ### $depth
+  ### depth: scalar(@{$self->{'depth_to_n'}})
   ### endpoints count: scalar(@$endpoints)
 
   my @new_endpoints;
@@ -165,41 +128,18 @@ sub _extend {
     my ($x,$y) = $sq->n_to_xy($endpoint_sn);
     ### endpoint: "$x,$y"
 
-  SURROUND: foreach my $i ($depth & 1 ? (0..1) : (2..3)) {
+  SURROUND: foreach my $i (0 .. $#surround_dx) {
       my $x = $x + $surround_dx[$i];
       my $y = $y + $surround_dy[$i];
-      if ($parts eq 'octant') {
-        if ($y <= 0 || $y > $x+1) { next; }
-      }
-      if ($parts eq 'wedge') {
-        if (abs($x) > $y) { next; }
-      }
-      if ($parts eq 'outwedge') {
-        if ($x < -abs($y)) { next; }
-      }
-      if ($parts eq 'outwedge2') {
-        if ($x <= -abs($y)) { next; }
-      }
-      if ($parts eq 'outwedge3') {
-        if ($x <= -abs($y)+1) { next; }
-      }
-      if ($parts eq 'downwedge') {
-        if ($y <= -abs($x)) { next; }
-      }
-      if ($parts eq 'downwedge2') {
-        if ($y < -abs($x)) { next; }
-      }
       ### consider: "$x,$y"
       my $sn = $sq->xy_to_n($x,$y);
-      if (defined($xy_to_n->[$sn])) { next; } # if already occupied
 
       my $count = 0;
-      # foreach my $j (0 .. 3) {       # four around
-      foreach my $j ($depth & 1 ? (0..1) : (2..3)) {  # VH around
+      foreach my $j (0 .. $#surround_dx) {
         my $x = $x + $surround_dx[$j];
         my $y = $y + $surround_dy[$j];
         my $sn = $sq->xy_to_n($x,$y);
-        ### count: "$x,$y at sn=$sn is ".($xy_to_n->[$sn] // 'undef')
+        ### check: "$x,$y at sn=$sn is ".($xy_to_n->[$sn] // 'undef')
         if (defined($xy_to_n->[$sn])) {
           if ($count++) {
             ### two or more surround ...
@@ -226,7 +166,7 @@ sub _extend {
 
 sub n_to_xy {
   my ($self, $n) = @_;
-  ### ToothpickByCells n_to_xy(): $n
+  ### OneOfSixByCells n_to_xy(): $n
 
   if ($n < 0) { return; }
   if (is_infinite($n)) { return ($n,$n); }
@@ -258,10 +198,10 @@ sub n_to_xy {
 
 sub xy_to_n {
   my ($self, $x, $y) = @_;
-  ### ToothpickByCells xy_to_n(): "$x, $y"
+  ### OneOfSixByCells xy_to_n(): "$x, $y"
 
   my ($depth,$exp) = round_down_pow (max($x,$y), 2);
-  $depth *= 4;
+  $depth *= 2;
   if (is_infinite($depth)) {
     return (1,$depth);
   }
@@ -285,14 +225,14 @@ sub xy_to_n {
 # not exact
 sub rect_to_n_range {
   my ($self, $x1,$y1, $x2,$y2) = @_;
-  ### ToothpickByCells rect_to_n_range(): "$x1,$y1  $x2,$y2"
+  ### OneOfSixByCells rect_to_n_range(): "$x1,$y1  $x2,$y2"
 
   $x1 = round_nearest ($x1);
   $y1 = round_nearest ($y1);
   $x2 = round_nearest ($x2);
   $y2 = round_nearest ($y2);
 
-  my $depth = 8 * max(1,
+  my $depth = 4 * max(1,
                       abs($x1),
                       abs($x2),
                       abs($y1),
@@ -302,12 +242,6 @@ sub rect_to_n_range {
 
 sub tree_depth_to_n {
   my ($self, $depth) = @_;
-  if ($depth < 0) {
-    return undef;
-  }
-  if (is_infinite($depth)) {
-    return $depth;
-  }
   my $depth_to_n = $self->{'depth_to_n'};
   while ($#$depth_to_n <= $depth) {
     _extend($self);
@@ -339,38 +273,31 @@ sub tree_n_children {
   ### tree_n_children(): $n
 
   my ($x,$y) = $self->n_to_xy($n)
-    or return;
+    or return undef;
   ### $x
   ### $y
 
-  my @n = map { $self->xy_to_n($x+$surround_dx[$_],$y+$surround_dy[$_]) }
-    0 .. $#surround_dx;
-  my $child_depth = $self->tree_n_to_depth($n) + 1;
-  ### $child_depth
-
-  ### @n
-  # ### depths: map {defined $_ && $n_to_depth->[$_]} @n
-
-  @n = sort {$a<=>$b}
-    grep {defined $_ && $self->tree_n_to_depth($_) == $child_depth}
-      @n;
-  ### found: @n
-  return @n;
+  my $depth = $self->tree_n_to_depth($n) + 1;
+  return grep { $self->tree_n_to_depth($_) == $depth }
+    map { $self->xy_to_n_list($x + $surround_dx[$_],
+                              $y + $surround_dy[$_]) }
+      0 .. $#surround_dx;
 }
 sub tree_n_parent {
   my ($self, $n) = @_;
 
+  if ($n < 0) {
+    return undef;
+  }
   my ($x,$y) = $self->n_to_xy($n)
     or return undef;
   my $parent_depth = $self->tree_n_to_depth($n) - 1;
-  ### $parent_depth
 
-  foreach my $dir (0 .. $#surround_dx) {
-    if (defined (my $n = $self->xy_to_n($x+$surround_dx[$dir],
-                                        $y+$surround_dy[$dir]))) {
-      if ($self->tree_n_to_depth($n) == $parent_depth) {
-        return $n;
-      }
+  foreach my $i (0 .. $#surround_dx) {
+    my $pn = $self->xy_to_n($x + $surround_dx[$i],
+                            $y + $surround_dy[$i]);
+    if (defined $pn && $self->tree_n_to_depth($pn) == $parent_depth) {
+      return $pn;
     }
   }
   return undef;
@@ -378,3 +305,135 @@ sub tree_n_parent {
 
 1;
 __END__
+
+=for stopwords eg Ryde Math-PlanePath-Toothpick OEIS
+
+=head1 NAME
+
+Math::PlanePath::OneOfSixByCells -- automaton growing to cells with one of eight neighbours
+
+=head1 SYNOPSIS
+
+ use Math::PlanePath::OneOfSixByCells;
+ my $path = Math::PlanePath::OneOfSixByCells->new;
+ my ($x, $y) = $path->n_to_xy (123);
+
+=head1 DESCRIPTION
+
+I<In progress ...>
+
+This is a 1 of 6 growth cellular automaton ...
+
+=cut
+
+# math-image --path=OneOfSixByCells --output=numbers --all --size=65x11
+
+=pod
+
+           5
+
+           4
+
+           3
+
+           2
+
+           1
+
+      <- Y=0
+
+          -1
+
+          -2
+
+          -3
+
+          -4
+
+          -5
+                       ^
+      -4   -3 -2  -1  X=0  1   2   3   4
+
+=head1 FUNCTIONS
+
+See L<Math::PlanePath/FUNCTIONS> for behaviour common to all path classes.
+
+=over 4
+
+=item C<$path = Math::PlanePath::OneOfSixByCells-E<gt>new ()>
+
+Create and return a new path object.
+
+=back
+
+=cut
+
+# =head2 Tree Methods
+#
+# =over
+#
+# =item C<@n_children = $path-E<gt>tree_n_children($n)>
+#
+# Return the children of C<$n>, or an empty list if C<$n> has no children
+# (including when C<$n E<lt> 1>, ie. before the start of the path).
+#
+# The children are the new toothpicks added at the ends of C<$n> in the next
+# depth.  This can be none, one or two points.
+#
+# =cut
+#
+# #   For example N=8 has a single
+# # child 12, N=24 has no children, or N=2 has two children 4,5.  The way points
+# # are numbered means when there's two children they're consecutive N values.
+#
+# =item C<$num = $path-E<gt>tree_n_num_children($n)>
+#
+# Return the number of children of C<$n>, or return C<undef> if C<$nE<lt>1>
+# (ie. before the start of the path).
+#
+# =item C<$n_parent = $path-E<gt>tree_n_parent($n)>
+#
+# Return the parent node of C<$n>, or C<undef> if C<$n E<lt>= 1> (the start of
+# the path).
+#
+# =back
+
+=head1 OEIS
+
+This cellular automaton is in Sloane's Online Encyclopedia of Integer
+Sequences as
+
+    http://oeis.org/A151723    (etc)
+
+    A151723   total cells at given depth
+    A151724   added cells at given depth
+
+=head1 SEE ALSO
+
+L<Math::PlanePath>,
+L<Math::PlanePath::UlamWarburton>
+
+=head1 HOME PAGE
+
+http://user42.tuxfamily.org/math-planepath/index.html
+
+=head1 LICENSE
+
+Copyright 2012, 2013 Kevin Ryde
+
+This file is part of Math-PlanePath-Toothpick.
+
+Math-PlanePath-Toothpick is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 3, or (at your option) any later
+version.
+
+Math-PlanePath-Toothpick is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+more details.
+
+You should have received a copy of the GNU General Public License along with
+Math-PlanePath-Toothpick.  If not, see <http://www.gnu.org/licenses/>.
+
+=cut

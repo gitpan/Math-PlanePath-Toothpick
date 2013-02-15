@@ -27,11 +27,42 @@ use Math::PlanePath::Base::Digits 'round_down_pow';
 # use Smart::Comments;
 
 
+{
+  # octant path->tree_depth_to_n() vs ByCells
+  require Math::PlanePath::OneOfEight;
+  require Math::PlanePath::OneOfEightByCells;
+  my $parts = 'side';
+  my $path = Math::PlanePath::OneOfEight->new (parts => $parts);
+  my $cells = Math::PlanePath::OneOfEightByCells->new (parts => $parts);
+  foreach my $depth (0 .. 32) {
+    my $n = $path->tree_depth_to_n($depth);
+    my $c = $cells->tree_depth_to_n($depth);
+    # my $c = octant($depth);
+    my $diff = $n - $c;
+    print "$depth  path=$n cells=$c = $diff\n";
+  }
+  exit 0;
+}
+{
+  # at 2^k-1
+  # V(2^k)     = (16*4^k + 24*k - 7) / 9
+  # V(2^k + r) = V(2^k) + 2*V(r) + V(r+1) - 8*floor(log2(r+1)) + 1
+
+  # V(15) = V(8) + 2*V(7) + V(8) - 8*floor(log2(8)) + 1
+  #       = 2*V(8) + 2*V(7) - 8*floor(log2(8)) + 1
+
+  # V(2^k - 1)
+  # = V(2^(k-1)) + 2*V(2^(k-1) - 1) + V(2^(k-1)) - 8*floor(log2(2^(k-1))) + 1
+  # = 2*V(2^(k-1)) + 2*V(2^(k-1) - 1) - 8*(k-1) + 1
+  # = 2*V(2^(k-1))+4*V(2^(k-2))+...+2^k*V(1)
+  #   - 8*(k-1 + k-2 + ... + 1) + k
+  ;
+}
 
 {
   # print octant_added()
-  require Math::PlanePath::SurroundOneEightByCells;
-  my $cells = Math::PlanePath::SurroundOneEightByCells->new (parts => 'octant');
+  require Math::PlanePath::OneOfEightByCells;
+  my $cells = Math::PlanePath::OneOfEightByCells->new (parts => 'octant');
   my @values;
   foreach my $depth (4 .. 128) {
     push @values, $cells->tree_depth_to_n($depth+1) - $cells->tree_depth_to_n($depth);
@@ -44,12 +75,12 @@ use Math::PlanePath::Base::Digits 'round_down_pow';
 
 {
   # octant_added() func vs ByCells
-  require Math::PlanePath::SurroundOneEight;
-  require Math::PlanePath::SurroundOneEightByCells;
-  my $cells = Math::PlanePath::SurroundOneEightByCells->new (parts => 'octant');
+  require Math::PlanePath::OneOfEight;
+  require Math::PlanePath::OneOfEightByCells;
+  my $cells = Math::PlanePath::OneOfEightByCells->new (parts => 'octant');
   foreach my $depth (0 .. 64) {
     my $n = $cells->tree_depth_to_n($depth+1) - $cells->tree_depth_to_n($depth);
-    my $a = Math::PlanePath::SurroundOneEight::_depth_to_octant_added([$depth],[1],0);
+    my $a = Math::PlanePath::OneOfEight::_depth_to_octant_added([$depth],[1],0);
     # my $a = octant_added($depth);
     my $diff = $a - $n;
     print "$depth  cells=$n func=$a   $diff\n";
@@ -104,14 +135,14 @@ use Math::PlanePath::Base::Digits 'round_down_pow';
 
 {
   # _depth_to_octant_added() vs ByCells
-  require Math::PlanePath::SurroundOneEight;
-  # print Math::PlanePath::SurroundOneEight::_depth_to_octant_added([7],[1],0),"\n";
+  require Math::PlanePath::OneOfEight;
+  # print Math::PlanePath::OneOfEight::_depth_to_octant_added([7],[1],0),"\n";
   #exit 0;
 
-  require Math::PlanePath::SurroundOneEightByCells;
-  my $oct = Math::PlanePath::SurroundOneEightByCells->new (parts => 'octant');
+  require Math::PlanePath::OneOfEightByCells;
+  my $oct = Math::PlanePath::OneOfEightByCells->new (parts => 'octant');
   foreach my $depth (0 .. 32) {
-    my $added = Math::PlanePath::SurroundOneEight::_depth_to_octant_added([$depth],[1],0);
+    my $added = Math::PlanePath::OneOfEight::_depth_to_octant_added([$depth],[1],0);
     my $c = $oct->tree_depth_to_n($depth+1) - $oct->tree_depth_to_n($depth);
     my $diff = $added - $c;
     print "$depth  added=$added cells=$c  diff=$diff\n";
@@ -122,8 +153,8 @@ use Math::PlanePath::Base::Digits 'round_down_pow';
 
 {
   # octant() func vs ByCells
-  require Math::PlanePath::SurroundOneEightByCells;
-  my $cells = Math::PlanePath::SurroundOneEightByCells->new (parts => 'octant');
+  require Math::PlanePath::OneOfEightByCells;
+  my $cells = Math::PlanePath::OneOfEightByCells->new (parts => 'octant');
   foreach my $depth (0 .. 32) {
     my $n = $cells->tree_depth_to_n($depth);
     my $s = octant($depth);
@@ -170,27 +201,12 @@ use Math::PlanePath::Base::Digits 'round_down_pow';
     Memoize::memoize('octant');
   }
 }
-{
-  # octant path->tree_depth_to_n() vs ByCells
-  require Math::PlanePath::SurroundOneEight;
-  require Math::PlanePath::SurroundOneEightByCells;
-  my $parts = 'side';
-  my $path = Math::PlanePath::SurroundOneEight->new (parts => $parts);
-  my $cells = Math::PlanePath::SurroundOneEightByCells->new (parts => $parts);
-  foreach my $depth (0 .. 32) {
-    my $n = $path->tree_depth_to_n($depth);
-    my $c = $cells->tree_depth_to_n($depth);
-    # my $c = octant($depth);
-    my $diff = $n - $c;
-    print "$depth  path=$n cells=$c = $diff\n";
-  }
-  exit 0;
-}
+
 
 {
   # octant powers
-  require Math::PlanePath::SurroundOneEightByCells;
-  my $path = Math::PlanePath::SurroundOneEightByCells->new (parts => 'octant');
+  require Math::PlanePath::OneOfEightByCells;
+  my $path = Math::PlanePath::OneOfEightByCells->new (parts => 'octant');
   foreach my $k (0 .. 9) {
     my $pow = 2**$k;
     my $n = $path->tree_depth_to_n($pow);
@@ -205,9 +221,9 @@ use Math::PlanePath::Base::Digits 'round_down_pow';
 }
 {
   # ByCells octant vs centre
-  require Math::PlanePath::SurroundOneEightByCells;
-  my $centre = Math::PlanePath::SurroundOneEightByCells->new (parts => '1');
-  my $oct = Math::PlanePath::SurroundOneEightByCells->new (parts => 'octant');
+  require Math::PlanePath::OneOfEightByCells;
+  my $centre = Math::PlanePath::OneOfEightByCells->new (parts => '1');
+  my $oct = Math::PlanePath::OneOfEightByCells->new (parts => 'octant');
   foreach my $depth (0 .. 32) {
     my $nc = $centre->tree_depth_to_n($depth);
     my $no = $oct->tree_depth_to_n($depth);
@@ -277,8 +293,8 @@ use Math::PlanePath::Base::Digits 'round_down_pow';
   # centre(pow+rem) = centre(pow) + centre(rem+1) + 2*centre(rem)
   #                   - 5 - 2*floor(log2(rem+1))
   #                  
-  require Math::PlanePath::SurroundOneEightByCells;
-  my $path = Math::PlanePath::SurroundOneEightByCells->new (parts => 1);
+  require Math::PlanePath::OneOfEightByCells;
+  my $path = Math::PlanePath::OneOfEightByCells->new (parts => 1);
   foreach my $k (0 .. 9) {
     my $pow = 2**$k;
     my $p = $path->tree_depth_to_n($pow);
@@ -301,8 +317,8 @@ use Math::PlanePath::Base::Digits 'round_down_pow';
 {
   # density decreasing as doubling, parts=4
 
-  require Math::PlanePath::SurroundOneEight;
-  my $path = Math::PlanePath::SurroundOneEight->new (parts => 4);
+  require Math::PlanePath::OneOfEight;
+  my $path = Math::PlanePath::OneOfEight->new (parts => 4);
   for (my $depth = 1; $depth < 65536; $depth *= 2) {
     my $a = (2*$depth-1)**2;
     my $c = $path->tree_depth_to_n($depth);
@@ -575,8 +591,8 @@ use Math::PlanePath::Base::Digits 'round_down_pow';
 
 {
   # A151726 added triangle
-  require Math::PlanePath::SurroundOneEightByCells;
-  my $path = Math::PlanePath::SurroundOneEightByCells->new;
+  require Math::PlanePath::OneOfEightByCells;
+  my $path = Math::PlanePath::OneOfEightByCells->new;
   my $depth = 0;
   foreach my $k (0 .. 7) {
     print "[$depth]  ";
@@ -597,8 +613,8 @@ use Math::PlanePath::Base::Digits 'round_down_pow';
   # A151725 total       0,1,9,13, 33,37,57,77, 121,125,145,165,209,237,297,373,
   # A151726 added       0,1,8,4,  20, 4,20,20, 44,   4, 20, 20, 44, 28, 60, 76,
 
-  require Math::PlanePath::SurroundOneEight;
-  print Math::PlanePath::SurroundOneEight::_depth_to_added(0,[4],[1],0),"\n";
+  require Math::PlanePath::OneOfEight;
+  print Math::PlanePath::OneOfEight::_depth_to_added(0,[4],[1],0),"\n";
   # print centre(4),"\n";
   # print centre(8),"\n";
   # print centre(7),"\n";
@@ -606,7 +622,7 @@ use Math::PlanePath::Base::Digits 'round_down_pow';
 
   foreach my $depth (0 .. 16) {
     my $centre_calc = centre($depth+1) - centre($depth);
-    my $centre_added = Math::PlanePath::SurroundOneEight::_depth_to_added($depth,[],[],0);
+    my $centre_added = Math::PlanePath::OneOfEight::_depth_to_added($depth,[],[],0);
     my $diff = $centre_added - $centre_calc;
     print "$depth  $centre_calc $centre_added diff=$diff\n";
   }
@@ -614,8 +630,8 @@ use Math::PlanePath::Base::Digits 'round_down_pow';
 }
 {
   # tree_depth_to_n()
-  require Math::PlanePath::SurroundOneEight;
-  my $path = Math::PlanePath::SurroundOneEight->new (parts => 1);
+  require Math::PlanePath::OneOfEight;
+  my $path = Math::PlanePath::OneOfEight->new (parts => 1);
   foreach my $depth (0 .. 500) {
     my $centre = centre($depth);
     my $full = full($depth);
@@ -665,10 +681,10 @@ use Math::PlanePath::Base::Digits 'round_down_pow';
   #    = (16*4^k + 24*k - 16)/9/4
   #    = (4*4^k + 6*k - 4)/9
 
-  require Math::PlanePath::SurroundOneEightByCells;
+  require Math::PlanePath::OneOfEightByCells;
   require Math::BaseCnv;
-  my $c = Math::PlanePath::SurroundOneEightByCells->new;
-  my $p = Math::PlanePath::SurroundOneEightByCells->new;
+  my $c = Math::PlanePath::OneOfEightByCells->new;
+  my $p = Math::PlanePath::OneOfEightByCells->new;
   my $prev_n = 0;
   for (my $k = 1; $k <= 16; $k++) {
     my $depth = 2**$k;
@@ -693,10 +709,10 @@ use Math::PlanePath::Base::Digits 'round_down_pow';
 {
   # rect_to_n_range() on 2^k
 
-  require Math::PlanePath::SurroundOneEight;
-  require Math::PlanePath::SurroundOneEightByCells;
-  my $c = Math::PlanePath::SurroundOneEightByCells->new;
-  my $p = Math::PlanePath::SurroundOneEight->new;
+  require Math::PlanePath::OneOfEight;
+  require Math::PlanePath::OneOfEightByCells;
+  my $c = Math::PlanePath::OneOfEightByCells->new;
+  my $p = Math::PlanePath::OneOfEight->new;
   foreach my $k (0 .. 10) {
     my $depth = 2**$k;
     my $c_hi = $c->tree_depth_to_n($depth);
@@ -732,10 +748,10 @@ use Math::PlanePath::Base::Digits 'round_down_pow';
   #           = ((4*4^k - 1)/3 0 k)/3
   #           = (4*4^k - 3*k - 1)/9
   #
-  require Math::PlanePath::SurroundOneEightByCells;
+  require Math::PlanePath::OneOfEightByCells;
   require Math::BaseCnv;
   require Math::BigRat;
-  my $path = Math::PlanePath::SurroundOneEightByCells->new;
+  my $path = Math::PlanePath::OneOfEightByCells->new;
   my $prev_n = 0;
 
   for (my $k = 1; $k <= 16; $k++) {
@@ -765,8 +781,8 @@ use Math::PlanePath::Base::Digits 'round_down_pow';
 }
 
 {
-  require Math::PlanePath::SurroundOneEightByCells;
-  my $path = Math::PlanePath::SurroundOneEightByCells->new;
+  require Math::PlanePath::OneOfEightByCells;
+  my $path = Math::PlanePath::OneOfEightByCells->new;
   my $n = $path->xy_to_n(4,4);
   ### $n
 

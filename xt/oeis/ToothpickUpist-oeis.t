@@ -32,6 +32,38 @@ use Math::PlanePath::ToothpickUpist;
 
 
 #------------------------------------------------------------------------------
+# A175098 grid points covered by length=2
+
+MyOEIS::compare_values
+  (anum => 'A175098',
+   # max_value=>10000,
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::ToothpickUpist->new (parts => 4);
+     my @got;
+     my %seen;
+     my $n = $path->n_start;
+     for (my $depth = -1; @got < $count; $depth++) {
+       my $next_n = $path->tree_depth_to_n($depth+1);
+       for ( ; $n < $next_n; $n++) {
+         my ($x,$y) = $path->n_to_xy($n);
+         $seen{"$x,$y"} = 1;
+
+         if ($depth & 1) {
+           $seen{($x+1).",$y"} = 1;
+           $seen{($x-1).",$y"} = 1;
+         } else {
+           $seen{"$x,".($y+1)} = 1;
+           $seen{"$x,".($y-1)} = 1;
+         }
+       }
+       push @got, scalar(keys %seen);
+     }
+     return \@got;
+   });
+
+
+#------------------------------------------------------------------------------
 # A160745 - added*3
 
 MyOEIS::compare_values

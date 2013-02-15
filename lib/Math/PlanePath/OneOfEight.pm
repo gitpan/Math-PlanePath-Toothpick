@@ -16,12 +16,11 @@
 # with Math-PlanePath-Toothpick.  If not, see <http://www.gnu.org/licenses/>.
 
 
-# A151727 parts=4 added endless row, A151728 div4, A151729 div8
-# A151747 v1 added 3/4
-# cf A170881 (3*n+1)*2^(n-2)+1 first column of A151747
-#
+# side without log2 from diagonal, and sides of 3side
+# side with log2 from X=3*2^k,Y=2^k down, and middle of 3side
 
-package Math::PlanePath::SurroundOneEight;
+
+package Math::PlanePath::OneOfEight;
 use 5.004;
 use strict;
 use Carp;
@@ -29,7 +28,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 2;
+$VERSION = 3;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 *_divrem = \&Math::PlanePath::_divrem;
@@ -50,9 +49,12 @@ use constant parameter_info_array =>
       share_key       => 'parts_surroundoneeight',
       display         => 'Parts',
       type            => 'enum',
-      default         => 4,
+      default         => '4',
       choices         => ['4','1','octant','3mid','3side',
                           # 'side'
+                         ],
+      choices_display => ['4','1','Octant','3 Mid','3 Side',
+                          # 'Side'
                          ],
       description     => 'Which parts of the plane to fill.',
     },
@@ -152,23 +154,21 @@ my %initial_n_to_xy = (4       => [ [0,0], [1,0], [1,1], [0,1],
                        '3mid'  => [ [0,0], [1,-1], [1,0], [1,1],
                                     [0,1], [-1,1] ],
 
-                      # for 3side table up to N=8 because cell X=1,Y=2 at N=7
+                       # for 3side table up to N=8 because cell X=1,Y=2 at N=7
                        # is overlapped by two upper octants
                        '3side' => [ [0,0], [1,-1], [1,0], [1,1],
                                     [1,-2], [2,-2], [2,2], [1,2], [0,2] ],
 
-                       side    => [ [0,1], [1,1] ]);
+                       side    => [ [0,0], [1,0], [1,1], [2,2], [1,2] ],
+                      );
 
-#                           0    1      2    3
+#                     depth=0    1      2    3
 my @octant_small_n_to_v = ([0], [0,1], [2], [1,2,3]);
-# my @mirror_small_n_to_v = ([0], [1,0], [2], [3,2,1]);
-
-# my @octant_mid_n_to_h = ([0], [ 1,1,1]);
-my @octant_mid_n_to_v = ([0], [-1,0,1]);
+my @octant_mid_n_to_v   = ([0], [-1,0,1]);
 
 sub n_to_xy {
   my ($self, $n) = @_;
-  ### SurroundOneEight n_to_xy(): $n
+  ### OneOfEight n_to_xy(): $n
 
   if ($n < 0) { return; }
   if (is_infinite($n)) { return ($n,$n); }
@@ -288,14 +288,10 @@ sub n_to_xy {
     ### lower of side 1, excluding diagonal: "depth=".($depth+1)." add=".$add
     if ($n < $add) {
       ### lower of side 1 ...
-      $hdx = 0;
-      $hdy = -1;
-      $vdx = 1;
-      $vdy = 0;
+      $hdx = 0; $hdy = -1; $vdx = 1; $vdy = 0;
       $log2_extras = 0;
       $depth += 1;
-      $x -= 1;
-      $y += 1;
+      $x = -1; $y = 1;
     } else {
       $n -= $add;
       ### past side 1 lower, not past diagonal: "n=$n"
@@ -337,8 +333,7 @@ sub n_to_xy {
               ### lower of side 3 ...
               $hdx = -1;
               $depth += 1;
-              $x += 1;
-              $y -= 1;
+              $x = 1; $y = -1;
               $log2_extras = 0;
               $mirror =1;
             }
@@ -359,7 +354,7 @@ sub n_to_xy {
       $vdy = 0;
       $log2_extras = 0;
       $depth += 1;
-      $x -= 1; $y += 1;
+      $x = -1; $y = 1;
     } else {
       $n -= $add;
 
@@ -380,12 +375,12 @@ sub n_to_xy {
           $n += 1;  # past diagonal
           ### not lower of centre, and past diagonal to n: $n
 
-          my $add = _depth_to_octant_added([$depth-1],[1],$zero);
+          $add = _depth_to_octant_added([$depth-1],[1],$zero);
           ### upper of centre, excluding diagonal: "depth=".($depth-1)." add-1=".$add
           if ($n < $add) {
             ### upper of centre ...
             $hdx = 0; $hdy = 1; $vdx = 1; $vdy = 0;
-            $x += 1; $y += 1;
+            $x = 1; $y = 1;
             $mirror = 1;
             $depth -= 1;
           } else {
@@ -395,7 +390,7 @@ sub n_to_xy {
             if ($n < $add) {
               ### upper of side 3 ...
               $hdx = 0; $hdy = 1; $vdx = -1; $vdy = 0; # rotate -90
-              $x += 1; $y += 1;
+              $x = 1; $y = 1;
               $depth -= 1;
             } else {
               $n -= $add;
@@ -404,13 +399,29 @@ sub n_to_xy {
 
               ### lower of side 3 ...
               $hdx = -1;
-              $x += 2;
+              $x = 2;
               $log2_extras = 0;
               $mirror =1;
             }
           }
         }
       }
+    }
+
+  } elsif ($parts eq 'side') {
+    my $add = _depth_to_octant_added([$depth],[1],$zero);
+    ### first octant add: $add
+    if ($n < $add) {
+      ### first octant ...
+    } else {
+      ### second octant ...
+      $n -= $add;
+      $n += 1; # past diagonal
+      $hdx = 0; $hdy = 1; $vdx = 1; $vdy = 0;
+      $depth += 1;
+      $log2_extras = 0;
+      $mirror = 1;
+      $x = -1; $y = -1;
     }
   }
 
@@ -582,7 +593,7 @@ sub n_to_xy {
   return ($x,$y);
 }
 
-no Smart::Comments;
+# no Smart::Comments;
 
 # use Smart::Comments;
 
@@ -655,7 +666,7 @@ sub _n0_to_depth_and_rem {
   return ($depth, $n - $n_depth);
 }
 
-no Smart::Comments;
+# no Smart::Comments;
 
 #------------------------------------------------------------------------------
 # xy_to_n()
@@ -674,10 +685,12 @@ my @yx3mid_to_n = ([     0, 2, undef ],   # Y=0   X=0,1,-1
                    [     4, 3, 5     ],   # Y=1
                    [ undef, 1, undef ]);  # Y=-1
 my @yx3side_to_n = ([     0, 2, undef ],   # Y=0   X=0,1,-1
-                    [ undef, 3, 5     ],   # Y=1
+                    [ undef, 3, undef ],   # Y=1
                     [     8, 7, 16    ],   # Y=2
                     [ undef, 4, undef ],   # Y=-2
                     [ undef, 1, undef ]);  # Y=-1
+my @yxside_to_n = ([     0, 1 ],   # Y=0   X=0,1,-1
+                   [ undef, 2 ]);   # Y=1
 
 # N values relative to tree_depth_to_n() start of the depth level
 my @yx_to_n = ([ [     0,     0,          ],  # plain
@@ -693,13 +706,13 @@ my @yx_to_n = ([ [     0,     0,          ],  # plain
 
 sub xy_to_n {
   my ($self, $x, $y) = @_;
-  ### SurroundOneEight xy_to_n(): "$x, $y"
+  ### OneOfEight xy_to_n(): "$x, $y"
 
-  if (0) {
-    require Math::PlanePath::SurroundOneEightByCells;
-    my $cells = ($self->{'cells'} ||= Math::PlanePath::SurroundOneEightByCells->new (parts => $self->{'parts'}));
-    return $cells->xy_to_n($x,$y);
-  }
+  # {
+  #   require Math::PlanePath::OneOfEightByCells;
+  #   my $cells = ($self->{'cells'} ||= Math::PlanePath::OneOfEightByCells->new (parts => $self->{'parts'}));
+  #   return $cells->xy_to_n($x,$y);
+  # }
 
   $x = round_nearest ($x);
   $y = round_nearest ($y);
@@ -725,9 +738,6 @@ sub xy_to_n {
   my @add_mult;
   my @add_log2_extras;
   my @add_top_no_extra_pow;
-  my @add_is_block1;
-  my @centre_offset;
-  my @centre_mult;
   my $mirror = 0;
   my $log2_extras = 1;
   my $top_extra = 1;
@@ -749,11 +759,11 @@ sub xy_to_n {
     my $mult = 0;
     if ($parts eq '1') {
       ### parts==1 ...
-      if ($x <= 1 && $y <= 1) {
-        return $yx1_to_n[$y][$x];
-      }
       if ($x < 0 || $y < 0) {
         return undef;
+      }
+      if ($x <= 1 && $y <= 1) {
+        return $yx1_to_n[$y][$x];
       }
     } else {
       ### parts==4 ...
@@ -788,7 +798,6 @@ sub xy_to_n {
       push @add_mult,             $mult;
       push @add_top_no_extra_pow, 0;
       push @add_log2_extras,      1;
-      push @add_is_block1,        1;
     }
 
   } elsif ($parts eq '3mid') {
@@ -817,7 +826,6 @@ sub xy_to_n {
         push @add_mult,             1;
         push @add_top_no_extra_pow, 0;
         push @add_log2_extras,      0;
-        push @add_is_block1,        1;
         $n -= 1;  # excluding diagonal
       }
     } else {
@@ -830,7 +838,6 @@ sub xy_to_n {
           push @add_mult,             1;
           push @add_top_no_extra_pow, 0;
           push @add_log2_extras,      0;
-          push @add_is_block1,        1;
           $n -= 1;  # excluding diagonal
 
           ### past block 1 ...
@@ -838,7 +845,6 @@ sub xy_to_n {
           push @add_mult,             1;
           push @add_top_no_extra_pow, 0;
           push @add_log2_extras,      1;
-          push @add_is_block1,        1;
 
         } else {
           ### block 3 second octant ...
@@ -850,7 +856,6 @@ sub xy_to_n {
           push @add_mult,             1;
           push @add_top_no_extra_pow, 0;
           push @add_log2_extras,      0;
-          push @add_is_block1,        1;
           $n -= 1;  # excluding diagonal
 
           ### past blocks 1,2, excluding leading diagonal ...
@@ -858,7 +863,6 @@ sub xy_to_n {
           push @add_mult,             2;
           push @add_top_no_extra_pow, 0;
           push @add_log2_extras,      1;
-          push @add_is_block1,        1;
           $n -= 1;  # excluding leading diagonal
         }
       } else {
@@ -873,7 +877,6 @@ sub xy_to_n {
           push @add_mult,             1;
           push @add_top_no_extra_pow, 0;
           push @add_log2_extras,      0;
-          push @add_is_block1,        1;
           $n -= 1;  # excluding diagonal
 
           ### past blocks 1,2,3 excluding leading diagonal ...
@@ -881,7 +884,6 @@ sub xy_to_n {
           push @add_mult,             3;
           push @add_top_no_extra_pow, 0;
           push @add_log2_extras,      1;
-          push @add_is_block1,        1;
           $n -= 1;  # excluding leading diagonal
 
         } else {
@@ -896,14 +898,12 @@ sub xy_to_n {
           push @add_mult,             1;
           push @add_top_no_extra_pow, 0;
           push @add_log2_extras,      0;
-          push @add_is_block1,        1;
           $n -= 1;  # excluding diagonal
 
           push @add_offset,           0;
           push @add_mult,             4;
           push @add_top_no_extra_pow, 0;
           push @add_log2_extras,      1;
-          push @add_is_block1,        1;
           $n -= 2;  # unduplicate two diagonals
         }
       }
@@ -935,7 +935,6 @@ sub xy_to_n {
         push @add_mult,             1;
         push @add_top_no_extra_pow, 0;
         push @add_log2_extras,      0;
-        push @add_is_block1,        1;
         $n -= 1;  # excluding diagonal
       }
     } else {
@@ -948,7 +947,6 @@ sub xy_to_n {
           push @add_mult,             1;
           push @add_top_no_extra_pow, 0;
           push @add_log2_extras,      0;
-          push @add_is_block1,        1;
           $n -= 1;  # excluding diagonal
 
           ### past block 1 ...
@@ -956,7 +954,6 @@ sub xy_to_n {
           push @add_mult,             1;
           push @add_top_no_extra_pow, 0;
           push @add_log2_extras,      1;
-          push @add_is_block1,        1;
 
         } else {
           ### block 3 second octant ...
@@ -969,7 +966,6 @@ sub xy_to_n {
           push @add_mult,             1;
           push @add_top_no_extra_pow, 0;
           push @add_log2_extras,      0;
-          push @add_is_block1,        1;
           $n -= 1;  # excluding diagonal
 
           ### past block 1,2, excluding leading diagonal ...
@@ -977,7 +973,6 @@ sub xy_to_n {
           push @add_mult,             2;
           push @add_top_no_extra_pow, 0;
           push @add_log2_extras,      1;
-          push @add_is_block1,        1;
           $n -= 1;  # excluding leading diagonal
         }
       } else {
@@ -996,7 +991,6 @@ sub xy_to_n {
           push @add_mult,             1;
           push @add_top_no_extra_pow, 0;
           push @add_log2_extras,      0;
-          push @add_is_block1,        1;
           $n -= 1;  # excluding diagonal
 
           ### past block 1,2, excluding leading diagonal ...
@@ -1004,7 +998,6 @@ sub xy_to_n {
           push @add_mult,             2;
           push @add_top_no_extra_pow, 0;
           push @add_log2_extras,      1;
-          push @add_is_block1,        1;
           $n -= 1;  # excluding leading diagonal
 
           ### past block 3 ...
@@ -1012,7 +1005,6 @@ sub xy_to_n {
           push @add_mult,             1;
           push @add_top_no_extra_pow, 0;
           push @add_log2_extras,      1;
-          push @add_is_block1,        1;
 
         } else {
           ### block 5 fourth octant ...
@@ -1024,7 +1016,6 @@ sub xy_to_n {
           push @add_mult,             1;
           push @add_top_no_extra_pow, 0;
           push @add_log2_extras,      0;
-          push @add_is_block1,        1;
           $n -= 1;  # excluding diagonal
 
           ### past block 1,2, excluding leading diagonal ...
@@ -1032,7 +1023,6 @@ sub xy_to_n {
           push @add_mult,             2;
           push @add_top_no_extra_pow, 0;
           push @add_log2_extras,      1;
-          push @add_is_block1,        1;
           $n -= 1;  # unduplicate leading diagonal
 
           ### past block 3,4 ...
@@ -1040,11 +1030,35 @@ sub xy_to_n {
           push @add_mult,             2;
           push @add_top_no_extra_pow, 0;
           push @add_log2_extras,      1;
-          push @add_is_block1,        1;
           $n -= 1;  # excluding block4 diagonal
         }
       }
     }
+
+  } elsif ($parts eq 'side') {
+    ### parts==side ...
+    if ($x < 0 || $y < 0) {
+      return undef;
+    }
+    if ($x <= 1 && $y <= 1) {
+      return $yxside_to_n[$y][$x];
+    }
+
+    if ($y > $x) {
+      ### second octant ...
+      ($x,$y) = ($y+1,$x+1);
+      $depth = -1;
+      $mirror = 1;
+      $log2_extras = 0;
+      $n -= 1;  # excluding diagonal
+
+      ### past block 1 ...
+      push @add_offset,           0;
+      push @add_mult,             1;
+      push @add_top_no_extra_pow, 0;
+      push @add_log2_extras,      1;
+    }
+
 
   } elsif ($parts eq '2') {
     ### parts==2 ...
@@ -1170,7 +1184,6 @@ sub xy_to_n {
             push @add_mult,             2;
             push @add_top_no_extra_pow, $top_no_extra_pow/2;
             push @add_log2_extras,      1;
-            push @add_is_block1,        0;
             $n -= 1;  # duplicated diagonal upper,lower
           }
 
@@ -1182,7 +1195,6 @@ sub xy_to_n {
             push @add_mult,             1;
             push @add_top_no_extra_pow, $top_no_extra_pow/2;
             push @add_log2_extras,      1;
-            push @add_is_block1,        0;
           } else {
             if ($x < $pow-1) {
               ### offset past lower, unduplicate diagonal, (not mirrored) ...
@@ -1190,7 +1202,6 @@ sub xy_to_n {
               push @add_mult, 1;
               push @add_top_no_extra_pow, 0;
               push @add_log2_extras, 0;
-              push @add_is_block1, 1;
               $n -= 1;  # duplicated diagonal upper,lower
             }
           }
@@ -1213,7 +1224,6 @@ sub xy_to_n {
             push @add_mult,             1;
             push @add_top_no_extra_pow, 0;
             push @add_log2_extras,      0;
-            push @add_is_block1,        1;
             $n -= 1;  # duplicated diagonal
           }
           ### offset past upper (not mirrored) ...
@@ -1221,7 +1231,6 @@ sub xy_to_n {
           push @add_mult,             1;
           push @add_top_no_extra_pow, ($log2_extras ? 0 : $pow);
           push @add_log2_extras,      1;
-          push @add_is_block1,        0;
           # if (! $log2_extras) {
           #   ### no log2_extras so N decrement ...
           #   $n -= 1;
@@ -1255,7 +1264,6 @@ sub xy_to_n {
   ### add_offset: join(',',@add_offset)
   ### add_mult:   join(',',@add_mult)
   ### assert: scalar(@add_offset) == scalar(@add_mult)
-  ### assert: scalar(@add_offset) == scalar(@add_is_block1)
   ### assert: scalar(@add_offset) == scalar(@add_log2_extras)
   ### assert: scalar(@add_offset) == scalar(@add_top_no_extra_pow)
 
@@ -1265,10 +1273,6 @@ sub xy_to_n {
     foreach my $i (0 .. $#add_offset) {
       my $d = $add_offset[$i] = $depth - $add_offset[$i];
 
-      # if ($add_is_block1[$i] && $d == $add_top_no_extra_pow[$i]) {
-      #   ### add exclude block1 ended pow2: "d=$d"
-      #   $add_mult[$i] = 0;
-      # }
       if ($d+1 == $add_top_no_extra_pow[$i]) {
         ### no top_extra, decrement applied: "d=$d"
         $n -= 1;
@@ -1278,7 +1282,7 @@ sub xy_to_n {
         $n -= 1;
       }
 
-      ### add: "depth=$add_offset[$i] is "._depth_to_octant_added([$add_offset[$i]],[1],$zero)." x $add_mult[$i]   is_block1=$add_is_block1[$i] log2_extras=$add_log2_extras[$i] top_no_extra_pow=$add_top_no_extra_pow[$i]"
+      ### add: "depth=$add_offset[$i] is "._depth_to_octant_added([$add_offset[$i]],[1],$zero)." x $add_mult[$i]   log2_extras=$add_log2_extras[$i] top_no_extra_pow=$add_top_no_extra_pow[$i]"
     }
 
     ### total add: _depth_to_octant_added ([@add_offset], [@add_mult], $zero)
@@ -1289,7 +1293,7 @@ sub xy_to_n {
   return $n;
 }
 
-no Smart::Comments;
+# no Smart::Comments;
 
 
 #------------------------------------------------------------------------------
@@ -1298,7 +1302,7 @@ no Smart::Comments;
 # not exact
 sub rect_to_n_range {
   my ($self, $x1,$y1, $x2,$y2) = @_;
-  ### SurroundOneEight rect_to_n_range(): "$x1,$y1  $x2,$y2"
+  ### OneOfEight rect_to_n_range(): "$x1,$y1  $x2,$y2"
 
   $x1 = round_nearest ($x1);
   $y1 = round_nearest ($y1);
@@ -1336,6 +1340,9 @@ sub rect_to_n_range {
   return (0, (64*$pow*$pow + 24*$exp + 17) / 9);
 }
 
+#------------------------------------------------------------------------------
+# tree
+
 sub tree_n_to_depth {
   my ($self, $n) = @_;
   ### tree_n_to_depth(): "$n"
@@ -1356,7 +1363,7 @@ sub tree_n_children {
   ### tree_n_children(): $n
 
   my ($x,$y) = $self->n_to_xy($n)
-    or return undef;
+    or return;
   ### $x
   ### $y
 
@@ -1694,6 +1701,10 @@ sub tree_depth_to_n {
   ### tree_depth_to_n(): "$depth  parts=$self->{'parts'}"
 
   $depth = int($depth);
+  if ($depth < 0) {
+    return undef;
+  }
+
   my $parts = $self->{'parts'};
   {
     my $initial = $tree_depth_to_n{$parts};
@@ -1702,9 +1713,6 @@ sub tree_depth_to_n {
       return $initial->[$depth];
     }
   }
-  # if ($depth <= 1) {
-  #   return $depth;
-  # }
 
   my ($pow,$exp) = round_down_pow
     ($depth + $tree_depth_to_n_extra_depth_pow{$parts},
@@ -1765,7 +1773,7 @@ sub tree_depth_to_n {
     push @pending, $depth+1, $depth;
     push @mult, 1, 1;
     # $exp == _log2_floor($depth+1)
-    $n -= $depth - $exp;
+    $n -= $depth + 1 + $exp;
   }
 
   while ($exp >= 0 && @pending) {
@@ -1824,7 +1832,7 @@ sub tree_depth_to_n {
           ### rem+1 == pow, increase powmult ...
           $powmult *= 2;    # oct(pow)+oct(rem+1) is 2*oct(pow)
         } elsif (@new_pending && $new_pending[-1] == $rem1) {
-          ### merge into previously pushed new_pending ...
+          ### merge into previously pushed new_pending[] ...
           # print "rem+1=$rem1 ",join(',',@new_pending),"\n";
           $new_mult[-1] += $mult;
         } else {
@@ -1839,6 +1847,7 @@ sub tree_depth_to_n {
       }
 
       # oct(pow) = (2*pow*pow + 3*exp + 7)/9 + pow/2
+      #          = ((4*pow+9)*pow + 6*exp + 14)/18
       #
       $oct_pow ||= ((4*$pow+9)*$pow + 6*$exp + 14)/18;
       $n += $oct_pow * $powmult;
@@ -1858,15 +1867,15 @@ sub tree_depth_to_n {
 #use Smart::Comments;
 
 # _depth_to_octant_added() returns the number of cells added at a given
-# $depth level in parts=octant.
-# Ie. tree_depth_to_n(depth+1) - tree_depth_to_n(depth).
+# $depth level in parts=octant.  This is the same as
+#     $added = tree_depth_to_n(depth+1) - tree_depth_to_n(depth)
 #
 # @$depth_aref is a list of depth values.
 # @$mult_aref is the multiple of oct(depth) desired for each @depth_aref.
 #
-# On input @$depth_aref must have $depth_aref->[0] as the highest depth.
+# On input @$depth_aref must have $depth_aref->[0] as the highest value.
 #
-# Within the code the depth list is mostly high to low and grown by one
+# Within the code the depth list is mostly high to low and growing by one
 # extra depth value at each $exp level.  But sometimes it grows a bit more
 # than that and sometimes the values are not high to low, and sometimes
 # there's duplication.
@@ -1971,7 +1980,7 @@ sub _depth_to_octant_added {
   return $added;
 }
 
-no Smart::Comments;
+# no Smart::Comments;
 
 sub _is_pow2 {
   my ($n) = @_;
@@ -1985,39 +1994,32 @@ sub _log2_floor {
   return $exp;
 }
 
-# sub _is_pow2_lt {
-#   my ($n, $limit) = @_;
-#   my ($pow,$exp) = round_down_pow ($n, 2);
-#   return ($n == $pow && $exp < $limit);
-# }
-
 1;
 __END__
 
-=for stopwords eg Ryde Math-PlanePath-Toothpick Nstart Nend
+=for stopwords eg Ryde Math-PlanePath-Toothpick Nstart Nend Applegate Automata Congressus Numerantium ie Octant octant octants Ie OEIS
 
 =head1 NAME
 
-Math::PlanePath::SurroundOneEight -- automaton growing to cells with one of eight neighbours
+Math::PlanePath::OneOfEight -- automaton growing to cells with one of eight neighbours
 
 =head1 SYNOPSIS
 
- use Math::PlanePath::SurroundOneEight;
- my $path = Math::PlanePath::SurroundOneEight->new;
+ use Math::PlanePath::OneOfEight;
+ my $path = Math::PlanePath::OneOfEight->new;
  my ($x, $y) = $path->n_to_xy (123);
 
 =head1 DESCRIPTION
 
-I<In progress ...>
-
 X<Applegate, David>X<Pol, Omar E.>X<Sloane, Neil>This a cellular automaton
-growing into cells which have just 1 of 8 neighbours already "on", as per
+growing into cells which have just 1 of 8 neighbours already "on" as per
+part 14 "Square Grid with Eight Neighbours" of
 
 =over
 
 David Applegate, Omar E. Pol, N.J.A. Sloane, "The Toothpick Sequence and
 Other Sequences from Cellular Automata", Congressus Numerantium, volume 206
-(2010), pages 157-191, part 14 "Square Grid with Eight Neighbours".
+(2010), pages 157-191.
 
 http://www.research.att.com/~njas/doc/tooth.pdf
 
@@ -2028,7 +2030,7 @@ the level.
 
 =cut
 
-# math-image --path=SurroundOneEight --output=numbers --all --size=75x16
+# math-image --path=OneOfEight --output=numbers --all --size=75x16
 
 =pod
 
@@ -2055,9 +2057,8 @@ the level.
 
 The start is N=0 at the origin X=0,Y=0.  Then each cell around it has just
 one neighbour (that first N=0 cell) and so all are turned on.  The rule is
-applied in a single atomic step, so the fact the new cells are adjacent
-doesn't matter.  When counting neighbours any other prospective new cells at
-a growth level don't count.
+applied in a single atomic step, so any adjacent prospective new cells don't
+count.
 
 At the next level only the diagonal cells X=+/-2,Y=+/-2 have a single
 neighbour, and so on.
@@ -2071,6 +2072,11 @@ neighbour, and so on.
                      6  7  8             6  7  8
                                        /         \
                                      11           12
+
+The children of a given node are numbered anti-clockwise relative to the
+position of the parent of that node.  So for example N=9 has it's parent
+south-west and points are numbered anti-clockwise around from there to give
+N=13 through N=17.
 
 =head2 Level Ranges
 
@@ -2103,12 +2109,12 @@ k=2 is 9/9 of the 3x3 at the origin.  Then for example k=2 7x7 square has
 =head2 One Quadrant
 
 Option C<parts =E<gt> 1> confines the pattern to the first quadrant.  This
-is a single copy of the repeating part in each of the four quadrants of the
+is a single copy of the part repeated in each of the four quadrants of the
 full pattern.
 
 =cut
 
-# math-image --path=SurroundOneEight,parts=1 --all --output=numbers --size=75x16
+# math-image --path=OneOfEight,parts=1 --all --output=numbers --size=75x16
 
 =pod
 
@@ -2140,7 +2146,7 @@ Option C<parts =E<gt> 'octant'> confines the pattern to the first octant
 
 =cut
 
-# math-image --path=SurroundOneEight,parts=octant --all --output=numbers --size=75x16
+# math-image --path=OneOfEight,parts=octant --all --output=numbers --size=75x16
 
 =pod
 
@@ -2165,9 +2171,9 @@ Option C<parts =E<gt> 'octant'> confines the pattern to the first octant
         +-------------------------------------------------
          X=0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
 
-The full pattern is symmetric on each size of the four diagonals.  This
-octant is one of those eight symmetric parts (inclusive of the diagonal,
-which would be shared if two octants are combined to make a quadrant).
+The full pattern is symmetric on each size of the four diagonals X=Y, X=-Y.
+This octant is one of those eight symmetric parts.  It includes the diagonal
+which is shared if two octants are combined to make a quadrant.
 
 The octant is self similar in blocks
 
@@ -2184,45 +2190,66 @@ The octant is self similar in blocks
           --      | lower --    |
         --  base  | depth+1 --  |
       --          | no pow2s  --|
-    ------------------------------
+    -----------------------------
 
-The "extend" is a direct copy of the "base" block.  The "upper" is the same
-as the "extend" but flipped vertically (and so numbered the opposite way
-too).
+"extend" is a direct copy of the "base" block and the "upper" likewise
+except flipped vertically.
 
 The "lower" block is the base pattern rotated by +90 degrees, and without
-the pow2 cells at X=3,7,15,etc,Y=1.  These absent cells are easier to see in
+the pow2 cells at Y=1 X=3,7,15,etc.  These absent cells are easier to see in
 a bigger picture of the pattern.
 
-The lower block is also one depth level ahead, so its N=45,46,47,48 is at
+The "lower" block is one depth level ahead.  It ends at N=45,46,47,48
 depth=14 whereas the corresponding N=62,63,64,65 in the "extend" is at
-depth=15.  Ie. the lower block ends one depth level sooner than the upper
-and extend.
+depth=15.
 
-The diagonal between the lower and upper looks as if it's a stair-step, but
-that's not so.  It's the same sort of diagonal as the X=Y leading diagonal
-of the whole octant.  Because the lower block is one depth level ahead of
-the upper the two have branches off the diagonal offset by 1 position.  For
-example the N=34,33,37 branch in the lower above corresponds to N=40,41,51
-in the upper.
+The diagonal between the lower and upper looks like a stair-step, but that's
+not so.  It's the same as the X=Y leading diagonal of the whole octant but
+because the lower block is one depth level ahead of the upper the branches
+off the diagonal are offset by 1 position.  For example N=34,33,37 branching
+off to the lower corresponds to N=40,41,51 branching into the upper.
 
-This offset on the upper/lower diagonal becomes easier to see in a bigger
-picture, and by chopping off one level of leaf nodes.  It might look at
-first as if the square side part comprising upper and lower is entirely
-different from the central symmetric square (per L</One Quadrant> above),
-but that's not so, it's just the branching off the diagonal offset by 1 in
-the lower part.
+This offset on the upper/lower diagonal becomes easier to see by chopping
+off one level of leaf nodes.
+
+=cut
+
+# math-image --text --path=OneOfEight,parts=octant --values=PlanePathCoord,planepath=\"OneOfEight,parts=octant\",coordinate_type=IsNonLeaf --size=50x40
+
+=pod
+
+                  * 
+                 *  
+                *   
+               *       octant with leaf nodes pruned
+              * *   
+             *   *  
+            *       
+           *        
+          * *       
+         *   *   *  
+        *     * *      <- upper,lower parts
+       *     * *          branch off lower is 1 level sooner
+      * *   *   *   
+     *   *       *  
+    *               
+   *                
+
+It may look at first as if the square side block comprising "upper" and
+"lower" is entirely different from the central symmetric square (of L</One
+Quadrant> above), but that's not so, it's just the offset of the branching
+from the diagonal.
 
 =head2 Three Mid
 
 Option C<parts =E<gt> "3mid"> is the "second corner sequence" of the
 toothpick paper above.  This is the part of the full pattern starting at a
-point X=2^k,Y=2^k in that pattern, but the three parts there extended
+point X=2^k,Y=2^k in that pattern, with the three parts there extended
 indefinitely.
 
 =cut
 
-# math-image --path=SurroundOneEight,parts=3mid --all --output=numbers --size=75x15
+# math-image --path=OneOfEight,parts=3mid --all --output=numbers --size=75x15
 
 =pod
 
@@ -2251,7 +2278,8 @@ The first quadrant XE<gt>=0,YE<gt>=0 is the same as in the full pattern, but
 the other quadrants are a "side" portion of the pattern.
 
 This pattern can be generated from the automaton rule by starting from N=0
-at X=0,Y=0 and then treating all points with XE<lt>0,YE<lt>0 as occupied.
+at X=0,Y=0 and then treating all points with XE<lt>0,YE<lt>0 as if already
+occupied.
 
                        ..       .. .. ..
                         9           8 ..
@@ -2266,12 +2294,12 @@ at X=0,Y=0 and then treating all points with XE<lt>0,YE<lt>0 as occupied.
 
 Option C<parts =E<gt> "3side"> is the "first corner sequence" of the
 toothpick paper above.  This is the part of the full pattern starting at a
-point X=2^k+1,Y=3*2^k-1, mirrored horizontally, and the three parts there
+point X=2^k+1,Y=3*2^k-1 and mirrored horizontally, and the three parts there
 extended indefinitely.
 
 =cut
 
-# math-image --path=SurroundOneEight,parts=3side --expression='i<=99?i:0' --output=numbers --size=120x25
+# math-image --path=OneOfEight,parts=3side --expression='i<=99?i:0' --output=numbers --size=120x25
 
 =pod
 
@@ -2298,12 +2326,12 @@ extended indefinitely.
        -7 -6 -4 -3 -2 -1 X=0 1  2  3  4  5  6  7  8
 
 The Y negative quadrant is rotated +90 degrees and is one depth level ahead
-of the other two, so its run 54,55,56 corresponds to 78,79,80 in the first
-quadrant.
+of the other two, so for example its run N=54,55,56 corresponds to
+N=78,79,80 in the first quadrant.
 
 This pattern can be generated from the automaton rule by starting from N=0
-at X=0,Y=0 and then treating all points with XE<lt>0,YE<lt>=0 as occupied.
-(Notice 3mid above is YE<lt>0 whereas here YE<lt>=0.)
+at X=0,Y=0 and then treating all points with XE<lt>0,YE<lt>=0 as already
+occupied.  Notice 3mid above is YE<lt>0 whereas here YE<lt>=0.
 
                            .. 8  7  6 ..
                                  3
@@ -2313,10 +2341,23 @@ at X=0,Y=0 and then treating all points with XE<lt>0,YE<lt>=0 as occupied.
     all "on"      *  *  *  |           9
                   *  *  *  |          ..
 
+The 3side pattern is the same as the 3mid but with the portion above the X=Y
+diagonal shifted up diagonally to X+1,Y+1 and therefore branching off the
+diagonal 1 depth level later.  On that basis the two C<tree_depth_to_n()>
+total cells are related by
+
+   N3side(depth) = (N3mid(depth) + N3mid(depth-1) + 1) / 2
+
+For example depth=4 begins at N=17 in 3side,
+
+   N3side(4) = 17
+   N3mid(4) = 22, N3mid(3) = 11 
+   (22 + 11 + 1)/2 = 17
+
 =head2 Three Growth
 
-The interest in the two "corner" sequences 3mid and 3side is that a base
-3mid can be doubled in size by adding one "3mid" and two "3side"s.
+The interest in the 3mid and 3side "corner" sequences is that a base 3mid
+can be doubled in size by adding one "3mid" and two "3side"s.
 
     +-------------+-------------+
     |             |             |       3mid doubled in size
@@ -2342,13 +2383,13 @@ See L<Math::PlanePath/FUNCTIONS> for behaviour common to all path classes.
 
 =over 4
 
-=item C<$path = Math::PlanePath::SurroundOneEight-E<gt>new ()>
+=item C<$path = Math::PlanePath::OneOfEight-E<gt>new ()>
 
-=item C<$path = Math::PlanePath::SurroundOneEight-E<gt>new (parts =E<gt> $str)>
+=item C<$path = Math::PlanePath::OneOfEight-E<gt>new (parts =E<gt> $str)>
 
-Create and return a new path object.  The C<parts> option can be
+Create and return a new path object.  The C<parts> option (a string) can be
 
-    "4"           full pattern
+    "4"           full pattern (the default)
     "1"           single quadrant
     "octant"      single octant wedge
     "3mid"        three quadrants, middle symmetric style
@@ -2366,7 +2407,7 @@ Return the children of C<$n>, or an empty list if C<$n> has no children
 (including when C<$n E<lt> 1>, ie. before the start of the path).  The way
 points are numbered means the children are always consecutive N values.
 
-The children are the new cells turned "on" adjacent to C<$n> in the next
+The children are the new cells turned "on" adjacent to C<$n> at the next
 depth level.  The possible number of children varies with the parts,
 
     parts        possible num children
@@ -2379,15 +2420,77 @@ depth level.  The possible number of children varies with the parts,
 
 For parts=4 there's 8 children at the initial N=0 and after that at most 5.
 
-1 child only occurs at the X=2^k,Y=2^k central diagonal of the full pattern
-and similar parts 1, octant and 3mid.  But in 3side there's no such corner
-and never a single child, only 2 or 3 children.
+1 child only occurs at X=2^k,Y=2^k of the central diagonal In parts=3side
+there's no such corner and never a single child, only 2 or 3 children.
 
-5 children occurs around the 1-child at X=2^k,Y=2^k of parts 4, 1, 3mid.  In
-an octant there's only 3 children around that point, being confined to on
-and below the X=Y diagonal.
+5 children occurs around the 1-child of X=2^k,Y=2^k in parts=4,1,3mid.  In
+an octant there's only 3 children around that point since that pattern
+doesn't go above the X=Y diagonal.
 
 =back
+
+=head1 FORMULAS
+
+=head2 Depth to N
+
+The first point is N=0 so C<tree_depth_to_n($depth)> is the total number of
+points up to and not including C<$depth>.  For the full pattern this
+total(depth) follows a recurrence
+
+    total(0)         = 0
+    total(pow)       = (16*pow^2 + 24*exp - 7) / 9
+    total(pow + rem) = total(pow) + 2*total(rem) + total(rem+1)
+                         - 8*floor(log2(rem+1)) + 1
+    where depth = pow + rem
+      with pow=2^k the biggest power-of-2 <= depth
+      and rem the remainder
+
+For parts=octant the equivalent total points is
+
+    oct(0)         = 0
+    oct(pow)       = (4*pow^2 + 9*pow + 6*exp + 14) / 18
+    oct(pow + rem) = oct(pow) + 2*oct(rem) + oct(rem+1)
+                       - floor(log2(rem+1)) - rem - 3
+
+The way this recurrence formula works can be seen from the self-similar
+pattern described in L</One Octant> above.
+
+    oct(pow)                # "base"
+    + oct(rem)              # "extend"
+    + oct(rem)              # "upper"
+    + oct(rem+1)            # "lower"
+    - floor(log2(rem+1))    # no pow2 points in lower
+    - rem                   # unduplicate diagonal upper/lower
+    - 3                     # unduplicate centre points
+
+The oct(rem)+oct(rem+1) of upper+lower parts would count their common
+diagonal twice, hence "-rem" being the length of that diagonal.  The
+"centre" point at X=pow,Y=pow is repeated by each of extend, upper, lower so
+"-2" to count just once, and the X=pow+1,Y=pow point is repeated by extend
+and upper, so "-1" to count it just once.
+
+The 2*total(rem)+total(rem+1) in the formula is the same recurrence as the
+toothpick pattern and the approach there can calculate it as a little set of
+pending depths and pow subtractions.  See
+L<Math::PlanePath::ToothpickTree/Depth to N>.
+
+The other patterns can be expressed as combinations of octants,
+
+    parts=4  total = 8*oct(n) - 4*n - 7
+    parts=1  total = 2*oct(n) - n
+    3mid  V2 total = 2*oct(n+1) + 4*oct(n)
+                       - 3n - 2*floor(log(n+1)) - 6
+    3side V1 total =   oct(n+1) + 3*oct(n) + 2*oct(n-1)
+                       - 3n - floor(log(n+1)) - floor(log(n)) - 4
+
+The set of depth offsets n,n+1,etc become initial depth values in the list
+for the recurrence reduction algorithm, with respective initial multipliers.
+
+From the V1,V2 formulas it can be seen that V2(n)+V2(n+1) gives the same
+combination of 1,3,2 octants as V1, and that therefore as noted in the
+Ndepth part of L</Three Side> above
+
+    V1(n) = (V2(n) + V2(n-1) + 1) / 2
 
 =head1 OEIS
 
@@ -2405,11 +2508,11 @@ Sequences as
       A151737   added cells
 
     parts=3mid
-      A170880   total cells "V2" (tree_depth_to_n())
+      A170880   total cells (tree_depth_to_n())
       A151728   added cells "v2"
 
     parts=3side
-      A170879   total cells "V1" (tree_depth_to_n())
+      A170879   total cells (tree_depth_to_n())
       A151747   added cells "v1"
 
 =head1 SEE ALSO

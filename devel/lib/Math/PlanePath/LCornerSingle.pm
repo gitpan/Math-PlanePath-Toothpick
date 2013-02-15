@@ -1,4 +1,4 @@
-# Copyright 2012 Kevin Ryde
+# Copyright 2012, 2013 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -45,7 +45,7 @@ use strict;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 2;
+$VERSION = 3;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 *_divrem = \&Math::PlanePath::_divrem;
@@ -330,7 +330,7 @@ sub tree_n_to_depth {
 # 6  97  +36     12+36=48=3*16
 # 7  133 +36
 # 8  225 +92 = 108 - 16         36+92=144
-# 
+#
 
 sub _n0_to_depthbits {
   my ($n) = @_;
@@ -375,7 +375,7 @@ sub _n0_to_depthbits {
   if ($all_ones) {
         $nwidth -= 2 ** ($#depthbits+2);
   }
-  
+
   ### return ...
   ### @depthbits
   ### $ndepth
@@ -547,7 +547,7 @@ http://user42.tuxfamily.org/math-planepath/index.html
 
 =head1 LICENSE
 
-Copyright 2012 Kevin Ryde
+Copyright 2012, 2013 Kevin Ryde
 
 This file is part of Math-PlanePath-Toothpick.
 

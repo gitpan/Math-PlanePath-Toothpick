@@ -21,22 +21,6 @@
 #
 # "45-deg" wedge
 # A160740 toothpick starting from 4 as cross
-# A160406 45deg diagonals wedge
-# A160407  added
-#         45deg image http://www.polprimos.com/imagenespub/poltp406.jpg
-# A170886 outside 45 from whole toothpick
-# A170887  added
-# A170888 outside 45 from half toothpick
-# A170889  added
-# A170890 outside 45 from half toothpick protuding from vertex
-# A170891  added
-# A170892 outside 45 from vertical endpoint at vertex
-# A170893  added
-# A170894 outside 45 from horizontal endpoint at vertex
-# A170895  added
-#
-# cf A160160,A160161,A162798 3-D toothpicks
-# cf A160408, A160409 toothpick pyramid 3-D
 #
 # cf A160172 T-tooth
 #
@@ -65,8 +49,6 @@
 #
 #    A160164 "I"-toothpick
 #    A187220 gull
-#
-#    A151567 another rule toothpicks
 
 # "Q"
 # A187210, A211001-A211003, A211010, A211020-A211024.
@@ -108,7 +90,7 @@ use strict;
 *min = \&Math::PlanePath::_min;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 2;
+$VERSION = 3;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -957,7 +939,7 @@ sub tree_depth_to_n {
   }
 
   ### return: $n
-  return $n
+  return $n;
 }
 
 
@@ -1090,7 +1072,7 @@ __END__
 #      -5  -4  -3  -2  -1  X=0  1   2   3   4   6
 
 
-=for stopwords eg Ryde Math-PlanePath-Toothpick Nstart Nend
+=for stopwords eg Ryde Math-PlanePath-Toothpick Applegate Automata Congressus Numerantium OEIS ie Ndepth Nquad
 
 =head1 NAME
 
@@ -1105,8 +1087,7 @@ Math::PlanePath::ToothpickTree -- toothpick pattern by growth levels
 =head1 DESCRIPTION
 
 X<Applegate, David>X<Pol, Omar E.>X<Sloane, Neil>This is the "toothpick"
-sequence which expands through the plane by non-overlapping line segments as
-per
+sequence expanding through the plane by non-overlapping line segments as per
 
 =over
 
@@ -1128,25 +1109,25 @@ level.
 =pod
 
     --49---                         --48---            5
-       |                               |   
+       |                               |
       44--38--  --37--  --36--  --35--43               4
-       |   |       |       |       |   |   
+       |   |       |       |       |   |
     --50- 27--17--26      25--16--24 -47---            3
-           |   |               |   |       
+           |   |               |   |
               12---8--- ---7--11                       2
-           |   |   |       |   |   |       
+           |   |   |       |   |   |
           28--18-- 4---1---3 -15--23                   1
-           |       |   |   |       |       
+           |       |   |   |       |
                        0                          <- Y=0
-           |       |   |   |       |       
+           |       |   |   |       |
           29--19-  5---2---6 -22--34                  -1
-           |   |   |       |   |   |       
+           |   |   |       |   |   |
               13---9--  --10--14                      -2
-           |   |   |       |   |   |       
+           |   |   |       |   |   |
     --51- 30--20--31      32--21--33 -54---           -3
-       |   |       |       |       |   |   
+       |   |       |       |       |   |
       45--39--- --40--- --41--- --42--46              -4
-       |                               |   
+       |                               |
     --52---                         --53---           -5
 
                        ^
@@ -1155,9 +1136,9 @@ level.
 Each X,Y point is the centre of a toothpick of length 2.  The first
 toothpick is vertical at the origin X=0,Y=0.
 
-A toothpick is added at each exposed end, and perpendicular to that end.  So
-N=1 and N=2 are added to the two ends of the initial N=0 toothpick.  Then
-points N=3,4,5,6 are added at the four ends of those.
+A toothpick is added at each exposed end, perpendicular to that end.  So N=1
+and N=2 are added to the two ends of the initial N=0 toothpick.  Then points
+N=3,4,5,6 are added at the four ends of those.
 
                                                ---8--- ---7---
                               |       |           |       |
@@ -1170,21 +1151,36 @@ points N=3,4,5,6 are added at the four ends of those.
                                                ---9--- --10---
 
 Toothpicks are not added if they would overlap, which means no toothpick at
-X=1,Y=0 where the ends of N=3 and N=6 meet , and likewise not at X=-1,Y=0
+X=1,Y=0 where the ends of N=3 and N=6 meet, and likewise not at X=-1,Y=0
 where N=4 and N=5 meet.
 
 The end of a new toothpick is allowed to touch an existing toothpick.  The
 first time this happens is N=15 where its left end touches N=3.
 
 The way each toothpick is perpendicular to the previous means that at even
-depth the toothpicks are vertical and odd depth they're horizontal.  The
-initial N=0 is depth=0.  It also means that "even" points X==Y mod 2 are
-vertical and "odd" points X!=Y mod 2 are horizontal.
+depth the toothpicks are vertical and odd depth they're horizontal (the
+initial N=0 is depth=0).  It also means the verticals are on "even" points
+X==Y mod 2 and the horizontals are on "odd" points X!=Y mod 2.
+
+The children at a given depth are numbered in the same order as their
+parents and anti-clockwise when there's two children.
+
+            |       |
+            4---1---3         points 3,4 numbered
+            |   |   |         anti-clockwise around
+                0
+                |
+
+Anti-clockwise is relative to the direction of the grandparent node.  So for
+example at N=1 its parent N=0 is downwards and the children of N=1 are then
+anti-clockwise around from there, hence to the right first for N=3 and to
+the left second for N=4.
 
 =head2 Cellular Automaton
 
 The toothpick rule can also be expressed as growing into a cell which has
-just one of two vertical or horizontal neighbours.
+just one of its two vertical or horizontal neighbours "ON", taking either
+vertical or horizontal neighbours according to X+Y odd or even.
 
           Point            Grow
     ------------------   ------------------------------------------
@@ -1193,9 +1189,34 @@ just one of two vertical or horizontal neighbours.
 
 For example X=0,Y=1 which is N=1 turns ON because it has a single vertical
 neighbour (the origin X=0,Y=0).  But the cell X=1,Y=0 never turns ON because
-initially its two vertical are OFF and then later at depth=3 they're both
-ON.  Only when there's exactly one of the two neighbours (in the relevant
-direction) does the cell turn ON.
+initially its two vertical neighbours are OFF and then later at depth=3
+they're both ON.  Only when there's exactly one of the two neighbours ON, in
+the relevant direction, does the cell turn ON.
+
+In the paper section 10 above this variation between odd and even points is
+reckoned as an automaton on a directed graph where even X,Y points have
+edges directed out horizontally and odd X,Y directed out vertically,
+
+         v          ^         v          ^         v
+    <- -2,2  ---> -1,2  <--- 0,2  --->  1,2 <---  2,2 --
+         ^          |         ^          |         ^
+         |          v         |          v         |
+    -> -2,1  <--- -1,1  ---> 0,1  <---  1,1 --->  2,1 <-
+         |          ^         |          ^         |
+         v          |         v          |         v
+    <- -2,0  ---> -1,0  <--- 0,0  --->  1,0 <---  2,0 ->
+         ^          |         ^          |         ^
+         |          v         |          v         |
+    -> -2,-1 <--- -1,-1 ---> 0,1  <--- 1,-1 ---> 2,-1 <-
+         |          ^         |          ^         |
+         v          |         v          |         v
+    <- -2,-2 ---> -1,-2 <--- 0,-2 ---> 1,-2 <--- 2,-2 ->
+         ^          v         ^          v         ^
+
+The rule is then that a cell turns ON if one it's two neighbours, by outward
+directed edge, is ON.  For example X=0,Y=0 starts as ON then the cell above
+X=0,Y=1 considers its two outward-direction neighbours 0,0 and 0,2, of which
+just 0,0 is ON and so 0,1 turns ON, etc.
 
 =head2 Replication
 
@@ -1218,11 +1239,11 @@ with an extra two toothpicks "A" and "B" in the middle.
     |   /        |    v       |
     +----------------------------
 
-Toothpick "A" is at an X=2^k,Y=2^k power-of-2 and toothpick "B" is above it.
-The B toothpick leading to blocks 2 and 3 means block 1 is one growth level
-ahead of blocks 2 and 3 in the replication.
+Toothpick "A" is at a power-of-2 position X=2^k,Y=2^k and toothpick "B" is
+above it.  The B toothpick leading to blocks 2 and 3 means block 1 is one
+growth level ahead of blocks 2 and 3.
 
-In the diagram above, in the first quadrant N=3,N=7 is block 0 and those two
+In the first quadrant of the diagram above, N=3,N=7 is block 0 and those two
 repeat as N=15,N=23 block 1, and N=24,N=35 block 2, and N=25,36 block 3.
 The rotation for block 1 can be seen.  The mirroring for block 3 can be seen
 at the next level (the diagram of the L</One Quadrant> form below extends to
@@ -1243,10 +1264,10 @@ Each "A" toothpick is at a power-of-2 position,
    X=2^k, Y=2^k
    depth = 4^k              counting from depth=0 at the origin
    N = (8*4^k + 1)/3        N=3,11,43, etc
-     = base4  222...22
+     = 222...223 in base4
 
-The N=222..223 in base4 arises from the replication described above.  Each
-replication is 4*N+2 of the previous, except for the initial N=0,1,2.
+N=222..223 in base4 arises from the replication described above.  Each
+replication is 4*N+2 of the previous, after the initial N=0,1,2.
 
 The "A" toothpick coming out of corner of block 2 is the only growth from a
 depth=4^k level.  The sides of blocks 1 and 2 and blocks 2 and 3 have all
@@ -1254,7 +1275,8 @@ endpoints meeting and so stop by the no-overlap rule, as can be seen for
 example N=35,36,37,38 across the top above.
 
 The number of points visited approaches 2/3 of the plane, as can be seen by
-the "A" points count as a fraction of the area (positive and negative),
+the points count up to "A" as a fraction of the area (in all four
+quadrants),
 
     N to "A"   (8*4^k + 1)/3      8/3 * 4^k
     -------- = -------------   -> --------- = 2/3
@@ -1305,7 +1327,9 @@ The "A" toothpick at X=2^k,Y=2^k is
 
 The repeating part starts from N=0 here so there's no initial centre
 toothpicks like the full pattern.  This means the repetition is a plain
-4*N+2 and hence a N="222..222" in base 4.
+4*N+2 and hence a N="222..222" in base 4.  It also means the depth is 2
+smaller, since N=0 depth=0 at X=1,Y=1 corresponds to depth=2 in the full
+pattern.
 
 =head2 Half Plane
 
@@ -1374,20 +1398,21 @@ three quadrants.
 
 The bottom right quarter is rotated by 90 degrees as per the "block 1"
 growth from a power-of-2 corner.  This means it's not the same as the bottom
-right of parts=4.  The two upper parts are the same as in parts=4 and
+right of parts=4.  But the two upper parts are the same as in parts=4 and
 parts=2.
 
 As noted by David Applegate and Omar Pol in OEIS A153006, the three parts
-replication means that N at the last level of a power-of-2 level is a
-triangular number, ie.
+replication means that N at the last level of a power-of-2 block is a
+triangular number,
 
     depth=2^k-1
-    N(depth) = (2^k-1)*2^k/2 = triangular number depth*(depth+1)/2
+    N(depth) = (2^k-1)*2^k/2
+             = triangular number depth*(depth+1)/2
     at X=(depth-1)/2, Y=-(depth+1)/2
 
-For depth=2^3-1=7 begins at N=7*8/2=28 and is at the lower right corner
-X=(7-1)/2=3, Y=-(7+1)/2=-4.  If the depth is not such a 2^k-1 then the
-Ndepth start of the level is less than the triangular depth*(depth+1)/2.
+For example depth=2^3-1=7 begins at N=7*8/2=28 and is at the lower right
+corner X=(7-1)/2=3, Y=-(7+1)/2=-4.  If the depth is not such a 2^k-1 then
+N(depth) is less than the triangular depth*(depth+1)/2.
 
 =head1 FUNCTIONS
 
@@ -1443,6 +1468,10 @@ The first N at given depth is given by the formulas in the paper by
 Applegate, Pol and Sloane above.  The first N is the total count of
 toothpicks in the preceding levels.
 
+It's convenient to calculate in terms of Nquad points within a single
+quadrant, but with the depth always numbered in the style of parts=4 (not
+the 1 or 2 offset of parts=2 or parts=1).
+
     depth = pow + rem
         where pow=2^k and 0 <= rem < 2^k
 
@@ -1456,9 +1485,8 @@ toothpicks in the preceding levels.
     parts=3   Ndepth = 3*Nquad(depth+1) + 2
     parts=4   Ndepth = 4*Nquad(depth) + 3
 
-Nquad is the total points of a single quadrant with depth numbered in the
-style of parts=4.  For example depth=8 gives Nquad=(4^3-4)/6=10 which is the
-N at X=4,Y=4.
+For example depth=8 gives Nquad=(4^3-4)/6=10 which is the N at X=4,Y=4 of
+parts=1.
 
 Ndepth is then the Nquad with depth adjusted for whether the respective
 parts=1,2,3,4 begin with depth=0 at the origin or 1 or 2, plus the initial
@@ -1467,31 +1495,37 @@ parts=1,2,3,4 begin with depth=0 at the origin or 1 or 2, plus the initial
 The (4^k-4)/6 part is the total points in a 2*depth x 2*depth block, similar
 to L</Level Ranges> above but a single quadrant.  It's a value "222..22" in
 base-4, with k-1 many "2"s.  For example depth=8=2^3 has k=3 so k-1=2 many
-"2"s for value "22" base-4 is 10.
+"2"s for value "22" in base-4, which is 10.
 
 The breakdown of depth to Ndepth(rem+1) + 2*Ndepth(rem) is the important
-part of the formula.  It knocks out the high bit of depth and spreads to an
-adjacent pair rem+1,rem.  This can be handled by keeping a list of pending
-depth values desired and knocking them down with the biggest necessary
-pow=2^k, then reduce to pow=2^(k-1), etc.
+part of the formula.  It knocks out the high bit of depth and spreads the
+remainder to an adjacent pair rem+1,rem.  This can be handled by keeping a
+list of pending depth values desired and knocking them down with a pow=2^k,
+then repeat with pow=2^(k-1), etc.
 
-Because rem+1,rem are adjacent successive reductions make a list like
-d+2,d+1,d then d+3,d+2,d+1,d etc.  But when the list crosses a 2^k then some
-are reduced and others remain.  When that happens the list is no longer
-successive values, only mostly so.  When breaking to rem+1,rem it's enough
-to check whether rem+1 is equal to the "rem" from the previous breakdown and
-if so coalesce with that pending entry.
+rem+1,rem are adjacent so successive reductions make a list growing by one further value each time, like
+
+    d+1,d
+    d+2,d+1,d
+    d+3,d+2,d+1,d
+
+But when the list crosses a 2^k boundary then some are reduced and others
+remain.  When that happens the list is no longer successive values, only
+mostly so.  When accumulating rem+1 and rem it's enough to check whether the
+current rem+1 is equal to the "rem" of the previous breakdown and if so
+coalesce with that previously entry.
 
 The factor of 2 in 2*Ndepth(rem) can be handled by keeping a desired
-multiplier with each pending depth.  Ndepth(rem+1) copies the current
+multiplier with each pending depth.  Ndepth(rem+1) keeps the current
 multiplier, and 2*Ndepth(rem) doubles the current.  When coalescing with a
-previous entry then add to its multiplier.
+previous entry then add to its multiplier.  Those additions mean the
+multipliers are not powers-of-2.
 
-If the pending list is a list of successive integers then the rem+1,rem
-breakdown and coalesce increases that list by just one value, keeping the
+If the pending list is a list of successive integers then rem+1,rem
+breakdown and coalescing increases that list by just one value, keeping the
 list to log2(depth) many entries (the number of bits in depth).  But as
-noted above that's not so when the list crosses a 2^k boundary.  It's then
-behaves like two lists and each grow by one entry.  But in any case the list
+noted above that's not so when the list crosses a 2^k boundary.  It then
+behaves like two lists and each grow by one entry.  In any case the list
 doesn't become huge.
 
 =head2 N to Depth
@@ -1518,9 +1552,9 @@ Sequences as
       A139253   total cells which are primes
 
       A147614   grid points covered at given depth
-                 (counting toothpick endpoints too)
+                 (including toothpick endpoints)
 
-      A139252   line segments at given depth
+      A139252   line segments at given depth,
                  coalescing touching ends horiz or vert
       A139560   added segments, net of any new joins
 
@@ -1561,6 +1595,7 @@ Drawings by Omar Pol
 
 L<Math::PlanePath>,
 L<Math::PlanePath::ToothpickReplicate>,
+L<Math::PlanePath::LCornerTree>,
 L<Math::PlanePath::UlamWarburton>
 
 =head1 HOME PAGE

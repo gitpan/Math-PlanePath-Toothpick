@@ -1,4 +1,4 @@
-# Copyright 2012 Kevin Ryde
+# Copyright 2012, 2013 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -25,7 +25,7 @@
 #
 # A161206 V-toothpick 120deg
 #
-# E-toothpick 
+# E-toothpick
 #    A161328 total cells at level
 #    A161329 cells added at level
 # E-toothpick snowflake
@@ -92,31 +92,31 @@
 #         / \   / \
 #        /   \ /   \
 
-#                          
-#        \    /       \   /  
-#         \  /         \ /   
+#
+#        \    /       \   /
+#         \  /         \ /
 #      ----10           9----
-#            \   / \   /     
-#             \ /   \ /      
-#          ----4     3----      
-#    \     \    \   /    /    /  
-#     \     \    \ /    /    /   
+#            \   / \   /
+#             \ /   \ /
+#          ----4     3----
+#    \     \    \   /    /    /
+#     \     \    \ /    /    /
 #  ----11----5----1----2----8----
-#     /     /    / \    \    \   
-#    /     /    /   \    \    \  
-#          ----6     7----      
-#             / \   / \     
-#            /   \ /   \   
+#     /     /    / \    \    \
+#    /     /    /   \    \    \
+#          ----6     7----
+#             / \   / \
+#            /   \ /   \
 #      ----12           13----
 #         /  \         /  \
 #        /    \       /    \
 
-#                            
+#
 #                         \    /
 #                          \  /
 #         16                15----
-#          \    /       \   /  
-#           \  /         \ /   
+#          \    /       \   /
+#           \  /         \ /
 #        ----10           9----23
 #              \   / \   /       \   \   /
 #               \ /   \ /             \ /
@@ -129,7 +129,7 @@
 #            ----6     7----          20----
 #               / \   / \             / \
 #              /   \ /   \           /   \
-#        ----12           13----    
+#        ----12           13----
 #           /  \         /  \       /
 #          /    \       /    \     /
 #        18                  19---*----
@@ -143,60 +143,60 @@
 #
 #
 #
-#                 
+#
 #                                           8
 #                                           |
 #                                           |
 #                                          \|/
 #                                   8       7       8
 #                                     \     |     /
-#                                       7   |   7    
-#                                     /   \ | /   \  
+#                                       7   |   7
+#                                     /   \ | /   \
 #                                   8       6       8
-#                                           |    
+#                                           |
 #                       8                   |                   8
 #                       |                  \|/                  |
-#                   8   |                   5               8   |    
-#                     \ |/                  |                 \ |/   
+#                   8   |                   5               8   |
+#                     \ |/                  |                 \ |/
 #               8       7               5   |   5               7       8
-#                 \ |   |                 \ | /                 |   | /  
-#                   7   |                   4                   |   7    
+#                 \ |   |                 \ | /                 |   | /
+#                   7   |                   4                   |   7
 #                  /  \ |                   |                   | /   \
 #                8      6       5           |           5       6       8
-#                      /  \ |   |          \|/          |   | /  \     
-#                           5   |           3           |   5          
-#                         /   \ |           |           | /   \        
-#                       6       4           |           4       6      
-#                              /  \ |      \|/      | /  \             
-#                                   3       2       3                  
-#                                  /  \ |   |   | /  \                 
-#                                       2   |   2                     
-#                                  \  /   \ | /  \   /                
-#                                   3       1       3                 
-#                                 / |               | \               
-#                       6       4   |               |   4       6     
-#                         \   /     |               |     \   /       
-#                           5       4               4       5            
-#                         /        /| \  /     \  / |\        \  /       
+#                      /  \ |   |          \|/          |   | /  \
+#                           5   |           3           |   5
+#                         /   \ |           |           | /   \
+#                       6       4           |           4       6
+#                              /  \ |      \|/      | /  \
+#                                   3       2       3
+#                                  /  \ |   |   | /  \
+#                                       2   |   2
+#                                  \  /   \ | /  \   /
+#                                   3       1       3
+#                                 / |               | \
+#                       6       4   |               |   4       6
+#                         \   /     |               |     \   /
+#                           5       4               4       5
+#                         /        /| \  /     \  / |\        \  /
 #               8       6           |   5       5   |           6       8
-#                 \   / |           |   |\     /|   |           | \   /  
-#                   7   |           5               5           |   7    
-#                 /     |          /|\             /|\          |     \  
+#                 \   / |           |   |\     /|   |           | \   /
+#                   7   |           5               5           |   7
+#                 /     |          /|\             /|\          |     \
 #               8       7           |               |           7       8
-#                                   |               |                    
-#                                   6               6                 
-#                              \  / | \  /     \  / | \  /            
-#                               7   |   7       7   |   7             
-#                              /|   |   |\     /|   |   |\            
-#                                   7               7                 
-#                                  /|\             /|\                
-#                                   |               |                 
-#                                   |               |                 
-#                                   8               8                 
+#                                   |               |
+#                                   6               6
+#                              \  / | \  /     \  / | \  /
+#                               7   |   7       7   |   7
+#                              /|   |   |\     /|   |   |\
+#                                   7               7
+#                                  /|\             /|\
+#                                   |               |
+#                                   |               |
+#                                   8               8
 
 
 
-package Math::PlanePath::EToothpickTree;             
+package Math::PlanePath::EToothpickTree;
 use 5.004;
 use strict;
 use Carp;
@@ -204,7 +204,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 2;
+$VERSION = 3;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -248,7 +248,7 @@ sub new {
 
   if ($self->{'shape'} eq 'Y' && $self->{'start'} eq 'snowflake') {
     $self->{'start'} = 'right';
-  }    
+  }
 
   if ($self->{'shape'} eq 'E') {
     $self->{'rotate_list'} = [ -1, 0, 1 ];
@@ -662,34 +662,34 @@ non-overlapping line segments (toothpicks).
 
 =pod
 
-                                
-                                
-                                
-               \   / \   /      
-                \ /   \ /       
-                 4     3----    
-  \   /           \   /    /    
-   \ /             \ /    /     
-    1----           1----2----  
-                          \     
-                           \    
-                                
-                                
-                                
-        \   /       \   /          
-         \ /         \ /           
-     -----8           7----        
-     \     \   / \   /             
-      \     \ /   \ /              
-  -----9-----4     3----           
-      /       \   /    /    /      
-     /         \ /    /    /       
-                1----2----6----    
-                      \    \       
-                       \    \      
-                        5----      
-                       / \         
-                      /   \        
+
+
+
+               \   / \   /
+                \ /   \ /
+                 4     3----
+  \   /           \   /    /
+   \ /             \ /    /
+    1----           1----2----
+                          \
+                           \
+
+
+
+        \   /       \   /
+         \ /         \ /
+     -----8           7----
+     \     \   / \   /
+      \     \ /   \ /
+  -----9-----4     3----
+      /       \   /    /    /
+     /         \ /    /    /
+                1----2----6----
+                      \    \
+                       \    \
+                        5----
+                       / \
+                      /   \
 
 
 =cut
@@ -742,7 +742,7 @@ Create and return a new path object.
 # # are numbered means when there's two children they're consecutive N values.
 #
 # =item C<$num = $path-E<gt>tree_n_num_children($n)>
-# 
+#
 # Return the number of children of C<$n>, or return C<undef> if C<$nE<lt>1>
 # (ie. before the start of the path).
 #
@@ -764,7 +764,7 @@ http://user42.tuxfamily.org/math-planepath/index.html
 
 =head1 LICENSE
 
-Copyright 2012 Kevin Ryde
+Copyright 2012, 2013 Kevin Ryde
 
 This file is part of Math-PlanePath-Toothpick.
 

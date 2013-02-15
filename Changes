@@ -17,6 +17,9 @@ with Math-PlanePath-Toothpick.  If not, see <http://www.gnu.org/licenses/>.
 
 
 
+Version 3, February 2013
+    - new OneOfEight
+
 Version 2, January 2013
     - new tree_num_children_maximum()
 

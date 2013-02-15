@@ -29,12 +29,12 @@ MyTestHelpers::nowarnings();
 # uncomment this to run the ### lines
 #use Smart::Comments;
 
-require Math::PlanePath::SurroundOneEight;
-require Math::PlanePath::SurroundOneEightByCells;
-require Math::PlanePath::SquareSpiral;
-require Math::PlanePath::Corner;
+require Math::PlanePath::OneOfEight;
+require Math::PlanePath::OneOfEightByCells;
 
-my $sq = Math::PlanePath::Corner->new;
+require Math::PlanePath::SquareSpiral;
+my $sq = Math::PlanePath::SquareSpiral->new;
+
 
 #------------------------------------------------------------------------------
 # n_to_xy()
@@ -48,9 +48,9 @@ my $report = sub {
   }
 };
 
-foreach my $parts ('3side', '3mid', '1', '4', 'octant') {
-  my $path = Math::PlanePath::SurroundOneEight->new (parts => $parts);
-  my $cells = Math::PlanePath::SurroundOneEightByCells->new (parts => $parts);
+foreach my $parts ('3side', 'side', '3mid', '1', '4', 'octant') {
+  my $path = Math::PlanePath::OneOfEight->new (parts => $parts);
+  my $cells = Math::PlanePath::OneOfEightByCells->new (parts => $parts);
 
   my $n = $path->n_start;
   my $sqn = $sq->n_start;
@@ -62,7 +62,7 @@ foreach my $parts ('3side', '3mid', '1', '4', 'octant') {
     {
       my $cells_n_depth = $cells->tree_depth_to_n($depth);
       unless ($n_depth == $cells_n_depth) {
-        &$report("tree_depth_to_n($depth) $n_depth cf cells $n_depth");
+        &$report("parts=$parts tree_depth_to_n($depth) $n_depth cf cells $n_depth");
       }
     }
     for ( ; $n <= $n_depth_end; $n++) {
@@ -70,13 +70,13 @@ foreach my $parts ('3side', '3mid', '1', '4', 'octant') {
         my ($x,$y) = $path->n_to_xy($n);
         my ($cx,$cy) = $cells->n_to_xy($n);
         unless (equal($x,$cx) && equal($y,$cy)) {
-          &$report("n_to_xy($n) depth=$depth got $x,$y cf cells $cx,$cy");
+          &$report("parts=$parts n_to_xy($n) depth=$depth got $x,$y cf cells $cx,$cy");
         }
       }
       {
         my $got_depth = $path->tree_n_to_depth($n);
         unless (equal($got_depth, $depth)) {
-          &$report("tree_n_to_depth($n) got $got_depth want $depth");
+          &$report("parts=$parts tree_n_to_depth($n) got $got_depth want $depth");
         }
       }
     }
@@ -86,7 +86,7 @@ foreach my $parts ('3side', '3mid', '1', '4', 'octant') {
       my $n = $path->xy_to_n($x,$y);
       my $cn = $cells->xy_to_n($x,$y);
       unless (equal($n,$cn)) {
-        &$report("xy_to_n($x,$y) got ",$n," cf cells ",$cn);
+        &$report("parts=$parts xy_to_n($x,$y) got ",$n," cf cells ",$cn);
       }
       last if abs($x) > $sq_limit && abs($y) > $sq_limit;
     }

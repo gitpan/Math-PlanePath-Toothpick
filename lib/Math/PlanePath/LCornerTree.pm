@@ -23,7 +23,7 @@ use strict;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 2;
+$VERSION = 3;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 *_divrem = \&Math::PlanePath::_divrem;
@@ -393,7 +393,7 @@ sub _n0_to_depthbits {
 }
 
 # ENHANCE-ME: step by the bits, not by X,Y
-# ENHANCE-ME: tree_n_to_depth() by probe
+# ENHANCE-ME: tree_n_to_depth() by probe?
 my @surround_x = (1, 0, -1, 0, 1, -1, 1, -1);
 my @surround_y = (0, 1, 0, -1, 1, 1, -1, -1);
 sub tree_n_children {
@@ -542,7 +542,7 @@ __END__
 #  3  2  4  9
 #  0  1  7  8
 
-=for stopwords eg Ryde Math-PlanePath-Toothpick Ulam Warburton Nstart OEIS ie
+=for stopwords eg Ryde Math-PlanePath-Toothpick Ulam Warburton Ulam-Warburton Nstart OEIS ie
 
 =head1 NAME
 
@@ -725,7 +725,7 @@ left similar to the way the tree grows from a power-of-2 corner X=2^k,Y=2^k.
 
 Taking just the non-leaf nodes gives the pattern of the Ulam-Warburton
 cellular automaton, oriented as per L<Math::PlanePath::UlamWarburtonQuarter>
-and using 2x2 blocks.
+and using 2x2 blocks for each cell.
 
 =cut
 
@@ -753,8 +753,8 @@ and using 2x2 blocks.
      **  **  **  **  
     *
 
-parts=E<gt>4 gives the pattern of L<Math::PlanePath::UlamWarburton>, turned
-45 degrees and again in 2x2 blocks.
+parts=E<gt>4 gives the pattern of L<Math::PlanePath::UlamWarburton> but
+turned 45 degrees and again in 2x2 blocks.
 
 =pod
 
@@ -781,9 +781,10 @@ Create and return a new path object.  C<parts> can be 1, 2, 3 or 4.
 Return the children of C<$n>, or an empty list if C<$n> has no children
 (including when C<$n E<lt> 0>, ie. before the start of the path).
 
-X<3-tree>There are either 0 or 3 children.  Such a tree is sometimes called
-a "3-tree".  The children of a corner C<$n> are the three cells adjacent to
-it which turn to "on" at the next depth.  A non-corner has no children.
+X<3-tree>Each point has either 0 or 3 children.  Such a tree is sometimes
+called a "3-tree".  The children of a corner C<$n> are the three cells
+adjacent to it which turn to "on" at the next depth.  A non-corner has no
+children.
 
 =back
 
@@ -826,7 +827,8 @@ Drawings by Omar Pol
 
 L<Math::PlanePath>,
 L<Math::PlanePath::LCornerReplicate>,
-L<Math::PlanePath::UlamWarburton>
+L<Math::PlanePath::UlamWarburton>,
+L<Math::PlanePath::ToothpickTree>
 
 =head1 HOME PAGE
 

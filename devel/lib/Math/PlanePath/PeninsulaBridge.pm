@@ -1,4 +1,4 @@
-# Copyright 2012 Kevin Ryde
+# Copyright 2012, 2013 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -79,7 +79,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 2;
+$VERSION = 3;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -269,7 +269,7 @@ sub _xy_is_bridge {
       } elsif ($count == 2) {
         unless (($j - $last_j + 2) % 8 == 0 || ($j - $last_j - 2) % 8 == 0) {
           ### not consecutive vertices ...
-          
+
           return 0;
         }
       } elsif ($count >= 3) {

@@ -1,4 +1,4 @@
-# Copyright 2012 Kevin Ryde
+# Copyright 2012, 2013 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -34,7 +34,7 @@ use strict;
 *min = \&Math::PlanePath::_min;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 2;
+$VERSION = 3;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -455,7 +455,7 @@ sub tree_n_to_depth {
 1;
 __END__
 
-=for stopwords eg Ryde Math-PlanePath-Toothpick Nstart Nend
+=for stopwords eg Ryde Math-PlanePath-Toothpick OEIS
 
 =head1 NAME
 
@@ -520,7 +520,7 @@ http://user42.tuxfamily.org/math-planepath/index.html
 
 =head1 LICENSE
 
-Copyright 2012 Kevin Ryde
+Copyright 2012, 2013 Kevin Ryde
 
 This file is part of Math-PlanePath-Toothpick.
 

@@ -16,11 +16,11 @@
 # with Math-PlanePath-Toothpick.  If not, see <http://www.gnu.org/licenses/>.
 
 
-# Tie::CArray
-# Tie::Array::Pack  with pack()
-# Tie::Array::Pack
+# two-of-eight
+# A151731, A151732, A151733, A151734
 
-package Math::PlanePath::SurroundOneEightByCells;
+
+package Math::PlanePath::TwoOfEightByCells;
 use 5.004;
 use strict;
 use Carp;
@@ -28,7 +28,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 2;
+$VERSION = 3;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -46,116 +46,37 @@ use Math::PlanePath::SquareSpiral;
 use constant n_start => 0;
 
 use constant parameter_info_array =>
-  [ { name            => 'parts',
-      share_key       => 'parts_surroundoneeight',
-      display         => 'Parts',
-      type            => 'enum',
-      default         => 4,
-      choices         => ['4','1','octant','3mid','3side','side'],
-      description     => 'Which parts of the plane to fill.',
-    },
-    { name      => 'start',
+  [ { name      => 'start',
       share_key => 'start_upstarplus',
       display   => 'Start',
       type      => 'enum',
-      default   => 'one',
-      choices   => ['one','two','three','four'],
+      default   => 'two',
+      choices   => ['two','three','four'],
     },
   ];
-use constant class_x_negative => 1;
-use constant class_y_negative => 1;
-{
-  my %x_negative = (4       => 1,
-                    1       => 0,
-                    octant  => 0,
-                    '3mid'  => 1,
-                    '3side' => 1,
-                    side    => 0,
-                   );
-  sub x_negative {
-    my ($self) = @_;
-    return $x_negative{$self->{'parts'}};
-  }
-}
-{
-  my %x_minimum = (4       => undef,
-                   1       => 0,
-                   octant  => undef,
-                   '3side' => undef,
-                   '3mid'  => undef,
-                   side    => 0,
-                  );
-  sub x_minimum {
-    my ($self) = @_;
-    return $x_minimum{$self->{'parts'}};
-  }
-}
-{
-  my %y_negative = (4       => 1,
-                    1       => 0,
-                    octant  => 0,
-                    '3mid'  => 1,
-                    '3side' => 1,
-                    side    => 0,
-                   );
-  sub y_negative {
-    my ($self) = @_;
-    return $y_negative{$self->{'parts'}};
-  }
-}
-{
-  my %y_minimum = (4       => undef,
-                   1       => 0,
-                    octant => 0,
-                   '3mid'  => undef,
-                   '3side' => undef,
-                   side    => 1,
-                  );
-  sub y_minimum {
-    my ($self) = @_;
-    return $y_minimum{$self->{'parts'}};
-  }
-}
+
 
 sub new {
   my $self = shift->SUPER::new(@_);
   $self->{'sq'} = Math::PlanePath::SquareSpiral->new (n_start => 0);
 
-  my $parts = ($self->{'parts'} ||= '4');
-  my $start = ($self->{'start'} ||= 'one');
+  my $start = ($self->{'start'} ||= 'two');
   my @n_to_x;
   my @n_to_y;
-  if ($parts eq 'Xside') {
-    @n_to_x = (0, 1);
-    @n_to_y = (1, 1);
-    $self->{'endpoints_dir'} = [ 4, 4 ];
-  } elsif ($parts eq '3mid') {
+  if ($start eq 'one') {
     @n_to_x = (0);
     @n_to_y = (0);
-    $self->{'endpoints_dir'} = [ 2 ];  # for numbering
-  } elsif ($parts eq '3side') {
-    @n_to_x = (0);
-    @n_to_y = (0);
-    $self->{'endpoints_dir'} = [ 2 ];  # for numbering
+  } elsif ($start eq 'two') {
+    @n_to_x = (0, -1);
+    @n_to_y = (0, 0);
+  } elsif ($start eq 'three') {
+    @n_to_x = (0, -1, -1);
+    @n_to_y = (0, 0, -1);
+  } elsif ($start eq 'four') {
+    @n_to_x = (0, -1, -1, 0);
+    @n_to_y = (0, 0, -1, -1);
   } else {
-    @n_to_x = (0);
-    @n_to_y = (0);
-    $self->{'endpoints_dir'} = [ 4 ];
- 
- # } elsif ($start eq 'two') {
- #    @n_to_x = (0, -1);
- #    @n_to_y = (0, 0);
- #    $self->{'endpoints_dir'} = [ 0, 4 ];
- #  } elsif ($start eq 'three') {
- #    @n_to_x = (0, -1, -1);
- #    @n_to_y = (0, 0, -1);
- #    $self->{'endpoints_dir'} = [ 0, 6, 2 ];
- #  } elsif ($start eq 'four') {
- #    @n_to_x = (0, -1, -1, 0);
- #    @n_to_y = (0, 0, -1, -1);
- #    $self->{'endpoints_dir'} = [ 0, 2, 4, 6 ];
- #  } else {
-    # croak "Unrecognised parts: ",$parts;
+    croak "Unrecognised start: ",$start;
   }
   $self->{'n_to_x'} = \@n_to_x;
   $self->{'n_to_y'} = \@n_to_y;
@@ -184,10 +105,8 @@ sub _extend {
   my ($self) = @_;
   ### _extend() ...
 
-  my $parts = $self->{'parts'};
   my $sq = $self->{'sq'};
   my $endpoints = $self->{'endpoints'};
-  my $endpoints_dir = $self->{'endpoints_dir'};
   my $xy_to_n = $self->{'xy_to_n'};
   my $n_to_x = $self->{'n_to_x'};
   my $n_to_y = $self->{'n_to_y'};
@@ -196,34 +115,21 @@ sub _extend {
   ### endpoints count: scalar(@$endpoints)
 
   my @new_endpoints;
-  my @new_endpoints_dir;
   my @new_x;
   my @new_y;
 
-  foreach my $endpoint_sn (@$endpoints) {
-    my $dir = shift @$endpoints_dir;
-    my ($x,$y) = $sq->n_to_xy($endpoint_sn);
+  foreach my $n (0 .. $#$n_to_x) {
+    my $x = $n_to_x->[$n];
+    my $y = $n_to_y->[$n];
     ### endpoint: "$x,$y"
 
   SURROUND: foreach my $i (0 .. $#surround_dx) {
-      my $dir = ($dir+4 + $i) & 7;
-      my $x = $x + $surround_dx[$dir];
-      my $y = $y + $surround_dy[$dir];
-      if ($parts eq '1') {
-        if ($x < 0 || $y < 0) { next; }
-      }
-      # if ($parts eq 'side') {
-      #   if ($x < 0 || $y < 0) { next; }
-      # }
-      # } elsif ($parts eq '3side') {
-      #   if ($x < 0 && $y < 0) { next; }
-      # } elsif ($parts eq 'octant') {
-      #   if ($x < 0 || $y < 0 || $y > $x) { next; }
-
+      my $x = $x + $surround_dx[$i];
+      my $y = $y + $surround_dy[$i];
       ### consider: "$x,$y"
       my $sn = $sq->xy_to_n($x,$y);
       if (defined $xy_to_n->[$sn]) {
-        ### already occupied ...
+        ### occupied ...
         next;
       }
 
@@ -231,61 +137,43 @@ sub _extend {
       foreach my $j (0 .. $#surround_dx) {
         my $x = $x + $surround_dx[$j];
         my $y = $y + $surround_dy[$j];
-        if ($parts eq '1') {
-          # if ($x < -1 || $y < -1   # treating rest as occupied
-          #     || ($y > 2 && $x < 0)
-          #     || ($x > 2 && $y < 0)) { next SURROUND; }
-          $x = abs($x);    # treating as quarter of parts=4
-          $y = abs($y);
-        }
-        if ($parts eq 'octant') {
-          if ($x < 0 || $y < ($x >= 3 ? 0 : -1) || $y > $x+2) { next SURROUND; }
-        }
-        if ($parts eq '3mid') {
-          if ($x < 0 && $y < 0) { next SURROUND; }
-        }
-        if ($parts eq '3side') {
-          if ($x < 0 && $y <= 0) { next SURROUND; }
-        }
-        if ($parts eq 'side') {
-          if ($x <= ($y >= 4 ? 0 : -1) || $y < ($x >= 3 ? 0 : -1)) { next SURROUND; }
-          # if ($x < -2 || $y < -2   # treating rest as occupied
-          #     || ($y > 3 && $x <= 0)
-          #     || ($y > 1 && $x < 0)
-          #     || ($x > 2 && $y < 0)) { next SURROUND; }
-          # if ($x < 0 || $y < 0) { next SURROUND; }
-        }
         my $sn = $sq->xy_to_n($x,$y);
-        ### count: "$x,$y at sn=$sn is ".($xy_to_n->[$sn] // 'undef')
+        ### count: "$x,$y at sn=$sn is n=".($xy_to_n->[$sn] // 'undef')
         if (defined($xy_to_n->[$sn])) {
-          if ($count++) {
-            ### two or more surround ...
+          if (++$count > 2) {
+            ### more than two surround ...
             next SURROUND;
           }
         }
       }
-      push @new_endpoints, $sn;
-      push @new_endpoints_dir, $dir;
-      push @new_x, $x;
-      push @new_y, $y;
+      ### $count
+      if ($count == 2) {
+        ### new: "$x,$y"
+        push @new_endpoints, $sn;
+        push @new_x, $x;
+        push @new_y, $y;
+      }
     }
   }
 
   my $n = scalar(@$n_to_x);
   push @{$self->{'depth_to_n'}}, $n;
   foreach my $sn (@new_endpoints) {
-    $xy_to_n->[$sn] = $n++;
+    my $x = shift @new_x;
+    my $y = shift @new_y;
+    if (! defined $xy_to_n->[$sn]) {
+      push @$n_to_x, $x;
+      push @$n_to_y, $y;
+      $xy_to_n->[$sn] = $n++;
+    }
   }
-  push @$n_to_x, @new_x;
-  push @$n_to_y, @new_y;
 
   $self->{'endpoints'} = \@new_endpoints;
-  $self->{'endpoints_dir'} = \@new_endpoints_dir;
 }
 
 sub n_to_xy {
   my ($self, $n) = @_;
-  ### SurroundOneEightByCells n_to_xy(): $n
+  ### TwoOfEightByCells n_to_xy(): $n
 
   if ($n < 0) { return; }
   if (is_infinite($n)) { return ($n,$n); }
@@ -305,7 +193,7 @@ sub n_to_xy {
     $n = $int;       # BigFloat int() gives BigInt, use that
   }
 
-  while ($#{$self->{'n_to_x'}} < $n) {
+  while ($#{$self->{'n_to_x'}} < $n && @{$self->{'endpoints'}}) {
     _extend($self);
   }
 
@@ -317,34 +205,36 @@ sub n_to_xy {
 
 sub xy_to_n {
   my ($self, $x, $y) = @_;
-  ### SurroundOneEightByCells xy_to_n(): "$x, $y"
+  ### TwoOfEightByCells xy_to_n(): "$x, $y"
 
   my ($depth,$exp) = round_down_pow (max($x,$y), 2);
   $depth *= 2;
   if (is_infinite($depth)) {
     return (1,$depth);
   }
-
   ### $depth
+
   for (;;) {
     {
       my $sn = $self->{'sq'}->xy_to_n($x,$y);
       if (defined (my $n = $self->{'xy_to_n'}->[$sn])) {
+        ### found at: "sn=$sn  n=$n"
         return $n;
       }
     }
-    if (scalar(@{$self->{'depth_to_n'}}) <= $depth) {
-      _extend($self);
-    } else {
+    if (scalar(@{$self->{'depth_to_n'}}) > $depth
+        || ! @{$self->{'endpoints'}}) {
+      ### past target depth, or no more endpoints ...
       return undef;
     }
+    _extend($self);
   }
 }
 
 # not exact
 sub rect_to_n_range {
   my ($self, $x1,$y1, $x2,$y2) = @_;
-  ### SurroundOneEightByCells rect_to_n_range(): "$x1,$y1  $x2,$y2"
+  ### TwoOfEightByCells rect_to_n_range(): "$x1,$y1  $x2,$y2"
 
   $x1 = round_nearest ($x1);
   $y1 = round_nearest ($y1);
@@ -362,7 +252,7 @@ sub rect_to_n_range {
 sub tree_depth_to_n {
   my ($self, $depth) = @_;
   my $depth_to_n = $self->{'depth_to_n'};
-  while ($#$depth_to_n <= $depth) {
+  while ($#$depth_to_n <= $depth && @{$self->{'endpoints'}}) {
     _extend($self);
   }
   return $depth_to_n->[$depth];
@@ -379,6 +269,9 @@ sub tree_n_to_depth {
   my $depth_to_n = $self->{'depth_to_n'};
   for (my $depth = 1; ; $depth++) {
     while ($depth > $#$depth_to_n) {
+      if (! @{$self->{'endpoints'}}) {
+        return undef;
+      }
       _extend($self);
     }
     if ($n < $depth_to_n->[$depth]) {
@@ -397,12 +290,10 @@ sub tree_n_children {
   ### $y
 
   my $depth = $self->tree_n_to_depth($n) + 1;
-  return
-    sort {$a<=>$b}
-      grep { $self->tree_n_to_depth($_) == $depth }
-        map { $self->xy_to_n_list($x + $surround_dx[$_],
-                                  $y + $surround_dy[$_]) }
-          0 .. $#surround_dx;
+  return grep { $self->tree_n_to_depth($_) == $depth }
+    map { $self->xy_to_n_list($x + $surround_dx[$_],
+                              $y + $surround_dy[$_]) }
+      0 .. $#surround_dx;
 }
 sub tree_n_parent {
   my ($self, $n) = @_;

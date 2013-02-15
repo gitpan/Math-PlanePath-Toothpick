@@ -1,4 +1,4 @@
-# Copyright 2012 Kevin Ryde
+# Copyright 2012, 2013 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -23,7 +23,7 @@ use strict;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 2;
+$VERSION = 3;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 *_divrem = \&Math::PlanePath::_divrem;
@@ -209,7 +209,7 @@ sub rect_to_n_range {
   return (digit_join_lowtohigh (\@n_min_digits, 4, $zero),
           digit_join_lowtohigh (\@n_max_digits, 4, $zero));
 }
-  
+
 1;
 __END__
 
@@ -233,19 +233,21 @@ This is a self-similar "L" shaped corners,
 
 # math-image --path=LCornerReplicate --all --output=numbers --size=50x9
 
-     7  |   58  57  55  54  46  45  43  42  64 
+=pod
+
+     7  |   58  57  55  54  46  45  43  42  64
      6  |   59  56  52  53  47  44  40  41  ...
-     5  |   61  60  50  49  35  34  36  39  
-     4  |   62  63  51  48  32  33  37  38  
-     3  |   14  13  11  10  16  19  31  30  
-     2  |   15  12   8   9  17  18  28  29  
-     1  |    3   2   4   7  21  20  24  27  
-    Y=0 |    0   1   5   6  22  23  25  26  
+     5  |   61  60  50  49  35  34  36  39
+     4  |   62  63  51  48  32  33  37  38
+     3  |   14  13  11  10  16  19  31  30
+     2  |   15  12   8   9  17  18  28  29
+     1  |    3   2   4   7  21  20  24  27
+    Y=0 |    0   1   5   6  22  23  25  26
         +-------------------------------------
           X=0   1   2   3   4   5   6   7   8
 
 The base pattern is the initial N=0,1,2,3 and then when replicating the 1
-and 3 sub-parts are rotated -90 and +90 degrees,
+and 3 sub-blocks are rotated -90 and +90 degrees,
 
     +----------------+
     |     3 |  2     |
@@ -261,11 +263,11 @@ and 3 sub-parts are rotated -90 and +90 degrees,
     | /  0  |  1     |
     +----------------+
 
-Groups of 3 points such as N=13,14,15 make little L-shaped parts, except at
+Groups of 3 points such as N=13,14,15 make little L-shaped blocks, except at
 the middle single points where a replication begins such as N=4,8,12.
 
-The sub-part layout is like CornerReplicate
-(L<Math::PlanePath::CornerReplicate>) but its parts are not rotated.
+The sub-block layout is like C<CornerReplicate>
+(L<Math::PlanePath::CornerReplicate>) but its blocks are not rotated.
 
 =head1 FUNCTIONS
 
@@ -281,21 +283,22 @@ Create and return a new path object.
 
 =head1 OEIS
 
-Entreis in Sloane's Online Encyclopedia of Integer Sequences related to this
+Entries in Sloane's Online Encyclopedia of Integer Sequences related to this
 path include
 
     http://oeis.org/A062880    (etc)
 
-    A062880    N values on diagonal X=Y (digits 0,2 in base 4)
+    A062880    N values on diagonal X=Y (digits 0,2 in base-4)
 
     A048647    permutation N at transpose Y,X
-                 base4 digit change 1<->3
+                 base-4 digit change 1<->3
 
 =head1 SEE ALSO
 
 L<Math::PlanePath>,
 L<Math::PlanePath::LCornerTree>,
-L<Math::PlanePath::CornerReplicate>
+L<Math::PlanePath::CornerReplicate>,
+L<Math::PlanePath::ToothpickReplicate>
 
 =head1 HOME PAGE
 
@@ -303,7 +306,7 @@ http://user42.tuxfamily.org/math-planepath/index.html
 
 =head1 LICENSE
 
-Copyright 2012 Kevin Ryde
+Copyright 2012, 2013 Kevin Ryde
 
 This file is part of Math-PlanePath-Toothpick.
 
