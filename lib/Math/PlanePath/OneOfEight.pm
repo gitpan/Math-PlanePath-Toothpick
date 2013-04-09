@@ -28,10 +28,9 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 3;
+$VERSION = 4;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
-*_divrem = \&Math::PlanePath::_divrem;
 
 use Math::PlanePath::Base::Generic
   'is_infinite',
@@ -63,12 +62,14 @@ use constant class_x_negative => 1;
 use constant class_y_negative => 1;
 
 {
-  my %x_negative = (4       => 1,
-                    1       => 0,
-                    octant  => 0,
-                    '3mid'  => 1,
-                    '3side' => 1,
-                    side    => 0,
+  my %x_negative = (4         => 1,
+                    1         => 0,
+                    octant    => 0,
+                    octant_up => 0,
+                    wedge     => 1,
+                    '3mid'    => 1,
+                    '3side'   => 1,
+                    side      => 0,
                    );
   sub x_negative {
     my ($self) = @_;
@@ -76,25 +77,14 @@ use constant class_y_negative => 1;
   }
 }
 {
-  my %x_minimum = (4       => undef,
-                   1       => 0,
-                   octant  => undef,
-                   '3side' => undef,
-                   '3mid'  => undef,
-                   side    => 0,
-                  );
-  sub x_minimum {
-    my ($self) = @_;
-    return $x_minimum{$self->{'parts'}};
-  }
-}
-{
-  my %y_negative = (4       => 1,
-                    1       => 0,
-                    octant  => 0,
-                    '3mid'  => 1,
-                    '3side' => 1,
-                    side    => 0,
+  my %y_negative = (4         => 1,
+                    1         => 0,
+                    octant    => 0,
+                    octant_up => 0,
+                    wedge     => 0,
+                    '3mid'    => 1,
+                    '3side'   => 1,
+                    side      => 0,
                    );
   sub y_negative {
     my ($self) = @_;
@@ -102,12 +92,14 @@ use constant class_y_negative => 1;
   }
 }
 {
-  my %y_minimum = (4       => undef,
-                   1       => 0,
-                    octant => 0,
-                   '3mid'  => undef,
-                   '3side' => undef,
-                   side    => 1,
+  my %y_minimum = (4         => undef,
+                   1         => 0,
+                   octant    => 0,
+                   octant_up => 0,
+                   wedge     => 0,
+                   '3mid'    => undef,
+                   '3side'   => undef,
+                   side      => 1,
                   );
   sub y_minimum {
     my ($self) = @_;
@@ -115,12 +107,14 @@ use constant class_y_negative => 1;
   }
 }
 {
-  my %tree_num_children_maximum = (4       => 8,
-                                   1       => 5,
-                                   octant  => 3,
-                                   '3mid'  => 5,
-                                   '3side' => 3,
-                                   side    => 3,
+  my %tree_num_children_maximum = (4         => 8,
+                                   1         => 5,
+                                   octant    => 3,
+                                   octant_up => 3,
+                                   wedge     => 3,
+                                   '3mid'    => 5,
+                                   '3side'   => 3,
+                                   side      => 3,
                                   );
   sub tree_num_children_maximum {
     my ($self) = @_;
@@ -132,6 +126,24 @@ use constant class_y_negative => 1;
 #   return ($self->{'parts'} <= 2   ? 1   # X=0,Y=1
 #           : 0);                         # origin X=0,Y=0
 # }
+
+{
+  # parts=1,3mid dx=2*2^k-3 dy=-2^k, it seems
+  # parts=3side  dx=2*2^k-5 dy=-2^k-2, it seems
+  my %dir_maximum_dxdy
+      = (4         => [0,-1], # South
+         1         => [2,-1], # ESE
+         octant    => [1,-1], # South-East
+         octant_up => [0,-1], # N=12 South
+         wedge     => [1,-1], # South-East
+         '3mid'    => [2,-1], # ESE
+         '3side'   => [2,-1], # ESE
+        );
+  sub dir_maximum_dxdy {
+    my ($self) = @_;
+    return @{$dir_maximum_dxdy{$self->{'parts'}}};
+  }
+}
 
 #------------------------------------------------------------------------------
 
@@ -150,7 +162,9 @@ sub new {
 my %initial_n_to_xy = (4       => [ [0,0], [1,0], [1,1], [0,1],
                                    [-1,1], [-1,0], [-1,-1], [0,-1], [1,-1] ],
                        1       => [ [0,0], [1,0], [1,1], [0,1] ],
-                       octant  => [ [0,0], [1,0], [1,1] ],
+                       octant    => [ [0,0], [1,0], [1,1] ],
+                       octant_up => [ [0,0], [1,1], [0,1] ],
+                       wedge     => [ [0,0], [1,1], [0,1], [-1,1] ],
                        '3mid'  => [ [0,0], [1,-1], [1,0], [1,1],
                                     [0,1], [-1,1] ],
 
@@ -248,6 +262,31 @@ sub n_to_xy {
 
   if ($parts eq 'octant') {
     ### parts=octant ...
+
+  } elsif ($parts eq 'octant_up') {
+    ### parts=octant_up ...
+    $hdx = 0;
+    $hdy = 1;
+    $vdx = 1;
+    $vdy = 0;
+    $mirror = 1;
+
+  } elsif ($parts eq 'wedge') {
+    ### parts=wedge ...
+    my $add = _depth_to_octant_added([$depth],[1],$zero);
+    if ($n < $add) {
+      $hdx = 0;  # same as octant_up
+      $hdy = 1;
+      $vdx = 1;
+      $vdy = 0;
+      $mirror = 1;
+    } else {
+      $n -= $add;
+      $hdx = 0;  # rotate +90
+      $hdy = 1;
+      $vdx = -1;
+      $vdy = 0;
+    }
 
   } elsif ($parts eq '1' || $parts eq '2' || $parts eq '4') {
     my $add = _depth_to_octant_added([$depth],[1],$zero);
@@ -618,12 +657,14 @@ sub n_to_xy {
 # parts=4      N*9/4 = N*3 as estimate
 # parts=3      N*9/4 = N*3 too
 #
-my %parts_to_depth_multiplier = (4       => 3,
-                                 1       => 9,
-                                 octant  => 18,
-                                 '3mid' => 3,
-                                 '3side' => 3,
-                                 side    => 9,
+my %parts_to_depth_multiplier = (4         => 3,
+                                 1         => 9,
+                                 octant    => 18,
+                                 octant_up => 18,
+                                 wedge     => 9,
+                                 '3mid'    => 3,
+                                 '3side'   => 3,
+                                 side      => 9,
                                 );
 sub _n0_to_depth_and_rem {
   my ($self, $n) = @_;
@@ -673,6 +714,10 @@ sub _n0_to_depth_and_rem {
 
 my @yxoct_to_n = ([     0, 1 ],   # Y=0
                   [ undef, 2 ]);  # Y=1
+my @yxoctup_to_n = ([ 0, undef ], # Y=0
+                    [ 2, 1 ]);    # Y=1
+my @yxwedge_to_n = ([ 0, undef, undef ], # Y=0   X=0,1,-1
+                    [ 2, 1, 3 ]);        # Y=1
 my @yx1_to_n = ([ 0, 1 ],   # Y=0
                 [ 3, 2 ]);  # Y=1
 my @yx3_to_n = ([     0, 2, undef ],   # Y=0   X=0,1,-1
@@ -753,6 +798,39 @@ sub xy_to_n {
     }
     if ($x <= 1 && $y <= 1) {
       return $yxoct_to_n[$y][$x];
+    }
+
+  } elsif ($parts eq 'octant_up') {
+    ### parts==octant_up ...
+    if ($x < 0 || $x > $y) {
+      ### outside upper octant ...
+      return undef;
+    }
+    if ($x <= 1 && $y <= 1) {
+      ### yxoctup_to_n[] table ...
+      return $yxoctup_to_n[$y][$x];
+    }
+    # transpose and mirror
+    ($x,$y) = ($y,$x);
+    $mirror = 1;
+
+  } elsif ($parts eq 'wedge') {
+    ### parts==wedge ...
+    if ($x > $y || $x < -$y) {
+      return undef;
+    }
+    if (abs($x) <= 1 && $y <= 1) {
+      return $yxwedge_to_n[$y][$x];
+    }
+    if ($x >= 0) {
+      ($x,$y) = ($y,$x);   # transpose and mirror
+      $mirror = 1;
+    } else {
+      ($x,$y) = ($y,-$x);  # rotate -90
+      push @add_offset,           0;
+      push @add_mult,             1;
+      push @add_top_no_extra_pow, 0;
+      push @add_log2_extras,      1;
     }
 
   } elsif ($parts eq '1' || $parts eq '4') {
@@ -1684,15 +1762,18 @@ my @oct_to_n = (0, 1);
 my %tree_depth_to_n = (4       => [ 0, 1 ],
                        1       => [ 0, 1 ],
                        octant  => [ 0, 1 ],
+                       wedge   => [ 0, 1, 4 ],
                        '3mid'  => [ 0, 1 ],
                        '3side' => [ 0, 1, 4 ],
                        side    => [ 0, 1 ]);
-my %tree_depth_to_n_extra_depth_pow = (4       => 0,
-                                       1       => 0,
-                                       octant  => 0,
-                                       '3mid'  => 1,
-                                       '3side' => 1,
-                                       side    => 1);
+my %tree_depth_to_n_extra_depth_pow = (4         => 0,
+                                       1         => 0,
+                                       octant    => 0,
+                                       octant_up => 0,
+                                       wedge     => 0,
+                                       '3mid'    => 1,
+                                       '3side'   => 1,
+                                       side      => 1);
 
 # use Smart::Comments;
 
@@ -1746,9 +1827,14 @@ sub tree_depth_to_n {
     push @mult, 2;
     $n -= $depth;
 
-  } elsif ($parts eq 'octant') {
+  } elsif ($parts eq 'octant' || $parts eq 'octant_up') {
     push @pending, $depth;
     push @mult, 1;
+
+  } elsif ($parts eq 'wedge') {
+    push @pending, $depth;
+    push @mult, 2;
+    $n -= 2;  # unduplicate centre two
 
   } elsif ($parts eq '3mid') {
     push @pending, $depth+1, $depth;
@@ -1863,6 +1949,8 @@ sub tree_depth_to_n {
   ### return: $n
   return $n;
 }
+
+# no Smart::Comments;
 
 #use Smart::Comments;
 
@@ -1982,6 +2070,27 @@ sub _depth_to_octant_added {
 
 # no Smart::Comments;
 
+sub tree_n_to_height {
+  my ($self, $n) = @_;
+  if ($n < 0)          { return undef; }
+  if (is_infinite($n)) { return $n; }
+  {
+    # infinite height on X=Y spines
+    my ($x,$y) = $self->n_to_xy($n);
+    if (abs($y) == abs($x)) {
+      return undef;
+    }
+  }
+  my @n = ($n);
+  my $height = 0;
+  for (;;) {
+    @n = map {$self->tree_n_children($_)} @n
+      or return $height;
+    $height++;
+  }
+}
+
+
 sub _is_pow2 {
   my ($n) = @_;
   my ($pow,$exp) = round_down_pow ($n, 2);
@@ -2025,8 +2134,8 @@ http://www.research.att.com/~njas/doc/tooth.pdf
 
 =back
 
-Points are numbered by growth levels and anti-clockwise on each cell within
-the level.
+Points are numbered by growth levels and anti-clockwise around each cell
+within the level.
 
 =cut
 
@@ -2057,11 +2166,11 @@ the level.
 
 The start is N=0 at the origin X=0,Y=0.  Then each cell around it has just
 one neighbour (that first N=0 cell) and so all are turned on.  The rule is
-applied in a single atomic step, so any adjacent prospective new cells don't
-count.
+applied in a single atomic step, so adjacent prospective new cells don't
+count towards the 1 of 8.
 
 At the next level only the diagonal cells X=+/-2,Y=+/-2 have a single
-neighbour, and so on.
+neighbour, then at the next level five around each of them, and so on.
 
                                      10           9
                                        \         /
@@ -2073,38 +2182,38 @@ neighbour, and so on.
                                        /         \
                                      11           12
 
-The children of a given node are numbered anti-clockwise relative to the
-position of the parent of that node.  So for example N=9 has it's parent
-south-west and points are numbered anti-clockwise around from there to give
-N=13 through N=17.
+The children of a given node are numbered anti-clockwise around relative to
+the direction of the node's parent.  For example N=9 has it's parent
+south-west and so points around N=9 are numbered anti-clockwise around from
+the south-west to give N=13 through N=17.
 
 =head2 Level Ranges
 
-The pattern always extends along the X=+/-Y diagonals, and extends to the
+The pattern always extends along the X=+/-Y diagonals and grows into the
 sides in power-of-2 blocks.  So for example in the part shown above N=33 at
-X=4,Y=4 is the only cell growing out of the 4x4 block X=0to3,Y=0to3 at the
+X=4,Y=4 is the only cell growing out of the 4x4 block X=0..3,Y=0..3 at the
 origin, and likewise N=34,35,36 in the other quadrants.  Then N=121 at
 X=8,Y=8 is the only growth out of the 8x8 block, etc.
 
-In general the first N at depth=2^k for kE<gt>=0 is
+In general the first N at a power-of-2 level is
 
+    depth=2^k  for k>=0
     Ndepth(2^k) = (16*4^k + 24*k - 7) / 9
                 = (16*depth*depth + 24*k - 7) / 9
-
     eg. k=3 Ndepth=121
 
-Because points are numbered from N=0 this is how many cells are "on" in the
-pattern before this depth level.  The cells are within -2^k E<lt> X,Y E<lt>
-2^k and so the fraction of the plane covered is
+Because points are numbered from N=0 this Ndepth is how many cells are "on"
+in the pattern up to this depth level (and not including it).  The cells are
+within -2^k E<lt> X,Y E<lt> 2^k and so the fraction of the plane covered is
 
     density = Ndepth(2^k) / (2*2^k - 1)^2
             = (16*4^k + 24*k - 7) / 9 / (2*2^k-1)^2
             -> 4/9 = 0.444...    as k -> infinity
 
-This density is approached from above, ie. density(k) decreases towards 4/9
-as k increases.  The first k=0 is the single origin point which is 1/1, and
-k=2 is 9/9 of the 3x3 at the origin.  Then for example k=2 7x7 square has
-33/49=0.673, then k=3 121/225=0.5377, etc.
+This density is approached from above, ie. decreases towards 4/9.  The first
+k=0 is the single origin point which is density=1/1, and k=2 is density=9/9
+of the 3x3 at the origin.  Then for example k=2 7x7 square has
+density=33/49=0.673, then k=3 121/225=0.5377, etc.
 
 =head2 One Quadrant
 
@@ -2171,7 +2280,7 @@ Option C<parts =E<gt> 'octant'> confines the pattern to the first octant
         +-------------------------------------------------
          X=0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
 
-The full pattern is symmetric on each size of the four diagonals X=Y, X=-Y.
+The full pattern is symmetric on each side of the four diagonals X=Y, X=-Y.
 This octant is one of those eight symmetric parts.  It includes the diagonal
 which is shared if two octants are combined to make a quadrant.
 
@@ -2183,7 +2292,7 @@ The octant is self similar in blocks
                         --      |
                       -- extend |
                     --          |
-                  --------------|
+          2^k,2^k --------------|
                 --| --   upper  |
               --  |   --  flip  |
             --    |     --      |
@@ -2192,25 +2301,25 @@ The octant is self similar in blocks
       --          | no pow2s  --|
     -----------------------------
 
-"extend" is a direct copy of the "base" block and the "upper" likewise
-except flipped vertically.
+"extend" is a direct copy of the "base" block.  "upper" likewise a direct
+copy except flipped vertically.
 
-The "lower" block is the base pattern rotated by +90 degrees, and without
-the pow2 cells at Y=1 X=3,7,15,etc.  These absent cells are easier to see in
-a bigger picture of the pattern.
+"lower" is the base pattern rotated by +90 degrees and without the pow2
+cells at Y=1 X=3,7,15,etc.  These absent cells are easier to see in a bigger
+picture of the pattern.
 
-The "lower" block is one depth level ahead.  It ends at N=45,46,47,48
-depth=14 whereas the corresponding N=62,63,64,65 in the "extend" is at
-depth=15.
+The "lower" block is one depth level ahead too.  For example in the sample
+above its last row is N=45,46,47,48 at depth=14 whereas the corresponding
+end of the "extend" at N=61,62,63,64,65 is depth=15.
 
 The diagonal between the lower and upper looks like a stair-step, but that's
 not so.  It's the same as the X=Y leading diagonal of the whole octant but
-because the lower block is one depth level ahead of the upper the branches
+because the lower block is one depth level ahead of the upper their branches
 off the diagonal are offset by 1 position.  For example N=34,33,37 branching
-off to the lower corresponds to N=40,41,51 branching into the upper.
+into the lower corresponds to N=40,41,51 branching into the upper.
 
-This offset on the upper/lower diagonal becomes easier to see by chopping
-off one level of leaf nodes.
+This offset on the upper/lower diagonal is easier to see by chopping off the
+leaf nodes of the pattern (one level of leaf nodes).
 
 =cut
 
@@ -2218,34 +2327,34 @@ off one level of leaf nodes.
 
 =pod
 
-                  * 
-                 *  
-                *   
-               *       octant with leaf nodes pruned
-              * *   
-             *   *  
-            *       
-           *        
-          * *       
-         *   *   *  
+                  *       octant with leaf nodes pruned
+                 *
+                *
+               *
+              * *
+             *   *
+            *
+           *
+          * *
+         *   *   *
         *     * *      <- upper,lower parts
        *     * *          branch off lower is 1 level sooner
-      * *   *   *   
-     *   *       *  
-    *               
-   *                
+      * *   *   *
+     *   *       *
+    *
+   *
 
-It may look at first as if the square side block comprising "upper" and
-"lower" is entirely different from the central symmetric square (of L</One
-Quadrant> above), but that's not so, it's just the offset of the branching
-from the diagonal.
+It may look at first as if the square side block comprising the "upper" and
+"lower" blocks is entirely different from the central symmetric square
+(L</One Quadrant> above), but that's not so, the only difference is the
+offset branching from the diagonal which occurs in the "lower" part.
 
 =head2 Three Mid
 
 Option C<parts =E<gt> "3mid"> is the "second corner sequence" of the
 toothpick paper above.  This is the part of the full pattern starting at a
-point X=2^k,Y=2^k in that pattern, with the three parts there extended
-indefinitely.
+point X=2^k,Y=2^k in the full pattern, with the three square blocks there
+each extended indefinitely.
 
 =cut
 
@@ -2275,10 +2384,11 @@ indefinitely.
     -7 -5 -6 -4 -3 -2 -1 X=0 1  2  3  4  5  6  7
 
 The first quadrant XE<gt>=0,YE<gt>=0 is the same as in the full pattern, but
-the other quadrants are a "side" portion of the pattern.
+the other quadrants are a "side" portion (branches off the diagonal offset
+by 1 above and below).
 
-This pattern can be generated from the automaton rule by starting from N=0
-at X=0,Y=0 and then treating all points with XE<lt>0,YE<lt>0 as if already
+This pattern can be generated from the 1 of 8 cell rule by starting from N=0
+at X=0,Y=0 and then treating all points with XE<lt>0,YE<lt>0 as already
 occupied.
 
                        ..       .. .. ..
@@ -2294,8 +2404,8 @@ occupied.
 
 Option C<parts =E<gt> "3side"> is the "first corner sequence" of the
 toothpick paper above.  This is the part of the full pattern starting at a
-point X=2^k+1,Y=3*2^k-1 and mirrored horizontally, and the three parts there
-extended indefinitely.
+point X=2^k+1,Y=3*2^k-1 and mirrored horizontally, and the three square
+blocks there each extended indefinitely.
 
 =cut
 
@@ -2325,13 +2435,15 @@ extended indefinitely.
                           ^
        -7 -6 -4 -3 -2 -1 X=0 1  2  3  4  5  6  7  8
 
-The Y negative quadrant is rotated +90 degrees and is one depth level ahead
-of the other two, so for example its run N=54,55,56 corresponds to
+The two top quadrants YE<gt>=0 are mirror images across the vertical X=1.
+The YE<lt>0 bottom quadrant is rotated -90 degrees and is one depth level
+ahead of the other two, so for example its run N=54,55,56 corresponds to
 N=78,79,80 in the first quadrant.
 
-This pattern can be generated from the automaton rule by starting from N=0
-at X=0,Y=0 and then treating all points with XE<lt>0,YE<lt>=0 as already
-occupied.  Notice 3mid above is YE<lt>0 whereas here YE<lt>=0.
+This pattern can be generated from the 1 of 8 rule by starting from N=0 at
+X=0,Y=0 and then treating all points with XE<lt>0,YE<lt>=0 as already
+occupied.  Notice parts=3mid above is YE<lt>0 occupied whereas here
+parts=3side is YE<lt>=0.
 
                            .. 8  7  6 ..
                                  3
@@ -2346,18 +2458,18 @@ diagonal shifted up diagonally to X+1,Y+1 and therefore branching off the
 diagonal 1 depth level later.  On that basis the two C<tree_depth_to_n()>
 total cells are related by
 
-   N3side(depth) = (N3mid(depth) + N3mid(depth-1) + 1) / 2
+   Ndepth3side(depth) = (Ndepth3mid(depth) + Ndepth3mid(depth-1) + 1) / 2
 
 For example depth=4 begins at N=17 in 3side,
 
-   N3side(4) = 17
-   N3mid(4) = 22, N3mid(3) = 11 
+   Ndepth3side(4) = 17
+   Ndepth3mid(4) = 22, Ndepth3mid(3) = 11
    (22 + 11 + 1)/2 = 17
 
 =head2 Three Growth
 
-The interest in the 3mid and 3side "corner" sequences is that a base 3mid
-can be doubled in size by adding one "3mid" and two "3side"s.
+The interest in the 3mid and 3side "corner" sequences is that a 3mid can be
+doubled in size by adding a "3mid" and two "3side"s.
 
     +-------------+-------------+
     |             |             |       3mid doubled in size
@@ -2365,7 +2477,7 @@ can be doubled in size by adding one "3mid" and two "3side"s.
     |             |             |       and one new 3mid.
     |      +-------------+      |
     |      |             |      |
-    |      |  start 3mid |      |
+    |      |      3mid   |      |
     |      |             |      |
     +------+------+      |------+
                   |      |      |
@@ -2420,11 +2532,11 @@ depth level.  The possible number of children varies with the parts,
 
 For parts=4 there's 8 children at the initial N=0 and after that at most 5.
 
-1 child only occurs at X=2^k,Y=2^k of the central diagonal In parts=3side
-there's no such corner and never a single child, only 2 or 3 children.
+For parts=3side a 1 child never occurs.  There's 1 child only at X=2^k,Y=2^k
+of the central diagonal and for parts=3side there's no such corner.
 
-5 children occurs around the 1-child of X=2^k,Y=2^k in parts=4,1,3mid.  In
-an octant there's only 3 children around that point since that pattern
+parts=4,1,3mid have 5 children growing from the 1-child of X=2^k,Y=2^k.  In
+an parts=octant there's only 3 children around that point since that pattern
 doesn't go above the X=Y diagonal.
 
 =back
@@ -2452,8 +2564,8 @@ For parts=octant the equivalent total points is
     oct(pow + rem) = oct(pow) + 2*oct(rem) + oct(rem+1)
                        - floor(log2(rem+1)) - rem - 3
 
-The way this recurrence formula works can be seen from the self-similar
-pattern described in L</One Octant> above.
+The way this recurrence works can be seen from the self-similar pattern
+described in L</One Octant> above.
 
     oct(pow)                # "base"
     + oct(rem)              # "extend"
@@ -2463,32 +2575,33 @@ pattern described in L</One Octant> above.
     - rem                   # unduplicate diagonal upper/lower
     - 3                     # unduplicate centre points
 
-The oct(rem)+oct(rem+1) of upper+lower parts would count their common
-diagonal twice, hence "-rem" being the length of that diagonal.  The
-"centre" point at X=pow,Y=pow is repeated by each of extend, upper, lower so
-"-2" to count just once, and the X=pow+1,Y=pow point is repeated by extend
-and upper, so "-1" to count it just once.
+oct(rem)+oct(rem+1) of upper and lower would count their common diagonal
+twice, hence "-rem" being the length of that diagonal.  The "centre" point
+at X=pow,Y=pow is repeated by each of extend, upper, lower so "-2" to count
+just once, and the X=pow+1,Y=pow point is repeated by extend and upper, so
+"-1" to count it just once.
 
 The 2*total(rem)+total(rem+1) in the formula is the same recurrence as the
-toothpick pattern and the approach there can calculate it as a little set of
+toothpick pattern and the approach there can calculate it as a set of
 pending depths and pow subtractions.  See
 L<Math::PlanePath::ToothpickTree/Depth to N>.
 
 The other patterns can be expressed as combinations of octants,
 
-    parts=4  total = 8*oct(n) - 4*n - 7
-    parts=1  total = 2*oct(n) - n
-    3mid  V2 total = 2*oct(n+1) + 4*oct(n)
-                       - 3n - 2*floor(log(n+1)) - 6
-    3side V1 total =   oct(n+1) + 3*oct(n) + 2*oct(n-1)
-                       - 3n - floor(log(n+1)) - floor(log(n)) - 4
+    parts=4 total   = 8*oct(n) - 4*n - 7
+    parts=1 total   = 2*oct(n) - n
+    3mid V2 total   = 2*oct(n+1) + 4*oct(n)
+                        - 3n - 2*floor(log(n+1)) - 6
+    3side V1 total  =   oct(n+1) + 3*oct(n) + 2*oct(n-1)
+                        - 3n - floor(log(n+1)) - floor(log(n)) - 4
 
-The set of depth offsets n,n+1,etc become initial depth values in the list
-for the recurrence reduction algorithm, with respective initial multipliers.
+The depth offsets n,n+1,etc in these formulas become initial pending depth
+for the toothpick style depth to N algorithm (and with respective initial
+multipliers).
 
 From the V1,V2 formulas it can be seen that V2(n)+V2(n+1) gives the same
-combination of 1,3,2 octants as V1, and that therefore as noted in the
-Ndepth part of L</Three Side> above
+combination of 1,3,2 times oct n-1,n,n+1 which is in V1, and that therefore
+as noted in the Ndepth part of L</Three Side> above
 
     V1(n) = (V2(n) + V2(n-1) + 1) / 2
 
@@ -2500,19 +2613,21 @@ Sequences as
     http://oeis.org/A151725    (etc)
 
     parts=4 (the default)
-      A151725   total cells "V" (tree_depth_to_n())
+      A151725   total cells "V", tree_depth_to_n()
       A151726   added cells "v"
 
     parts=1
-      A151735   total cells (tree_depth_to_n())
+      A151735   total cells, tree_depth_to_n()
       A151737   added cells
 
     parts=3mid
-      A170880   total cells (tree_depth_to_n())
+      A170880   total cells, tree_depth_to_n()
       A151728   added cells "v2"
+      A151727   added cells * 4
+      A151729   (added cells - 1) / 2
 
     parts=3side
-      A170879   total cells (tree_depth_to_n())
+      A170879   total cells, tree_depth_to_n()
       A151747   added cells "v1"
 
 =head1 SEE ALSO

@@ -204,7 +204,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 3;
+$VERSION = 4;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 

@@ -23,15 +23,36 @@
 # A151565 ,1,1,2,2,2,2, 4, 4, 2, 2,4,4,4,4,8,8,2,2,4,4,4,4,8,8,4,4,8,8,8,8,16,
 # A151566 ,0,1,2,4,6,8,10,14,18,20,22,26,30,34,38,46,54,56,58,62,66,70,74,82,90
 
+# A175099,A160018 leftist closed rectangles
+
 package Math::PlanePath::ToothpickUpist;
 use 5.004;
 use strict;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 3;
+$VERSION = 4;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
-*_divrem_mutate = \&Math::PlanePath::_divrem_mutate;
+
+
+# return $remainder, modify $n
+# the scalar $_[0] is modified, but if it's a BigInt then a new BigInt is made
+# and stored there, the bigint value is not changed
+sub _divrem_mutate {
+  my $d = $_[1];
+  my $rem;
+  if (ref $_[0] && $_[0]->isa('Math::BigInt')) {
+    ($_[0], $rem) = $_[0]->copy->bdiv($d);  # quot,rem in array context
+    if (! ref $d || $d < 1_000_000) {
+      return $rem->numify;  # plain remainder if fits
+    }
+  } else {
+    $rem = $_[0] % $d;
+    $_[0] = int(($_[0]-$rem)/$d); # exact division stays in UV
+  }
+  return $rem;
+}
+
 
 use Math::PlanePath::Base::Generic
   'is_infinite',
@@ -49,6 +70,10 @@ use constant default_n_start => 0;
 use constant class_x_negative => 1;
 use constant class_y_negative => 0;
 use constant tree_num_children_maximum => 2;
+# use constant dir4_maximum => 2;          # West dX=-1,dY=0 at N=1
+# use constant dir_maximum_360  => 180;    # West
+use constant dir_maximum_dxdy => (-1,0); # West
+
 
 #------------------------------------------------------------------------------
 sub new {
@@ -326,6 +351,35 @@ sub tree_depth_to_n {
   }
 }
 
+sub tree_n_to_height {
+  my ($self, $n) = @_;
+  ### ToothpickUpist tree_n_to_height(): $n
+
+  $n = $n - $self->{'n_start'};
+  if ($n < 0) {
+    return undef;
+  }
+  my ($depthbits, $lowbit, $ndepth) = _n0_to_depthbits($n);
+  $n -= $ndepth;      # remaining offset into row
+  my @nbits = bit_split_lowtohigh($n);
+
+  ### $lowbit
+  ### $depthbits
+
+  my $target = $nbits[0] || 0;
+  foreach my $i (0 .. $#$depthbits) {
+    unless ($depthbits->[$i] ^= 1) {  # flip 0<->1, at original==1 take nbit
+      if ((shift @nbits || 0) != $target) {
+        unshift @$depthbits, 1-$lowbit;
+        $#$depthbits = $i;
+        ### $depthbits
+        return digit_join_lowtohigh($depthbits, 2, $n*0);
+      }
+    }
+  }
+  return undef; # first or last of row, infinite
+}
+
 # Ndepth = 2 * (        3^a      first N at this depth
 #               +   2 * 3^b
 #               + 2^2 * 3^c
@@ -379,7 +433,7 @@ sub _n0_to_depthbits {
 1;
 __END__
 
-=for stopwords eg Ryde Sierpinski Nlevel ie Ymin Ymax SierpinskiArrowheadCentres OEIS Online rowpoints Nleft Math-PlanePath-Toothpick Gould's Nend bitand CellularRule Noffset Applegate Automata Congressus Numerantium
+=for stopwords eg Ryde Sierpinski Nlevel ie Ymin Ymax OEIS Online rowpoints Nleft Math-PlanePath-Toothpick Gould's Nend bitand Noffset Applegate Automata Congressus Numerantium
 
 =head1 NAME
 
@@ -416,7 +470,7 @@ where a vertical toothpick may only extend upwards.
 
     X= -9 -8 -7 -6 -5 -4 -3 -2 -1  0  1  2  3  4  5  6  7  8  9 10 ...
 
-It's a 90-degree rotated version of the "leftist" pattern from part 7
+This is a 90-degree rotated version of the "leftist" pattern from part 7
 "Leftist Toothpicks" of
 
 =over
@@ -430,12 +484,12 @@ http://www.research.att.com/~njas/doc/tooth.pdf
 =back
 
 As per C<ToothpickTree> (L<Math::PlanePath::ToothpickTree>) each point is
-considered a toothpick of length 2, starting from a vertical toothpick at
-the origin X=0,Y=0.  Then the pattern grows by adding a toothpick at each
-exposed end, so long as it would not cause two toothpicks to overlap (an end
-can touch, but they cannot overlap).  The variation here is that vertical
-toothpicks can only grow up, so nothing is ever added at the bottom end of a
-vertical.
+considered a toothpick of length 2, starting from an initial vertical
+toothpick at the origin X=0,Y=0.  Then the pattern grows by adding a
+toothpick at each exposed end, so long as it would not cause two toothpicks
+to overlap (an end can touch, but toothpicks cannot overlap).  The variation
+here is that vertical toothpicks can only grow upwards, so nothing is ever
+added at the bottom end of a vertical.
 
     ...     ...     ...      ...
      |       |       |        |
@@ -449,17 +503,19 @@ vertical.
                  |
 
 Points are numbered by growth depth and then left to right across the row
-within that depth.  This means for example N=6,N=7 are up toothpicks giving
-N=8,N=9 in row Y=3, and then those two grow to N=10,N=11 and N=12,N=13
+within that depth.  This means for example N=6 and N=7 are up toothpicks
+giving N=8 and N=9 in row Y=3, and then those two grow to N=10,11,12,13
 respectively left and right.
 
 =head2 Sierpinski Triangle
 
-X<Sierpinski, Waclaw>As described in the paper above the pattern is a
-version of the Sierpinski triangle with each row doubled.  Vertical
-toothpicks are on "even" points X==Ymod2 and make the Sierpinski triangle
-pattern.  Horizontal toothpicks are on "odd" points X!=Ymod2 and are a
-second copy of the triangle, positioned up one at Y+1.
+X<Sierpinski, Waclaw>As described in the paper above, the rule gives a
+version of the Sierpinski triangle where each row is doubled.  (See
+L<Math::PlanePath::SierpinskiTriangle>.)
+
+Vertical toothpicks are on "even" points X==Y mod 2 and make the Sierpinski
+triangle pattern.  Horizontal toothpicks are on "odd" points X!=Y mod 2 and
+are a second copy of the triangle, positioned up one at Y+1.
 
       5                                    h               h
       4     v               v                h   h   h   h
@@ -468,14 +524,17 @@ second copy of the triangle, positioned up one at Y+1.
       1           v   v                            h
     Y=0             v
 
-                         gives ToothpickUpist
+                        gives ToothpickUpist
 
-                     5   ..h..           ..h..
-                     4     v h   h   h   h v       
-                     3       v h v   v h v
-                     2         v h   h v
-                     1           v h v
-                   Y=0             v
+                    5   ..h..           ..h..
+                    4     v h   h   h   h v       
+                    3       v h v   v h v
+                    2         v h   h v
+                    1           v h v
+                  Y=0             v
+
+A vertical toothpick always has a child at its upwards end.  But the
+horizontal toothpicks may or may not be able to grow at its two ends.
 
 =head1 FUNCTIONS
 
@@ -498,10 +557,9 @@ Create and return a new path object.
 Return the children of C<$n>, or an empty list if C<$nE<lt>0> (ie. before
 the start of the path).
 
-Every vertical toothpick has a single child above it.  The horizontal
-toothpicks have either 0, 1 or 2 children according to the Sierpinski
-triangle pattern.  (See L<Math::PlanePath::SierpinskiTriangle/N to Number of
-Children>).
+Every vertical toothpick has a single child.  The horizontal toothpicks have
+either 0, 1 or 2 children according to the Sierpinski triangle pattern.
+(See L<Math::PlanePath::SierpinskiTriangle/N to Number of Children>).
 
 =item C<$n_parent = $path-E<gt>tree_n_parent($n)>
 
@@ -526,9 +584,9 @@ depth=2, so depth=ceil(Y/2).
 Return the first or last N at tree level C<$depth>.  The start of the tree
 is depth=0 at the origin X=0,Y=0.
 
-For C<$depth> even this is the N at the left end of each row X=-Y,Y=depth/2.
-For C<$depth> odd it's the point above there, 1 in from the left end, so
-X=-Y+1,Y=ceil(depth/2).
+For even C<$depth> this is the N at the left end of each row X=-Y,Y=depth/2.
+For odd C<$depth> it's the point above there, one cell in from the left end,
+so X=-Y+1,Y=ceil(depth/2).
 
 =back
 
@@ -539,8 +597,10 @@ path include,
 
     http://oeis.org/A151566    etc
 
-    A151566    total cells at depth=n (tree_depth_to_n())
-    A060632    cells added at depth=n (A151565 same)
+    A151566    total cells at depth=n, tree_depth_to_n()
+    A060632     cells added, 2^count1bits(floor(n/2))
+    A151565     cells added (duplicate of A060632)
+    A175098    total lattice points touched by length=2 toothpicks
 
     A160742    total*2
     A160744    total*3

@@ -15,6 +15,28 @@
 # You should have received a copy of the GNU General Public License along
 # with Math-PlanePath-Toothpick.  If not, see <http://www.gnu.org/licenses/>.
 
+# wedge odd/even
+
+#     1  1
+#  2  0  1
+#  2  2
+
+#  3  3        3  3
+#  3  2  2  2  2  3
+#  3  2  1  1  2
+#  3  3  0  1  2
+#        3  2  2  3
+#        3  3  3  3
+
+#  4  4  4  4  4  4  4  4
+#  4  3  3  4  4  3  3  4
+#     3  2  2  2  2  3  4
+#     3  2  1  1  2  4  4
+#  4  3  3  0  1  2  4  4
+#  4  4     3  2  2  3  4
+#        4  3  3  3  3  4
+#        4  4        4  4
+#
 
 package Math::PlanePath::LCornerTree;
 use 5.004;
@@ -23,11 +45,10 @@ use strict;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 3;
+$VERSION = 4;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
-*_divrem = \&Math::PlanePath::_divrem;
-*_divrem_mutate = \&Math::PlanePath::_divrem_mutate;
+
 
 use Math::PlanePath::Base::Generic
   'is_infinite',
@@ -39,21 +60,24 @@ use Math::PlanePath::Base::Digits
   'digit_join_lowtohigh';
 
 # uncomment this to run the ### lines
-#use Smart::Comments;
+# use Smart::Comments;
 
 
 use constant default_n_start => 0;
 use constant parameter_info_array =>
   [ { name            => 'parts',
-      share_key       => 'parts_4to1',
+      share_key       => 'parts_lcornertree',
       display         => 'Parts',
-      type            => 'integer',
-      default         => 4,
-      width           => 1,
-      minimum         => 1,
-      maximum         => 4,
-      description     => 'Which parts of the plane to fill, 1 to 4 quadrants.',
-    },
+      type            => 'enum',
+      default         => '4',
+      choices         => ['4','3','2','1','octant',
+                          # 'octant_up','wedge',
+                         ],
+      choices_display => ['4','3','2','1','Octant',
+                          # 'Octant Up','Wedge',
+                         ],
+      description     => 'Which parts of the plane to fill.',
+    }
     # { name        => 'n_start',
     #   share_key   => 'n_start_0',
     #   type        => 'integer',
@@ -63,15 +87,62 @@ use constant parameter_info_array =>
     # },
   ];
 
-sub x_negative {
-  my ($self) = @_;
-  return ($self->{'parts'} >= 2);
+{
+  my %x_negative = (4         => 1,
+                    3         => 1,
+                    2         => 1,
+                    1         => 0,
+                    octant    => 0,
+                    octant_up => 0,
+                    wedge     => 1,
+                   );
+  sub x_negative {
+    my ($self) = @_;
+    return $x_negative{$self->{'parts'}};
+  }
 }
-sub y_negative {
-  my ($self) = @_;
-  return ($self->{'parts'} >= 3);
+{
+  my %y_negative = (4         => 1,
+                    3         => 1,
+                    2         => 0,
+                    1         => 0,
+                    octant    => 0,
+                    octant_up => 0,
+                    wedge     => 0,
+                   );
+  sub y_negative {
+    my ($self) = @_;
+    return $y_negative{$self->{'parts'}};
+  }
 }
+
 use constant tree_num_children_maximum => 3;
+
+# parts=1 Dir4 max 12,-11
+#                 121,-110
+#                 303,-213
+#                1212,-1031
+#               12121,-10310      -> 12,-10
+#               30303,-21213      -> 3,-2
+# parts=2  dX=big,dY=-1
+# parts=3  dX=big,dY=-1
+# parts=4  dx=0,dy=-1 at N=1
+{
+  my %dir_maximum_dxdy = (1         => [3,-2],  # supremum
+                          2         => [0,0],   # supremum
+                          3         => [0,0],   # supremum
+                          4         => [0,-1],  # N=1 dX=0,dY=-1
+                          octant    => [0,-2],  # N=4 dX=0,dY=-2
+                          octant_up => [0,-1],  # N=8 dX=0,dY=-1
+                          wedge     => [0,-1],  # N=13 dX=0,dY=-1
+                         );
+  sub dir_maximum_dxdy {
+    my ($self) = @_;
+    return @{$dir_maximum_dxdy{$self->{'parts'}}};
+  }
+}
+
+#------------------------------------------------------------------------------
 
 sub new {
   my $self = shift->SUPER::new(@_);
@@ -81,6 +152,16 @@ sub new {
   $self->{'parts'} ||= 4;
   return $self;
 }
+
+# how many toplevel root nodes in the tree of given $parts
+my %parts_to_numroots = (4         => 4,
+                         3         => 3,
+                         2         => 2,
+                         1         => 1,
+                         octant    => 1,
+                         octant_up => 1,
+                         wedge     => 2,
+                        );
 
 my @next_state = (0,12,0,4, 4,0,4,8, 8,4,8,12, 12,8,12,0);
 my @digit_to_x = (0,1,1,0, 1,1,0,0, 1,0,0,1, 0,0,1,1);
@@ -124,15 +205,32 @@ sub n_to_xy {
   ### assert: $n >= 0
   ### assert: $n < $nwidth
 
-  # like a mixed-radix high digit radix $parts then rest radix 3
-  $nwidth /= $parts;
-  (my $quad, $n) = _divrem($n,$nwidth);
-  ### $quad
-  ### assert: $quad >= 0
-  ### assert: $quad < $parts
-  if ($parts == 3) {
-    if ($quad == 1) { $quad = 3; } # quad=1 -> 3
-    if ($quad == 2) { $quad = 1; } # quad=2 -> 1
+  # like a mixed-radix high digit radix $numroots then rest radix 3
+  my $quad;
+  if ($parts eq 'wedge') {
+    my $nhalf = $nwidth/2;
+    if ($n < $nhalf) {
+      $n += $nhalf - 1;
+      $quad = 0;
+    } else {
+      $n -= $nhalf;
+      $quad = 1;
+    }
+  } elsif ((my $numroots = $parts_to_numroots{$parts}) > 1) {
+      $nwidth /= $numroots;
+    ($quad, $n) = _divrem($n,$nwidth);
+    ### $quad
+    ### assert: $quad >= 0
+    ### assert: $quad < $numroots
+    if ($parts eq '3') {
+      if ($quad == 1) { $quad = 3; }   # quad=1 -> 3
+      if ($quad == 2) { $quad = 1; }   # quad=2 -> 1
+    }
+  } else {
+    $quad = 0;
+    if ($parts eq 'octant_up') {
+      $n += $nwidth - 1;
+    }
   }
 
   my @nternary = digit_split_lowtohigh($n, 3);
@@ -183,7 +281,8 @@ sub xy_to_n {
 
   my $parts = $self->{'parts'};
   my $quad = 0;
-  if ($parts == 3) {
+
+  if ($parts eq '3') {
     if ($x < 0) {
       if ($y < 0) {
         return undef;
@@ -196,18 +295,34 @@ sub xy_to_n {
         $quad = 1;
       }
     }
+
+  } elsif ($parts eq 'octant') {
+    if ($y < 0 || $y > $x) { return undef; }
+
+  } elsif ($parts eq 'octant_up') {
+    if ($x < 0 || $x > $y) { return undef; }
+
+  } elsif ($parts eq 'wedge') {
+    if ($x < -1-$y || $x > $y) { return undef; }
+    if ($x < 0) {
+      ($x,$y) = ($y,-1-$x); # rotate +90 and offset
+      $quad = 1;
+    }
+
   } else {
-    # parts==1,2,4
+    # parts=1,2,4
+
     if ($y < 0) {
-      if ($parts < 3) {
+      if ($parts ne '4') {
         return undef;
       }
       $x = -1-$x; # rotate +180
       $y = -1-$y;
       $quad = 2;
     }
+
     if ($x < 0) {
-      if ($parts < 2) {
+      if ($parts eq '1') {
         return undef;
       }
       ($x,$y) = ($y,-1-$x); # rotate +90 and offset
@@ -232,11 +347,10 @@ sub xy_to_n {
 
   my ($len,$exp) = round_down_pow(max($x,$y), 2);
   my @depthbits;
-  my $n = $zero;
-  my $ndigits = $zero;
+  my @ndigits;  # high to low
 
   foreach my $i (reverse 0 .. $exp) {
-    ### at: "x=$x,y=$y  n=$n len=$len"
+    ### at: "x=$x,y=$y  ndigits=".join(',',@ndigits)." len=$len"
 
     ### assert: $x >= 0
     ### assert: $y >= 0
@@ -246,40 +360,50 @@ sub xy_to_n {
 
     if ($depthbits[$i] = ($x >= $len || $y >= $len ? 1 : 0)) {
       # one of the three parts away from the origin
-      $n *= 3;
-      $ndigits++;
 
       if ($y < $len) {
         ### lower right, digit 0 ...
         ($x,$y) = ($len-1-$y,$x-$len);  # rotate +90 and offset
+        push @ndigits, 0;
       } elsif ($x >= $len) {
         ### diagonal, digit 1 ...
         ### right, digit 1 ...
         $x -= $len;
         $y -= $len;
-        $n += 1;
+        push @ndigits, 1;
       } else {
         ### top left, digit 2 ...
         ($x,$y) = ($y-$len,$len-1-$x);  # rotate -90 and offset
-        $n += 2;
+        push @ndigits, 2;
       }
     }
 
     $len /= 2;
   }
 
-  my $depth = digit_join_lowtohigh(\@depthbits,2,$zero);
-
+  @ndigits = reverse @ndigits;
+  my $n = digit_join_lowtohigh(\@ndigits,3,$zero);
   ### $n
-  ### @depthbits
-  ### $depth
-  ### $ndigits
-  ### npower: 3**$ndigits
   ### $quad
-  ### quad powered: $quad*3**$ndigits
-  ### result: $n + $quad*3**$ndigits + $self->tree_depth_to_n($depth)
 
-  return $n + $quad*3**$ndigits + $self->tree_depth_to_n($depth);
+  if ($quad) {
+    ### npower: 3**scalar(@ndigits)
+    ### quad npower: $quad * 3**scalar(@ndigits)
+    $n += $quad * 3**scalar(@ndigits);
+  }
+  if ($parts eq 'octant_up' || $parts eq 'wedge') {
+    $n -= (3**scalar(@ndigits) - 1) / 2;
+  }
+
+  {
+    my $depth = digit_join_lowtohigh(\@depthbits,2,$zero);
+    ### @depthbits
+    ### $depth
+    $n += $self->tree_depth_to_n($depth);
+  }
+
+  ### final n: $n
+  return $n;
 }
 
 #use Smart::Comments;
@@ -298,17 +422,42 @@ sub rect_to_n_range {
   ($y1,$y2) = ($y2,$y1) if $y1 > $y2;
 
   my $parts = $self->{'parts'};
-  if (($parts < 2 && $x2 < 0)
-      || ($parts < 3 && $y2 < 0)
-      || ($parts == 3 && $x2 < 0 && $y2 < 0))  {
-    return (1,0);  # nothing
-  }
+  my $xymax;
+  if ($parts eq 'octant') {
+    if ($y2 < 0 || $x2 < $y1) { return (1,0); }
+    $xymax = $x2;
 
-  my $xymax = max($x2,
-                     $y2,
-                     ($parts >= 2 ? (-1-$x1) : ()),
-                     ($parts >= 3 ? (-1-$y1) : ()));
+  } elsif ($parts eq 'octant_up') {
+    if ($x2 < 0 || $y2 < $x1) { return (1,0); }
+    $xymax = $y2;
+
+  } elsif ($parts eq 'wedge') {
+    if ($x2 < -1-$y2 || $x1 > $y2) { return (1,0); }
+    $xymax = $y2;
+
+  } else {
+    $xymax = max($x2,$y2);
+    if ($parts eq '1') {
+      if ($x2 < 0 || $y2 < 0) { return (1,0); }
+
+    } else {
+      # parts=2,3,4
+      $xymax = max($xymax, -1-$x1);
+
+      if ($parts eq '2') {
+        if ($y2 < 0) { return (1,0); }
+      } else {
+        # parts=3,4
+        $xymax = max($xymax, -1-$y1);
+
+        if ($parts eq '3') {
+          if ($x2 < 0 && $y2 < 0)  { return (1,0); }
+        }
+      }
+    }
+  }
   ### $xymax
+
   ($xymax) = round_down_pow($xymax,2);
   ### $xymax
   ### depth_to_n: $self->tree_depth_to_n($xymax+1)
@@ -316,20 +465,24 @@ sub rect_to_n_range {
           $self->tree_depth_to_n(2*$xymax) - 1);
 }
 
+# quad(d) = sum i=0tod 3^count1bits(i)
+# quad(d) = 2*oct(d) + d
+# oct(d) = (quad(d) + d) / 2
+# oct(d) = sum i=0tod (3^count1bits(d) + 1)/2
+# quad add   1,3,3, 9, 3, 9, 9,27, 3, 9, 9,27,9,27,27,81   A048883
+# oct add    1,2,2, 5, 2, 5, 5,14, 2, 5, 5,14,5,14,14,41,  A162784
+# oct total  1,3,5,10,12,17,22,36,38,43,48,
+#
 sub tree_depth_to_n {
   my ($self, $depth) = @_;
   ### tree_depth_to_n(): "depth=$depth"
 
-  if (is_infinite($depth)) {
-    return $depth;
-  }
-  unless ($depth >= 0) {
-    return undef;
-  }
-  my $n = ($depth*0);    # bignum 0
+  if ($depth < 0) {          return undef; }
+  if (is_infinite($depth)) { return $depth; }
 
-  # pow3 = parts * 3^count1bits(depth)
-  my $pow3 = $self->{'parts'} + $n; # bignum 1 to 4
+  # pow3 = 3^count1bits(depth)
+  my $n = ($depth*0);   # inherit bignum 0
+  my $pow3 = $n + 1;    # inherit bignum 1
 
   foreach my $bit (reverse bit_split_lowtohigh($depth)) {  # high to low
     $n *= 4;
@@ -338,6 +491,16 @@ sub tree_depth_to_n {
       $pow3 *= 3;
     }
   }
+
+  my $parts = $self->{'parts'};
+  if ($parts eq 'octant' || $parts eq 'octant_up') {
+    $n = ($n + $depth) / 2;
+  } elsif ($parts eq 'wedge') {
+    $n += $depth;
+  } else {
+    $n *= $parts;
+  }
+
   return $n + $self->{'n_start'};
 }
 
@@ -355,47 +518,87 @@ sub tree_n_to_depth {
   return digit_join_lowtohigh ($depthbits, 2, $n*0);
 }
 
+# nwidth = 4^k next 4^(k-1) or to 3*4^(k-1)
+# octant nwidth = (4^k + 2^k)/2
+#               = 2^k*(2^k+1)/2
+# next (4^(k-1) + 2^(k-1))/2
+#      = 2^(k-1)*(2^(k-1) + 1)/2
+#
 sub _n0_to_depthbits {
   my ($n, $parts) = @_;
   ### _n0_to_depthbits(): $n
   ### $parts
 
-  if ($n < $parts) {
-    return ([], 0, $parts);
+  my $numroots = $parts_to_numroots{$parts};
+  if ($n < $numroots) {
+    return ([], 0, $numroots); # $n is in row depth=0
   }
 
-  my ($nwidth, $bitpos) = round_down_pow ($n/$parts, 4);
-  $nwidth *= $parts;
-  ### $nwidth
+  my ($nmore, $nhalf, $bitpos);
+  if ($parts eq 'octant' || $parts eq 'octant_up') {
+    ($nmore, $bitpos) = round_down_pow (2*$n, 4);
+    $nhalf = 2**$bitpos;
+  } elsif ($parts eq 'wedge') {
+    ($nmore, $bitpos) = round_down_pow ($n, 4);
+    $nhalf = 2**$bitpos;
+  } else {
+    ($nmore, $bitpos) = round_down_pow ($n/$numroots, 4);
+    $nmore *= $parts;
+    $nhalf = 0;
+  }
+  ### $nmore
+  ### $nhalf
   ### $bitpos
 
   my @depthbits;
   my $ndepth = 0;
   for (;;) {
-    ### at: "n=$n nwidth=$nwidth bitpos=$bitpos depthbits=".join(',',map{$_||0}@depthbits)
-    if ($n >= $ndepth + $nwidth) {
+    ### at: "n=$n ndepth=$ndepth nmore=$nmore nhalf=$nhalf bitpos=$bitpos depthbits=".join(',',map{$_||0}@depthbits)
+
+    my $ncmp;
+    if ($parts eq 'wedge') {
+      $ncmp = $ndepth + $nmore + $nhalf;
+    } elsif ($nhalf) {
+      $ncmp = $ndepth + ($nmore + $nhalf)/2;
+    } else {
+      $ncmp = $ndepth + $nmore;
+    }
+    ### $ncmp
+
+    if ($n >= $ncmp) {
       $depthbits[$bitpos] = 1;
-      $ndepth += $nwidth;
-      $nwidth *= 3;
+      $ndepth = $ncmp;
+      $nmore *= 3;
     } else {
       $depthbits[$bitpos] = 0;
     }
     $bitpos--;
     last unless $bitpos >= 0;
-    $nwidth /= 4;
+
+    $nmore /= 4;
+    $nhalf /= 2;
   }
 
   # Nwidth = 3**count1bits(depth)
+  ### final ...
+  ### $nmore
+  ### $nhalf
   ### @depthbits
-  ### assert: $nwidth == $parts * 3 ** (scalar(grep{$_}@depthbits))
+  ### assert: $nmore == $numroots * 3 ** (scalar(grep{$_}@depthbits))
 
-  return (\@depthbits, $ndepth, $nwidth);
+  if ($parts eq 'wedge') {
+    $nmore += 1;
+  } elsif ($nhalf) {
+    ### assert: $nmore % 2 == 1
+    $nmore = ($nmore + 1) / 2;
+  }
+  return (\@depthbits, $ndepth, $nmore);
 }
 
 # ENHANCE-ME: step by the bits, not by X,Y
 # ENHANCE-ME: tree_n_to_depth() by probe?
-my @surround_x = (1, 0, -1, 0, 1, -1, 1, -1);
-my @surround_y = (0, 1, 0, -1, 1, 1, -1, -1);
+my @surround8_dx = (1, 0, -1, 0, 1, -1, 1, -1);
+my @surround8_dy = (0, 1, 0, -1, 1, 1, -1, -1);
 sub tree_n_children {
   my ($self, $n) = @_;
   ### LCornerTree tree_n_children(): $n
@@ -407,8 +610,8 @@ sub tree_n_children {
   my ($x,$y) = $self->n_to_xy($n);
   my @n_children;
   foreach my $i (0 .. 7) {
-    if (defined (my $n_surround = $self->xy_to_n($x + $surround_x[$i],
-                                                 $y + $surround_y[$i]))) {
+    if (defined (my $n_surround = $self->xy_to_n($x + $surround8_dx[$i],
+                                                 $y + $surround8_dy[$i]))) {
       ### $n_surround
       if ($n_surround > $n) {
         my $n_parent = $self->tree_n_parent($n_surround);
@@ -428,16 +631,16 @@ sub tree_n_parent {
   my ($self, $n) = @_;
   ### LCornerTree tree_n_parent(): $n
 
-  if ($n < $self->{'n_start'} + $self->{'parts'}) {
+  my $want_depth = $self->tree_n_to_depth($n);
+  if (! defined $want_depth || ($want_depth -= 1) < 0) {
     return undef;
   }
-  my $want_depth = $self->tree_n_to_depth($n) - 1;
   my ($x,$y) = $self->n_to_xy($n);
   ### $want_depth
 
   foreach my $i (0 .. 7) {
-    if (defined (my $n_surround = $self->xy_to_n($x + $surround_x[$i],
-                                                 $y + $surround_y[$i]))) {
+    if (defined (my $n_surround = $self->xy_to_n($x + $surround8_dx[$i],
+                                                 $y + $surround8_dy[$i]))) {
       my $depth_surround = $self->tree_n_to_depth($n_surround);
       ### $n_surround
       ### $depth_surround
@@ -448,6 +651,88 @@ sub tree_n_parent {
   }
   ### no parent ...
   return undef;
+}
+
+sub tree_n_to_height {
+  my ($self, $n) = @_;
+  ### LCornerTree tree_n_to_height(): $n
+
+  $n = $n - $self->{'n_start'};
+  if ($n < 0)          { return undef; }
+  if (is_infinite($n)) { return $n; }
+
+  my ($depthbits, $ndepth, $nwidth) = _n0_to_depthbits($n, $self->{'parts'});
+  $n -= $ndepth;      # remaining offset into row
+  my @nbits = bit_split_lowtohigh($n);
+
+  my $parts = $self->{'parts'};
+  if ($parts eq 'octant_up') {
+    # add to second half of parts=1 row
+    $n += $nwidth - 1;
+
+  } elsif ($parts eq 'wedge') {
+    # swap row halves into style of parts=1
+    my $nhalf = $nwidth/2;
+    if ($n < $nhalf) {
+      $n += $nhalf-1;
+    } else {
+      $n -= $nhalf;
+    }
+
+  } elsif ((my $numroots = $parts_to_numroots{$parts}) > 1) {
+    # parts=2,3,4 reduce to parts=1 style
+    ### assert: $nwidth % $numroots == 0
+    $nwidth /= $numroots;
+    $n %= $nwidth;    # Nrem in level, as per n_to_xy()
+  }
+
+  ### $depthbits
+  ### $n
+
+  foreach my $i (0 .. $#$depthbits) {
+    ### $i
+    ### N ternary digit: $n%3
+    unless ($depthbits->[$i] ^= 1) {  # invert, taken Nrem digit at bit=1
+      if (_divrem_mutate($n,3) != 1) {  # stop at lowest non-"1" ternary digit
+        $#$depthbits = $i;  # truncate
+        return digit_join_lowtohigh($depthbits, 2, $n*0);
+      }
+    }
+  }
+  return undef;  # Nrem all 1-digits, so on central infinite spine
+}
+
+# return ($quotient, $remainder)
+sub _divrem {
+  my ($n, $d) = @_;
+  if (ref $n && $n->isa('Math::BigInt')) {
+    my ($quot,$rem) = $n->copy->bdiv($d);
+    if (! ref $d || $d < 1_000_000) {
+      $rem = $rem->numify;  # plain remainder if fits
+    }
+    return ($quot, $rem);
+  }
+  my $rem = $n % $d;
+  return (int(($n-$rem)/$d), # exact division stays in UV
+          $rem);
+}
+
+# return $remainder, modify $n
+# the scalar $_[0] is modified, but if it's a BigInt then a new BigInt is made
+# and stored there, the bigint value is not changed
+sub _divrem_mutate {
+  my $d = $_[1];
+  my $rem;
+  if (ref $_[0] && $_[0]->isa('Math::BigInt')) {
+    ($_[0], $rem) = $_[0]->copy->bdiv($d);  # quot,rem in array context
+    if (! ref $d || $d < 1_000_000) {
+      return $rem->numify;  # plain remainder if fits
+    }
+  } else {
+    $rem = $_[0] % $d;
+    $_[0] = int(($_[0]-$rem)/$d); # exact division stays in UV
+  }
+  return $rem;
 }
 
 1;
@@ -556,10 +841,9 @@ Math::PlanePath::LCornerTree -- cellular automaton growing at exposed corners
 
 =head1 DESCRIPTION
 
-This is the pattern of a cellular automaton growing by 3 cells from an
-exposed corner at each growth level.  Points are numbered anti-clockwise
-within their level.  The default is four quadrants starting from four
-initial cells N=0 to N=3,
+This is the pattern of a cellular automaton growing by 3 cells at exposed
+corners.  Points are numbered anti-clockwise within their level.  The
+default is four quadrants starting from four initial cells N=0 to N=3,
 
     68  67                          66  65      4
     69  41  40  39  38  35  34  33  32  64      3
@@ -574,8 +858,8 @@ initial cells N=0 to N=3,
                          ^
     -5  -4  -3  -2  -1  X=0  1   2   3   4
 
-The rule is that a cell which is an exposed corner grows by the three cells
-surrounding that corner.  So
+The growth rule is a cell which is an exposed corner grows by the three
+cells surrounding that corner.  So
 
     depth=0   depth=1         depth=2             depth=3
 
@@ -601,7 +885,7 @@ they grow to the "c" cells.  Those "c" cells are then all exposed corners
 and give a set of 36 "d" cells.  Of those "d"s only the corners are exposed
 corners for the next "e" level.
 
-Grouping the three children of each corner shows the growth pattern
+Grouping the three children of each corner shows the pattern
 
 =cut
 
@@ -628,15 +912,15 @@ Grouping the three children of each corner shows the growth pattern
     +-----------------------+
 
 In general the number of cells gained in each level is
-4*3^count1bits(depth).  So for example depth=3 binary "11" has 2 1-bits so
-cells=4*3^2=36.  Through to a depth=2^k adding all those powers-of-3 gives a
-power-of-4 square area.
+
+    Nwidth = 4 * 3^count1bits(depth)
+
+So for example depth=3 binary "11" has 2 1-bits so cells=4*3^2=36.  Adding
+such powers-of-3 up to a depth=2^k gives a power-of-4 total square area.
 
 Each side part turns by 90 degrees at its corner, so the plane is filled in
-a self-similar style turning into each side quarter, making an attractive
-way to fill the plane by a tree structure.  See
-L<Math::PlanePath::LCornerReplicate> for a digit-based approach to the
-replication.
+a self-similar style turning into each side quarter.  This is an attractive
+way to fill the plane by a tree structure.
 
     +----------------+
     |       |        |
@@ -652,11 +936,14 @@ replication.
     | /     |        |
     +----------------+
 
+See also L<Math::PlanePath::LCornerReplicate> for a digit-based approach to
+the replication.
+
 =head2 One Quadrant
 
-Option C<parts =E<gt> 1> confines the pattern to the first quadrant.  This
-is a single copy of the repeating part in each of the four quadrants of the
-full pattern.
+Option C<parts =E<gt> '1'> confines the pattern to the first quadrant.  This
+is a single copy of the repeating part which is in each of the four
+quadrants of the full pattern.
 
 =cut
 
@@ -664,7 +951,7 @@ full pattern.
 
 =pod
 
-    parts => 1
+    parts => "1"
 
      4  |              18  17
      3  |  14  13  12  11  16
@@ -676,7 +963,7 @@ full pattern.
 
 =head2 Half Plane
 
-Option C<parts =E<gt> 2> confines the tree to the upper half plane
+Option C<parts =E<gt> '2'> confines the tree to the upper half plane
 C<YE<gt>=0>, giving two symmetric parts above the X axis.
 
 =cut
@@ -685,7 +972,7 @@ C<YE<gt>=0>, giving two symmetric parts above the X axis.
 
 =pod
 
-    parts => 2
+    parts => "2"
 
     36  35                          34  33        4  
     37  27  26  25  24  21  20  19  18  32        3  
@@ -697,7 +984,7 @@ C<YE<gt>=0>, giving two symmetric parts above the X axis.
 
 =head2 Three Parts
 
-Option C<parts =E<gt> 3> is three replications arranged in a corner down and
+Option C<parts =E<gt> '3'> is three replications arranged in a corner down and
 left similar to the way the tree grows from a power-of-2 corner X=2^k,Y=2^k.
 
 =cut
@@ -706,7 +993,7 @@ left similar to the way the tree grows from a power-of-2 corner X=2^k,Y=2^k.
 
 =pod
 
-    parts => 3
+    parts => "3"
 
     55  54                          50  49        4  
     56  43  42  41  40  28  27  26  25  48        3  
@@ -721,11 +1008,39 @@ left similar to the way the tree grows from a power-of-2 corner X=2^k,Y=2^k.
                          ^
     -5  -4  -3  -2  -1  X=0  1   2   3   4
 
+=head2 One Octant
+
+Option C<parts =E<gt> 'octant'> confines the pattern to the first eighth of
+the plane.  This is a single side of the eight-way symmetry in the full
+pattern.
+
+=cut
+
+# math-image --path=LCornerTree,parts=octant, --all --output=numbers --size=50x7
+
+=pod
+
+    parts => "octant"
+           
+     6  |                          21 
+     5  |                      16  20 
+     4  |                  11  15  31 
+     3  |               9  10  14  30 
+     2  |           4   8  12  13  19 
+     1  |       2   3   7  22  17  18 
+    Y=0 |   0   1   5   6  23  24  25 
+        +-----------------------------
+          X=0   1   2   3   4   5   6
+
+The points are numbered in the same sequence as the parts=1 quadrant, but
+with those above the X=Y diagonal omitted.  This means each N on the X=Y
+diagonal is the last of the depth level.
+
 =head2 Ulam Warburton
 
 Taking just the non-leaf nodes gives the pattern of the Ulam-Warburton
-cellular automaton, oriented as per L<Math::PlanePath::UlamWarburtonQuarter>
-and using 2x2 blocks for each cell.
+cellular automaton, oriented on the diagonal as per
+L<Math::PlanePath::UlamWarburtonQuarter> and using 2x2 blocks for each cell.
 
 =cut
 
@@ -735,26 +1050,27 @@ and using 2x2 blocks for each cell.
 
 =pod
 
-    parts=>1  non-leaf points
+    parts=>1  non-leaf cells
                    ...
-     **  **  **  **  
-     **  **  **  **  
-       **      **    
-       **      **    
-     **  **  **  **  
-     **  **  **  **  
-           **        
-           **        
-     **  **  **  **  
-     **  **  **  **  
-       **      **    
-       **      **    
-     **  **  **  **  
-     **  **  **  **  
-    *
+    |  **  **  **  **  
+    |  **  **  **  **  
+    |    **      **    
+    |    **      **    
+    |  **  **  **  **  
+    |  **  **  **  **  
+    |        **        
+    |        **        
+    |  **  **  **  **  
+    |  **  **  **  **  
+    |    **      **    
+    |    **      **    
+    |  **  **  **  **  
+    |  **  **  **  **  
+    | *
+    +----------------
 
-parts=E<gt>4 gives the pattern of L<Math::PlanePath::UlamWarburton> but
-turned 45 degrees and again in 2x2 blocks.
+parts=4 gives the pattern of L<Math::PlanePath::UlamWarburton> but again
+turned 45 degrees and in 2x2 blocks.
 
 =pod
 
@@ -766,9 +1082,15 @@ See L<Math::PlanePath/FUNCTIONS> for behaviour common to all path classes.
 
 =item C<$path = Math::PlanePath::LCornerTree-E<gt>new ()>
 
-=item C<$path = Math::PlanePath::LCornerTree-E<gt>new (parts =E<gt> $integer)>
+=item C<$path = Math::PlanePath::LCornerTree-E<gt>new (parts =E<gt> $parts)>
 
-Create and return a new path object.  C<parts> can be 1, 2, 3 or 4.
+Create and return a new path object.  C<parts> (a string) can be
+
+    "4"
+    "3"
+    "2"
+    "1"
+    "octant"
 
 =back
 
@@ -781,10 +1103,13 @@ Create and return a new path object.  C<parts> can be 1, 2, 3 or 4.
 Return the children of C<$n>, or an empty list if C<$n> has no children
 (including when C<$n E<lt> 0>, ie. before the start of the path).
 
-X<3-tree>Each point has either 0 or 3 children.  Such a tree is sometimes
-called a "3-tree".  The children of a corner C<$n> are the three cells
-adjacent to it which turn to "on" at the next depth.  A non-corner has no
-children.
+X<3-tree>For parts=1,2,3,4 each point has either 0 or 3 children.  Such a
+tree is sometimes called a "3-tree".  The children of a corner C<$n> are the
+three cells adjacent to it turned "on" at the next depth.  A non-corner has
+no children.
+
+For parts=octant the points on the X=Y diagonal always have 2 children and
+the rest is 0 or 3 children.
 
 =back
 
@@ -796,32 +1121,36 @@ Sequences as
     http://oeis.org/A160410    (etc)
 
     parts=4 (the default)
-      A160410   total cells at given depth (Ndepth)
+      A160410   total cells at given depth, tree_depth_to_n()
       A161411   added cells at given depth, 4*3^count1bits(n)
 
     parts=3
-      A160412   total cells at given depth (Ndepth)
+      A160412   total cells at given depth, tree_depth_to_n()
       A162349   added cells at given depth, 3*3^count1bits(n)
 
     parts=1
-      A130665   total cells at given depth (Ndepth)
+      A130665   total cells at given depth, from depth=1 onwards
+                  cumulative 3^count1bits, tree_depth_to_n(d+1)
       A048883   added cells at given depth, 3^count1bits(n)
+
+    parts=octant
+      A162784   added cells at given depth, (3^count1bits(n) + 1)/2
 
 Drawings by Omar Pol
 
     parts=4
-    http://www.polprimos.com/imagenespub/polca023.jpg
-    http://www.polprimos.com/imagenespub/polca024.jpg
+      http://www.polprimos.com/imagenespub/polca023.jpg
+      http://www.polprimos.com/imagenespub/polca024.jpg
 
     parts=3
-    http://www.polprimos.com/imagenespub/polca013.jpg
-    http://www.polprimos.com/imagenespub/polca027.jpg
-    http://www.polprimos.com/imagenespub/polca029.jpg
+      http://www.polprimos.com/imagenespub/polca013.jpg
+      http://www.polprimos.com/imagenespub/polca027.jpg
+      http://www.polprimos.com/imagenespub/polca029.jpg
 
     parts=1
-    http://www.polprimos.com/imagenespub/polca011.jpg
-    http://www.polprimos.com/imagenespub/polca012.jpg
-    http://www.polprimos.com/imagenespub/polca014.jpg
+      http://www.polprimos.com/imagenespub/polca011.jpg
+      http://www.polprimos.com/imagenespub/polca012.jpg
+      http://www.polprimos.com/imagenespub/polca014.jpg
 
 =head1 SEE ALSO
 

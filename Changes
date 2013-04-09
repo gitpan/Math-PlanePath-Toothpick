@@ -17,6 +17,11 @@ with Math-PlanePath-Toothpick.  If not, see <http://www.gnu.org/licenses/>.
 
 
 
+Version 4, April 2013
+    - new dir_maximum_dxdy()
+    - LCornerTree new parts=octant
+    - Math::NumSeq::OEIS catalogue entries for OneOfEight
+
 Version 3, February 2013
     - new OneOfEight
 

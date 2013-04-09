@@ -63,7 +63,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 3;
+$VERSION = 4;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -87,7 +87,7 @@ use constant parameter_info_array =>
       type      => 'enum',
       default   => '4',
       choices   => ['4','3','2','1',
-                    'cross','octant',
+                    'cross','octant','octant_up',
                     'wedge','wedge+1',
                     'unwedge_left','unwedge_left+1','unwedge_left_S',
                     'unwedge_down','unwedge_down+1','unwedge_down_W',
@@ -114,7 +114,7 @@ sub new {
     @n_to_x = (0);
     @n_to_y = (0);
     @endpoint_dirs = (2);
-  } elsif ($parts eq '1' || $parts eq 'octant') {
+  } elsif ($parts eq '1' || $parts eq 'octant' || $parts eq 'octant_up') {
     @n_to_x = (1);
     @n_to_y = (1);
     @endpoint_dirs = (0);
@@ -130,6 +130,10 @@ sub new {
     @n_to_x = (0, -1, 1, 0);
     @n_to_y = (0, 0, 0, -2);
     @endpoint_dirs = (2, 3, 0, 1);
+  } elsif ($parts eq 'two_horiz') {
+    @n_to_x = (1, -1);
+    @n_to_y = (0, 0);
+    @endpoint_dirs = (3, 1);
   } else {
     croak "Unrecognised parts: ",$parts;
   }
@@ -200,6 +204,9 @@ sub _extend {
       }
       if ($parts eq 'octant') {
         if ($y <= 0 || $y > $x+1) { next; }
+      }
+      if ($parts eq 'octant_up') {
+        if ($x <= 0 || $x > $y) { next; }
       }
       if ($parts eq 'wedge') {
         if ($y < abs($x)) { next; }

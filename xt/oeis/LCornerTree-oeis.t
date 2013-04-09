@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2012 Kevin Ryde
+# Copyright 2012, 2013 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -33,6 +33,31 @@ use Math::PlanePath::LCornerTree;
 # uncomment this to run the ### lines
 #use Smart::Comments '###';
 
+# Return the number of points at $depth.
+sub path_tree_depth_to_width {
+  my ($path, $depth) = @_;
+  if (defined (my $n = $path->tree_depth_to_n($depth))
+      && defined (my $n_end = $path->tree_depth_to_n_end($depth))) {
+    return $n_end - $n + 1;
+  } else {
+    return undef;
+  }
+}
+
+#------------------------------------------------------------------------------
+# A162784 - added cells parts=octant
+
+MyOEIS::compare_values
+  (anum => 'A162784',
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::LCornerTree->new (parts => 'octant');
+     my @got;
+     for (my $depth = 0; @got < $count; $depth++) {
+       push @got, path_tree_depth_to_width($path,$depth);
+     }
+     return \@got;
+   });
 
 #------------------------------------------------------------------------------
 # A160410 - total cells parts=4
@@ -58,9 +83,8 @@ MyOEIS::compare_values
      my ($count) = @_;
      my $path = Math::PlanePath::LCornerTree->new;
      my @got;
-     for (my $depth = 1; @got < $count; $depth++) {
-       push @got,
-         $path->tree_depth_to_n($depth) - $path->tree_depth_to_n($depth-1);
+     for (my $depth = 0; @got < $count; $depth++) {
+       push @got, path_tree_depth_to_width($path,$depth);
      }
      return \@got;
    });
@@ -89,9 +113,8 @@ MyOEIS::compare_values
      my ($count) = @_;
      my $path = Math::PlanePath::LCornerTree->new (parts => 3);
      my @got;
-     for (my $depth = 1; @got < $count; $depth++) {
-       push @got,
-         $path->tree_depth_to_n($depth) - $path->tree_depth_to_n($depth-1);
+     for (my $depth = 0; @got < $count; $depth++) {
+       push @got, path_tree_depth_to_width($path,$depth);
      }
      return \@got;
    });
@@ -120,9 +143,8 @@ MyOEIS::compare_values
      my ($count) = @_;
      my $path = Math::PlanePath::LCornerTree->new (parts => 1);
      my @got;
-     for (my $depth = 1; @got < $count; $depth++) {
-       push @got,
-         $path->tree_depth_to_n($depth) - $path->tree_depth_to_n($depth-1);
+     for (my $depth = 0; @got < $count; $depth++) {
+       push @got, path_tree_depth_to_width($path,$depth);
      }
      return \@got;
    });

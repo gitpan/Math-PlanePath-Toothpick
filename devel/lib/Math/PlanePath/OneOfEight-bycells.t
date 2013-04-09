@@ -17,6 +17,10 @@
 # You should have received a copy of the GNU General Public License along
 # with Math-PlanePath-Toothpick.  If not, see <http://www.gnu.org/licenses/>.
 
+
+# Compare OneOfEight.pm and OneOfEightByCells.pm.
+#
+
 use 5.004;
 use strict;
 use Test;
@@ -48,7 +52,7 @@ my $report = sub {
   }
 };
 
-foreach my $parts ('3side', 'side', '3mid', '1', '4', 'octant') {
+foreach my $parts ('octant_up', 'octant', '3side', 'side', '3mid', '1', '4') {
   my $path = Math::PlanePath::OneOfEight->new (parts => $parts);
   my $cells = Math::PlanePath::OneOfEightByCells->new (parts => $parts);
 

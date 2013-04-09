@@ -14,51 +14,53 @@ not run its Makefile.PL or Build.PL.
 -----BEGIN PGP SIGNED MESSAGE-----
 Hash: SHA1
 
-SHA1 00113a6c77a021e643bbf000f9249f094fe90771 Changes
-SHA1 3f4f2de305519d0b28388f17fa1914ba30dec726 MANIFEST
+SHA1 dd2af390e6283c1142b2e980b55a2a0bf79c7321 Changes
+SHA1 89b088d5362f1bb60c16dce9251c78458f381257 MANIFEST
 SHA1 b758f740af57256154bbf4e1f8a760a1b9f9dfe1 MANIFEST.SKIP
-SHA1 478dae0286093c3667f3997cf060a38b690a637c META.yml
+SHA1 e9971abd31455103cee64cb567cf1c2a7cb3511e META.yml
 SHA1 3a2c496c2df7f7b668f1a1f03147e8656fedb8c1 Makefile.PL
-SHA1 a63199f2a16021b555348b1ebc442218f520d071 debian/changelog
+SHA1 fb56f78e87ee254f53271b00d9df92b3b552a3cb debian/changelog
 SHA1 ac3478d69a3c81fa62e60f5c3696165a4e5e6ac4 debian/compat
 SHA1 9b60a6b341d23dea3c1e2374e8964dda2b6054b1 debian/control
 SHA1 7de327e8eaf76796464adc08c5927d329fb71feb debian/copyright
 SHA1 4d1b31ae943a2d96f8d5c355e866e57219ba8f2b debian/rules
 SHA1 61652cd1568dcf2614df833eba241755eee34e89 debian/source/format
 SHA1 95af84e3e873e74219c90055f42917f799ce291e debian/watch
+SHA1 11a6980fd1c8292bcd08e4b2832580992252451a devel/lcorner-replicate.pl
 SHA1 4b48f9c38ef4e00ef2d306527d9a328154ba06d3 devel/lcorner-single.pl
 SHA1 5274009dcb93b342db8da810dd0d5fe81f9df421 devel/lcorner-tree-triplets.pl
 SHA1 f2aa9511c4bb1cfcb7c174187eaf4b86566a2f75 devel/lib/Math/PlanePath/EToothpickTree-oeis.t
-SHA1 27520bb0e4bb7a76e81e0de44d816fa38eda44e4 devel/lib/Math/PlanePath/EToothpickTree.pm
-SHA1 da3a6db76e650bda86259d765fd05c4af679ec62 devel/lib/Math/PlanePath/LCornerSingle.pm
+SHA1 a4cada607d4162cc9ea89381b342d0b9f97a4b78 devel/lib/Math/PlanePath/EToothpickTree.pm
+SHA1 e44b37cea0f6bb38eb873c8901b8847e201698f5 devel/lib/Math/PlanePath/LCornerSingle.pm
+SHA1 2946ffd72a1677640e013411f95381490ec5f725 devel/lib/Math/PlanePath/LCornerTreeByCells.pm
 SHA1 65c727c950566e2ab96336e9198c6b7641f5c123 devel/lib/Math/PlanePath/LToothpickTree-oeis.t
-SHA1 d149b88be09c4505f27d111096cd6cb8a3cab291 devel/lib/Math/PlanePath/LToothpickTree.pm
-SHA1 fc31c0e6703e84c1e16ceb51240b5b015f95f3c4 devel/lib/Math/PlanePath/OneOfEight-bycells.t
-SHA1 8c7845a5044ba7d75c940f63ac78250bbcfe355a devel/lib/Math/PlanePath/OneOfEightByCells.pm
-SHA1 d6d131ded2ed8f1a39f4d6f8ea5a2c08600a7280 devel/lib/Math/PlanePath/OneOfSixByCells.pm
+SHA1 36f00c9468df04faae3d57cabebe37f0b54febb4 devel/lib/Math/PlanePath/LToothpickTree.pm
+SHA1 01163ba7ee460c950a3f224fe14ce1d602906b64 devel/lib/Math/PlanePath/OneOfEight-bycells.t
+SHA1 b8348c590adf2207102f8c1ab02eb4e5bd86f7ec devel/lib/Math/PlanePath/OneOfEightByCells.pm
+SHA1 fd50322d17c9378b2bdaab0b5948d292ef295a69 devel/lib/Math/PlanePath/OneOfSixByCells.pm
 SHA1 a195d4b2d8207b4aba5430a9a0cadaf4e615afde devel/lib/Math/PlanePath/PeninsulaBridge-oeis.t
-SHA1 5e68a68984e38d5e670838aa4724760d34fddfba devel/lib/Math/PlanePath/PeninsulaBridge.pm
-SHA1 a250e62748559d042741b98306c579aa5c238f62 devel/lib/Math/PlanePath/ToothpickTreeByCells-oeis.t
-SHA1 02d32b7b8c198f3296351e918de1f6bca5549b42 devel/lib/Math/PlanePath/ToothpickTreeByCells.pm
+SHA1 b882dca1103c589d3bda358fae01d9e9dbe1add8 devel/lib/Math/PlanePath/PeninsulaBridge.pm
+SHA1 c2702c8770192da369d9afc1fb89260089066dde devel/lib/Math/PlanePath/ToothpickTreeByCells-oeis.t
+SHA1 f09a05af8b78ce19773e6560cfcdb328b2520a1a devel/lib/Math/PlanePath/ToothpickTreeByCells.pm
 SHA1 05f4a8cb147ec5dccd32df1515a46b5bd88c17af devel/lib/Math/PlanePath/TwoOfEightByCells-oeis.t
-SHA1 6c92f95a13e9189eefaa82b22a2e80a179a3e3e9 devel/lib/Math/PlanePath/TwoOfEightByCells.pm
-SHA1 38fd5127e1e48170730a934133f1eff77f89a06b devel/lib/Math/PlanePath/UlamWarburtonAway.pm
-SHA1 972a9010f146be2dd119f237acd614916b9dde9f devel/lib/Math/PlanePath/one-of-eight.pl
+SHA1 a8786c9a99e6e60e05e3d79bcc960e1dae93d771 devel/lib/Math/PlanePath/TwoOfEightByCells.pm
+SHA1 3ac4e60da115459e17d9890306ce7e614914093a devel/lib/Math/PlanePath/UlamWarburtonAway.pm
+SHA1 972a9010f146be2dd119f237acd614916b9dde9f devel/one-of-eight.pl
 SHA1 de46a2e188598daaaafd616694102e6bf29608c7 devel/toothpick-upist.pl
 SHA1 f11ad881acd4a84af04ceaea2c49f8987ddf3e2e devel/toothpick.pl
-SHA1 b7dbbf283f24a2f2d61986c7b54062d49f24c95f lib/Math/NumSeq/OEIS/Catalogue/Plugin/PlanePathToothpick.pm
-SHA1 c755dc86f8c2141787d70d4a90806c8573cbddec lib/Math/PlanePath/LCornerReplicate.pm
-SHA1 a83a6e02c8e27b3f10f44df66adc250f030f6e98 lib/Math/PlanePath/LCornerTree.pm
-SHA1 3ec035fa14da22d0d641bb87592f74b7332cf2d9 lib/Math/PlanePath/OneOfEight.pm
-SHA1 26a604e3c2cb7066a6f015cad74e8ba0f71df779 lib/Math/PlanePath/ToothpickReplicate.pm
-SHA1 9a1e998f2cbe7d08bb98d0906c2aefceef390dfa lib/Math/PlanePath/ToothpickTree.pm
-SHA1 ca4d0ceb0b85b558b260eec65606f191e4bdf470 lib/Math/PlanePath/ToothpickUpist.pm
-SHA1 d79296fe48983142daa4527994d39f4a70678c3b t/LCornerTree.t
+SHA1 1b17e95428523692b4b1f8f4f4210736d2fad71e lib/Math/NumSeq/OEIS/Catalogue/Plugin/PlanePathToothpick.pm
+SHA1 f10b9756dfc54e4ce3533529d325eaaf784e371a lib/Math/PlanePath/LCornerReplicate.pm
+SHA1 2d0f6ad9b85f3e4102db66443ccb91c7b2cbecee lib/Math/PlanePath/LCornerTree.pm
+SHA1 e6cb79af45c522b5683e9bb30e133dbaaf718354 lib/Math/PlanePath/OneOfEight.pm
+SHA1 00d16b6c6271ee38e1623ed37d4b2a29ea963eae lib/Math/PlanePath/ToothpickReplicate.pm
+SHA1 3a028e504833370c1f4919a2db3c3a0879ab81bc lib/Math/PlanePath/ToothpickTree.pm
+SHA1 01f37e7598c0d5825a0538edfd7bf017e03df624 lib/Math/PlanePath/ToothpickUpist.pm
+SHA1 35bfef079c88d9e481f84e38d3cad817e4f65679 t/LCornerTree.t
 SHA1 3855de075da37f5bc4e6a5534b2f00cc14872a98 t/MyTestHelpers.pm
-SHA1 56c2b2f2da0e1e36b0c537321d3b1c7415d0537d t/OneOfEight.t
-SHA1 e8200dd7a387290a89bbb08eb16543f87607b396 t/ToothpickReplicate.t
-SHA1 800545b6898036c4c39529ea9d4c85a228b72892 t/ToothpickTree.t
-SHA1 79c101064e50af60df187fbf5022bbd87dd4476c t/ToothpickUpist.t
+SHA1 cd2678952803e9025803a765d604aa5041ff3f70 t/OneOfEight.t
+SHA1 632e4b682b79f07f3ae7007b58316645b1daa8cc t/ToothpickReplicate.t
+SHA1 780cf5f2efde6a98a4cc8eb5fbe8f5e57479fe48 t/ToothpickTree.t
+SHA1 3f329444e0adefd2b5469ff36e4b800ff019fbc1 t/ToothpickUpist.t
 SHA1 551447f364b216eed96fbd24c4873ab906cc1fa5 tools/lcorner-replicate-table.pl
 SHA1 8863a0ce3e14f9335880c11428b2a13d7c54a264 tools/lcorner-tree-bricks.pl
 SHA1 811028548aa4b360b5086d1af3150f9dde348aa6 xt/0-META-read.t
@@ -72,12 +74,14 @@ SHA1 ec454b1b524d2d0b35e5a7d8292ad13d82becab5 xt/0-Test-YAML-Meta.t
 SHA1 bdc59bfb29089f4c801a4282c0c3498f9a7982e5 xt/0-examples-xrefs.t
 SHA1 2fb2ce60ce5c740d1eb7e3b55a96f3ccb84d38c3 xt/0-file-is-part-of.t
 SHA1 aeb6f41dfae96d04459448f6c3e3dee44691e722 xt/0-no-debug-left-on.t
-SHA1 781a69c1c057a26b00bbcb0158d4c673bb95bedc xt/MyOEIS.pm
-SHA1 6e00b47079c3d93521676261ee2466af20410222 xt/oeis/LCornerTree-oeis.t
-SHA1 e0e91ee1a4c33e70a342d00d009d65e162d08f68 xt/oeis/OneOfEight-oeis.t
+SHA1 c19e1eaef4fdd833591c2270e34aa7e838750c20 xt/MyOEIS.pm
+SHA1 0e23d691e9a901762d8a2c7801acef3fa66136c0 xt/oeis-xrefs.t
+SHA1 aaf4c13fc6362adc32a82ec4e93943d6e1a52ffb xt/oeis/LCornerReplicate-oeis.t
+SHA1 32d28d4c219881b1783d8bb8140f670a54e63f91 xt/oeis/LCornerTree-oeis.t
+SHA1 f9043de5fad22fd07fa3079a7a77b8f0893efb5a xt/oeis/OneOfEight-oeis.t
 SHA1 98236db7630cdd41f9bcc0892eacf57720c3f50b xt/oeis/ToothpickReplicate-oeis.t
-SHA1 dcd5bd3f83ff15d690b896a3ebaaa9ac313479fc xt/oeis/ToothpickTree-oeis.t
-SHA1 b05d58a8546251234d33ef2ea55fac2e60449c20 xt/oeis/ToothpickUpist-oeis.t
+SHA1 0d33fa693ee26888dfc08cc463a652d8255ab6f1 xt/oeis/ToothpickTree-oeis.t
+SHA1 4d077909ef601d6e73c669118d24d5ff062687e2 xt/oeis/ToothpickUpist-oeis.t
 SHA1 84a47c1d71fd58797a2754030998dfb673b62811 xtools/my-check-copyright-years.sh
 SHA1 bfb75ffb7a834c345288e01f561b12695f191d12 xtools/my-check-file-part-of.sh
 SHA1 1f28ea8151b0f8554e5ab4e5bbcf1c5371f788eb xtools/my-check-spelling.sh
@@ -88,7 +92,7 @@ SHA1 4db9c30b1fc96b04a794218ca19561b368f59679 xtools/my-pc.sh
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iD8DBQFRFWgKLFMCIV9q3ToRAgBkAJ9/3284llMUIs7cjE6F8DkDsLMWZQCeMjYp
-CZ4cp1g3s6n/A31KrK1kCZc=
-=lJgQ
+iD8DBQFRY1ziLFMCIV9q3ToRAjHMAKCH+0JFxQEMeghAFXzxdXcLl8BRIgCgk9nj
+cp+ZzT5rTK2JDZ3Qg7PNLGI=
+=83LC
 -----END PGP SIGNATURE-----

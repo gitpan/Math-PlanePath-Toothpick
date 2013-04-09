@@ -15,9 +15,15 @@
 # You should have received a copy of the GNU General Public License along
 # with Math-PlanePath-Toothpick.  If not, see <http://www.gnu.org/licenses/>.
 
+
+# numbering of surrounds?
+
+# bridge cells children of two parent nodes
+# graph_n_parent_list()
+
 # A160117 peninsula and bridges surrounding
 # A160411 added
-
+#
 # A160118 peninsula surrounding from single start cell
 # A160415  added
 # A160796 peninsula surrounding from single start cell, 3 quadrants
@@ -27,7 +33,7 @@
 #
 # A165345 turn ON if 1 or 3 adjacent neighbours
 #     http://www.math.vt.edu/people/layman/sequences/A165345.html
-
+#
 
 # 249 373 239 238 237 361 227 226 225 349 215 214 213 337 208
 # 248     240 194 236     228 192 224     216 190 212     209
@@ -79,7 +85,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 3;
+$VERSION = 4;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -159,8 +165,8 @@ sub new {
   return $self;
 }
 
-my @surround_dx = (1, 1, 0, -1, -1, -1,  0,  1);
-my @surround_dy = (0, 1, 1,  1,  0, -1, -1, -1);
+my @surround8_dx = (1, 1, 0, -1, -1, -1,  0,  1);
+my @surround8_dy = (0, 1, 1,  1,  0, -1, -1, -1);
 
 sub _extend {
   my ($self) = @_;
@@ -188,9 +194,9 @@ sub _extend {
 
     if ($depth & 1) {
       ### consider all around previous: "$x,$y"
-      foreach my $i (0 .. $#surround_dx) {
-        my $x = $x + $surround_dx[$i];
-        my $y = $y + $surround_dy[$i];
+      foreach my $i (0 .. $#surround8_dx) {
+        my $x = $x + $surround8_dx[$i];
+        my $y = $y + $surround8_dy[$i];
         my $sn = $sq->xy_to_n($x,$y);
         if (! defined $xy_to_n->[$sn]) {
           ### add: "x=$x,y=$y"
@@ -206,9 +212,9 @@ sub _extend {
       }
     } else {
       # cells touching one or two existing
-      foreach my $i (0 .. $#surround_dx) {
-        my $x = $x + $surround_dx[$i];
-        my $y = $y + $surround_dy[$i];
+      foreach my $i (0 .. $#surround8_dx) {
+        my $x = $x + $surround8_dx[$i];
+        my $y = $y + $surround8_dy[$i];
         my $sn = $sq->xy_to_n($x,$y);
         next if defined $xy_to_n->[$sn];
         ### consider p or b surround: "$x,$y"
@@ -234,9 +240,9 @@ sub _xy_is_peninsula {
   my $sq = $self->{'sq'};
   my $xy_to_n = $self->{'xy_to_n'};
   my $count = 0;
-  foreach my $j (0 .. $#surround_dx) {
-    my $x = $x + $surround_dx[$j];
-    my $y = $y + $surround_dy[$j];
+  foreach my $j (0 .. $#surround8_dx) {
+    my $x = $x + $surround8_dx[$j];
+    my $y = $y + $surround8_dy[$j];
     my $sn = $sq->xy_to_n($x,$y);
     if (defined($xy_to_n->[$sn])) {
       if ($count++) {
@@ -254,9 +260,9 @@ sub _xy_is_bridge {
   my $xy_to_n = $self->{'xy_to_n'};
   my $count = 0;
   my $last_j = undef;
-  foreach my $j (0 .. $#surround_dx) {
-    my $x = $x + $surround_dx[$j];
-    my $y = $y + $surround_dy[$j];
+  foreach my $j (0 .. $#surround8_dx) {
+    my $x = $x + $surround8_dx[$j];
+    my $y = $y + $surround8_dy[$j];
     my $sn = $sq->xy_to_n($x,$y);
     if (defined($xy_to_n->[$sn])) {
       $count++;
@@ -321,7 +327,7 @@ sub xy_to_n {
   my ($depth,$exp) = round_down_pow (max($x,$y), 2);
   $depth *= 4;
   if (is_infinite($depth)) {
-    return (1,$depth);
+    return ($depth);
   }
 
   ### $depth
@@ -395,16 +401,19 @@ sub tree_n_to_depth {
 sub tree_n_children {
   my ($self, $n) = @_;
   ### tree_n_children(): $n
-  if (is_infinite($n)) {
+  if (is_infinite($n) || $n < 0) {
     return;
   }
-  while ($#{$self->{'n_to_x'}} < $n) {
+  while ($#{$self->{'n_to_x'}} < $n+10) {
     _extend($self);
   }
   return @{$self->{'n_to_children'}->[$n] || []};
 }
 sub tree_n_parent {
   my ($self, $n) = @_;
+  if ($n < 0) {
+    return undef;
+  }
   if (is_infinite($n)) {
     return $n;
   }

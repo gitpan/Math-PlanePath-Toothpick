@@ -34,7 +34,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 3;
+$VERSION = 4;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -104,8 +104,8 @@ sub new {
   return $self;
 }
 
-my @surround_dx = (2, 1,-1, -2, -1,  1);
-my @surround_dy = (0, 1, 1,  0, -1, -1);
+my @surround6_dx = (2, 1,-1, -2, -1,  1);
+my @surround6_dy = (0, 1, 1,  0, -1, -1);
 
 sub _extend {
   my ($self) = @_;
@@ -128,16 +128,16 @@ sub _extend {
     my ($x,$y) = $sq->n_to_xy($endpoint_sn);
     ### endpoint: "$x,$y"
 
-  SURROUND: foreach my $i (0 .. $#surround_dx) {
-      my $x = $x + $surround_dx[$i];
-      my $y = $y + $surround_dy[$i];
+  SURROUND: foreach my $i (0 .. $#surround6_dx) {
+      my $x = $x + $surround6_dx[$i];
+      my $y = $y + $surround6_dy[$i];
       ### consider: "$x,$y"
       my $sn = $sq->xy_to_n($x,$y);
 
       my $count = 0;
-      foreach my $j (0 .. $#surround_dx) {
-        my $x = $x + $surround_dx[$j];
-        my $y = $y + $surround_dy[$j];
+      foreach my $j (0 .. $#surround6_dx) {
+        my $x = $x + $surround6_dx[$j];
+        my $y = $y + $surround6_dy[$j];
         my $sn = $sq->xy_to_n($x,$y);
         ### check: "$x,$y at sn=$sn is ".($xy_to_n->[$sn] // 'undef')
         if (defined($xy_to_n->[$sn])) {
@@ -279,9 +279,9 @@ sub tree_n_children {
 
   my $depth = $self->tree_n_to_depth($n) + 1;
   return grep { $self->tree_n_to_depth($_) == $depth }
-    map { $self->xy_to_n_list($x + $surround_dx[$_],
-                              $y + $surround_dy[$_]) }
-      0 .. $#surround_dx;
+    map { $self->xy_to_n_list($x + $surround6_dx[$_],
+                              $y + $surround6_dy[$_]) }
+      0 .. $#surround6_dx;
 }
 sub tree_n_parent {
   my ($self, $n) = @_;
@@ -293,9 +293,9 @@ sub tree_n_parent {
     or return undef;
   my $parent_depth = $self->tree_n_to_depth($n) - 1;
 
-  foreach my $i (0 .. $#surround_dx) {
-    my $pn = $self->xy_to_n($x + $surround_dx[$i],
-                            $y + $surround_dy[$i]);
+  foreach my $i (0 .. $#surround6_dx) {
+    my $pn = $self->xy_to_n($x + $surround6_dx[$i],
+                            $y + $surround6_dy[$i]);
     if (defined $pn && $self->tree_n_to_depth($pn) == $parent_depth) {
       return $pn;
     }

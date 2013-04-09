@@ -20,7 +20,7 @@ use 5.004;
 use strict;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 3;
+$VERSION = 4;
 use Math::NumSeq::OEIS::Catalogue::Plugin;
 @ISA = ('Math::NumSeq::OEIS::Catalogue::Plugin');
 
@@ -50,6 +50,34 @@ use constant info_arrayref =>
      class => 'Math::NumSeq::PlanePathN',
      parameters => [ planepath => 'LCornerReplicate',
                      line_type => 'Diagonal'
+                   ]
+   },
+
+   #---------------------------------------------------------------------------
+   # OneOfEight
+
+   { anum => 'A151725',  # total
+     class => 'Math::NumSeq::PlanePathN',
+     parameters => [ planepath => 'OneOfEight',
+                     line_type => 'Depth_start'
+                   ]
+   },
+   { anum => 'A151735',
+     class => 'Math::NumSeq::PlanePathN',
+     parameters => [ planepath => 'OneOfEight,parts=1',
+                     line_type => 'Depth_start'
+                   ]
+   },
+   { anum => 'A170880',  # V2=3mid
+     class => 'Math::NumSeq::PlanePathN',
+     parameters => [ planepath => 'OneOfEight,parts=3mid',
+                     line_type => 'Depth_start'
+                   ]
+   },
+   { anum => 'A170879',  # V1=3side
+     class => 'Math::NumSeq::PlanePathN',
+     parameters => [ planepath => 'OneOfEight,parts=3side',
+                     line_type => 'Depth_start'
                    ]
    },
 

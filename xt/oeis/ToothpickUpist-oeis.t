@@ -30,22 +30,24 @@ use MyOEIS;
 
 use Math::PlanePath::ToothpickUpist;
 
+# uncomment this to run the ### lines
+# use Smart::Comments;
+
 
 #------------------------------------------------------------------------------
 # A175098 grid points covered by length=2
 
 MyOEIS::compare_values
   (anum => 'A175098',
-   # max_value=>10000,
    func => sub {
      my ($count) = @_;
-     my $path = Math::PlanePath::ToothpickUpist->new (parts => 4);
-     my @got;
+     my $path = Math::PlanePath::ToothpickUpist->new;
+     my @got = (0);
      my %seen;
      my $n = $path->n_start;
-     for (my $depth = -1; @got < $count; $depth++) {
-       my $next_n = $path->tree_depth_to_n($depth+1);
-       for ( ; $n < $next_n; $n++) {
+     for (my $depth = 0; @got < $count; $depth++) {
+       my $n_end = $path->tree_depth_to_n_end($depth);
+       for ( ; $n <= $n_end; $n++) {
          my ($x,$y) = $path->n_to_xy($n);
          $seen{"$x,$y"} = 1;
 
@@ -62,6 +64,86 @@ MyOEIS::compare_values
      return \@got;
    });
 
+# grid(d) = cells to depth < d
+# grid(0) = 0
+# grid(1) = 3
+# grid(2) = 5
+# grid(4) = 5 + 2*5 - 2 - 1 = 12     mid touch, join overlap
+# grid(8) = 12 + 2*12 - 2-2-1 = 31   mid, join, down dup
+# grid(16) = 3*31 - 5 = 88
+# grid(pow+rem) = grid(pow) + 2*grid(rem)
+#                 - some
+#
+# 3*x-5  x=3*y-5
+# 3*(3*y-5)-5
+#   = 9*y - 3*5 - 5
+
+use Math::PlanePath::Base::Digits 'round_down_pow';
+
+sub A175098_func {
+  my ($depth) = @_;
+  ### A175098_func(): $depth
+  if ($depth <= 0) { return 0; }
+  if ($depth == 1) { return 3; }
+  if ($depth == 2) { return 5; }
+
+  # split to  pow=2^k  1 <= rem <= 2^k
+  my ($pow,$exp) = round_down_pow($depth-1,2);
+  my $rem = $depth - $pow;
+
+  return (A175098_func($pow)
+          + 2 * A175098_func($rem)
+          - 2                          # join
+          - ($rem >= 3 ? 2 : 0)        # down dup
+          - ($rem == $pow ? 1 : 0)     # middle touch
+         );
+}
+
+# 0,
+#  3,
+#  5, 9,
+#  12, 16, 20, 26,
+#  31, 35, 39, 45, 51, 59, 67, 79,
+#  88,92,96,102,108,116,124,136,146,154,162,174,186,202,218,242,
+# 259,263,267,273,279,287,295,307,317,325,333,345,357,373,389,413,431,439,447,459,471,487,503,527,547
+
+MyOEIS::compare_values
+  (anum => 'A175098',
+   func => sub {
+     my ($count) = @_;
+     my @got;
+     for (my $depth = 0; @got < $count; $depth++) {
+       push @got, A175098_func($depth);
+     }
+     return \@got;
+   });
+
+{
+  my $path = Math::PlanePath::ToothpickUpist->new;
+  my @got;
+  my %seen;
+  my $n = $path->n_start;
+  for (my $depth = 0; $depth < 1024; $depth++) {
+    my $next_n = $path->tree_depth_to_n($depth);
+    for ( ; $n < $next_n; $n++) {
+      my ($x,$y) = $path->n_to_xy($n);
+      $seen{"$x,$y"} = 1;
+
+      if ($depth & 1) {
+        $seen{"$x,".($y+1)} = 1;
+        $seen{"$x,".($y-1)} = 1;
+      } else {
+        $seen{($x+1).",$y"} = 1;
+        $seen{($x-1).",$y"} = 1;
+      }
+    }
+    my $path_total = scalar(keys %seen);
+    my $func_total = A175098_func($depth);
+    if ($path_total != $func_total) {
+      die "oops depth=$depth path=$path_total func=$func_total";
+    }
+  }
+}
 
 #------------------------------------------------------------------------------
 # A160745 - added*3

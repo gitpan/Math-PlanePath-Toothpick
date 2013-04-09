@@ -33,10 +33,26 @@ use strict;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 3;
+$VERSION = 4;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
-*_divrem = \&Math::PlanePath::_divrem;
+
+
+# return ($quotient, $remainder)
+sub _divrem {
+  my ($n, $d) = @_;
+  if (ref $n && $n->isa('Math::BigInt')) {
+    my ($quot,$rem) = $n->copy->bdiv($d);
+    if (! ref $d || $d < 1_000_000) {
+      $rem = $rem->numify;  # plain remainder if fits
+    }
+    return ($quot, $rem);
+  }
+  my $rem = $n % $d;
+  return (int(($n-$rem)/$d), # exact division stays in UV
+          $rem);
+}
+
 
 use Math::PlanePath::Base::Generic
   'is_infinite',
@@ -63,7 +79,17 @@ use constant n_start => 0;
 use constant class_x_negative => 1;
 use constant class_y_negative => 1;
 
+# parts=1 same as parts=4
+# parts=2 same as parts=4
+# parts=3 same as parts=4
+# parts=4    33,-12
+#           133,-30
+#           333,-112
+#          1333,-230
+#          3332,-1112    -> 3,-1
+use constant dir_maximum_dxdy => (3,-1);
 
+#------------------------------------------------------------------------------
 # Fraction covered
 # Xlevel = 2^(level+1) - 1
 # Ylevel = 2^(level+1)

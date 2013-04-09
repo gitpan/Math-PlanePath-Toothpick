@@ -79,6 +79,72 @@ sub path_tree_depth_to_width {
 
 
 #------------------------------------------------------------------------------
+# A151727 parts=4 added endless row
+# 4,20,20,44,28,60,76,92,28,60,84,116
+# 4,24,44,88,116
+
+# add power-of-2 to start from 2^k corner
+MyOEIS::compare_values
+  (anum => 'A151727',
+   func => sub {
+     my ($count) = @_;
+     my $path = make_path('4');
+     my @got;
+     my ($depth,$exp) = round_down_pow($count,2);
+     $depth *= 4;
+     for ( ; @got < $count; $depth++) {
+       push @got, path_tree_depth_to_width($path,$depth);
+     }
+     return \@got;
+   });
+
+# is also 4 * 3mid added
+MyOEIS::compare_values
+  (anum => q{A151727},
+   func => sub {
+     my ($count) = @_;
+     my $path = make_path('3mid');
+     my @got;
+     for (my $depth = 0; @got < $count; $depth++) {
+       push @got, 4 * path_tree_depth_to_width($path,$depth);
+     }
+     return \@got;
+   });
+
+
+#------------------------------------------------------------------------------
+# A151729 "v2", added endless row, div 8
+
+MyOEIS::compare_values
+  (anum => 'A151729',
+   func => sub {
+     my ($count) = @_;
+     my $path = make_path('4');
+     my @got;
+     my ($depth,$exp) = round_down_pow($count,2);
+     $depth *= 4;
+     for ( ; @got < $count; $depth++) {
+       push @got, (path_tree_depth_to_width($path,$depth)-4) / 8;
+     }
+     return \@got;
+   });
+
+# is also 3mid (added-1)/2
+MyOEIS::compare_values
+  (anum => q{A151729},
+   func => sub {
+     my ($count) = @_;
+     my $path = make_path('3mid');
+     my @got;
+     for (my $depth = 0; @got < $count; $depth++) {
+       push @got, (path_tree_depth_to_width($path,$depth) - 1) / 2;
+     }
+     return \@got;
+   });
+
+
+
+#------------------------------------------------------------------------------
 
 # V1(n) = oct(n+1) + 3*oct(n) + 2*oct(n-1)
 #          - 3n - 2*floor(log(n+1) - (ispow2(n+1) ? 3 : 4)
@@ -106,7 +172,6 @@ MyOEIS::compare_values
    name => 'my_3side_from_octant()',
    func => sub {
      my ($count) = @_;
-     my $path = make_path('3side');
      my @got;
      for (my $depth = 0; @got < $count; $depth++) {
        push @got, my_3side_from_octant($depth);
@@ -197,7 +262,6 @@ MyOEIS::compare_values
    name => 'my_3mid_from_octant()',
    func => sub {
      my ($count) = @_;
-     my $path = make_path('3side');
      my @got;
      for (my $depth = 0; @got < $count; $depth++) {
        push @got, my_3mid_from_octant($depth);
@@ -439,8 +503,7 @@ MyOEIS::compare_values
 
 
 #------------------------------------------------------------------------------
-# A151728 "v2", 3mid added, endless row 3/4 centre and sides div 4
-# also A151727 3mid div 4
+# A151728 "v2", 3mid added
 # 1, 5, 5, 11, 7, 15, 19, 23, 7, 15, 21, 29, 29, 49, 59, 47, 7, 15, 21
 # 1,6,11,22,29,44,
 
@@ -576,7 +639,7 @@ MyOEIS::compare_values
 
 MyOEIS::compare_values
   (anum => 'A151748',
-   name => 'by parts=side at offset tree_depth_to_n() width',
+   name => 'by parts=3side at offset tree_depth_to_n() width',
    func => sub {
      my ($count) = @_;
      my $path = make_path('3side');
@@ -805,44 +868,6 @@ if ($class eq 'Math::PlanePath::OneOfEight') {
        });
 }
 
-
-#------------------------------------------------------------------------------
-# A151727 parts=4 added endless row
-# 4,20,20,44,28,60,76,92,28,60,84,116
-# 4,24,44,88,116
-
-# add power-of-2 to start from 2^k corner
-MyOEIS::compare_values
-  (anum => 'A151727',
-   func => sub {
-     my ($count) = @_;
-     my $path = make_path('4');
-     my @got;
-     my ($depth,$exp) = round_down_pow($count,2);
-     $depth *= 4;
-     for ( ; @got < $count; $depth++) {
-       push @got, path_tree_depth_to_width($path,$depth);
-     }
-     return \@got;
-   });
-
-
-#------------------------------------------------------------------------------
-# A151729 "v2", 3mid added endless row, div 8
-
-MyOEIS::compare_values
-  (anum => 'A151729',
-   func => sub {
-     my ($count) = @_;
-     my $path = make_path('4');
-     my @got;
-     my ($depth,$exp) = round_down_pow($count,2);
-     $depth *= 4;
-     for ( ; @got < $count; $depth++) {
-       push @got, (path_tree_depth_to_width($path,$depth)-4) / 8;
-     }
-     return \@got;
-   });
 
 #------------------------------------------------------------------------------
 exit 0;

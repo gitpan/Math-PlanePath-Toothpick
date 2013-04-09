@@ -45,11 +45,31 @@ use strict;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 3;
+$VERSION = 4;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
-*_divrem = \&Math::PlanePath::_divrem;
-*_divrem_mutate = \&Math::PlanePath::_divrem_mutate;
+
+
+
+# return ($quotient, $remainder)
+sub _divrem {
+  my ($n, $d) = @_;
+  if (ref $n && $n->isa('Math::BigInt')) {
+    my ($quot,$rem) = $n->copy->bdiv($d);
+    if (! ref $d || $d < 1_000_000) {
+      $rem = $rem->numify;  # plain remainder if fits
+    }
+    return ($quot, $rem);
+  }
+  my $rem = $n % $d;
+  return (int(($n-$rem)/$d), # exact division stays in UV
+          $rem);
+}
+
+
+
+
+
 
 use Math::PlanePath::Base::Generic
   'is_infinite',
@@ -386,8 +406,8 @@ sub _n0_to_depthbits {
 
 # ENHANCE-ME: step by the bits, not by X,Y
 # ENHANCE-ME: tree_n_to_depth() by probe
-my @surround_x = (1, 0, -1, 0, 1, -1, 1, -1);
-my @surround_y = (0, 1, 0, -1, 1, 1, -1, -1);
+my @surround8_dx = (1, 0, -1, 0, 1, -1, 1, -1);
+my @surround8_dy = (0, 1, 0, -1, 1, 1, -1, -1);
 sub tree_n_children {
   my ($self, $n) = @_;
   ### LCornerSingle tree_n_children(): $n
@@ -399,8 +419,8 @@ sub tree_n_children {
   my ($x,$y) = $self->n_to_xy($n);
   my @n_children;
   foreach my $i (0 .. 7) {
-    if (defined (my $n_surround = $self->xy_to_n($x + $surround_x[$i],
-                                                 $y + $surround_y[$i]))) {
+    if (defined (my $n_surround = $self->xy_to_n($x + $surround8_dx[$i],
+                                                 $y + $surround8_dy[$i]))) {
       ### $n_surround
       if ($n_surround > $n) {
         my $n_parent = $self->tree_n_parent($n_surround);
@@ -428,8 +448,8 @@ sub tree_n_parent {
   ### $want_depth
 
   foreach my $i (0 .. 7) {
-    if (defined (my $n_surround = $self->xy_to_n($x + $surround_x[$i],
-                                                 $y + $surround_y[$i]))) {
+    if (defined (my $n_surround = $self->xy_to_n($x + $surround8_dx[$i],
+                                                 $y + $surround8_dy[$i]))) {
       my $depth_surround = $self->tree_n_to_depth($n_surround);
       ### $n_surround
       ### $depth_surround

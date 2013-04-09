@@ -16,15 +16,11 @@
 # with Math-PlanePath-Toothpick.  If not, see <http://www.gnu.org/licenses/>.
 
 
-# Development version of "OneOfEight" done by cellular automaton.
+# Development version of "LCornerTree" done by cellular automaton.
 
 
 
-# Tie::CArray
-# Tie::Array::Pack  with pack()
-# Tie::Array::Pack
-
-package Math::PlanePath::OneOfEightByCells;
+package Math::PlanePath::LCornerTreeByCells;
 use 5.004;
 use strict;
 use Carp;
@@ -51,52 +47,27 @@ use constant n_start => 0;
 
 use constant parameter_info_array =>
   [ { name            => 'parts',
-      share_key       => 'parts_oneofeightbycells',
+      share_key       => 'parts_lcornertreebycells',
       display         => 'Parts',
       type            => 'enum',
-      default         => 4,
-      choices         => ['4','1','octant','octant_up','wedge',
-                          '3mid','3side','side'],
+      default         => '4',
+      choices         => ['4','1','octant','octant_up',
+                          'wedge','single'],
       description     => 'Which parts of the plane to fill.',
     },
-    # { name      => 'start',
-    #   share_key => 'start_upstarplus',
-    #   display   => 'Start',
-    #   type      => 'enum',
-    #   default   => 'one',
-    #   choices   => ['one','two','three','four'],
-    # },
   ];
 use constant class_x_negative => 1;
 use constant class_y_negative => 1;
 {
-  my %x_negative = (4         => 1,
-                    1         => 0,
+  my %x_negative = (1         => 0,
+                    single    => 1,
                     octant    => 0,
                     octant_up => 0,
                     wedge     => 1,
-                    '3mid'    => 1,
-                    '3side'   => 1,
-                    side      => 0,
                    );
   sub x_negative {
     my ($self) = @_;
     return $x_negative{$self->{'parts'}};
-  }
-}
-{
-  my %x_minimum = (4         => undef,
-                   1         => 0,
-                   octant    => undef,
-                   octant_up => undef,
-                   wedge     => undef,
-                   '3side'   => undef,
-                   '3mid'    => undef,
-                   side      => 0,
-                  );
-  sub x_minimum {
-    my ($self) = @_;
-    return $x_minimum{$self->{'parts'}};
   }
 }
 {
@@ -105,9 +76,6 @@ use constant class_y_negative => 1;
                     octant    => 0,
                     octant_up => 0,
                     wedge     => 0,
-                    '3mid'    => 1,
-                    '3side'   => 1,
-                    side      => 0,
                    );
   sub y_negative {
     my ($self) = @_;
@@ -120,14 +88,11 @@ use constant class_y_negative => 1;
                    octant    => 0,
                    octant_up => 0,
                    wedge     => 0,
-                   '3mid'    => undef,
-                   '3side'   => undef,
-                   side      => 1,
                   );
   sub y_minimum {
     my ($self) = @_;
     return $y_minimum{$self->{'parts'}};
-}
+  }
 }
 
 sub new {
@@ -138,36 +103,23 @@ sub new {
   my $start = ($self->{'start'} ||= 'one');
   my @n_to_x;
   my @n_to_y;
-  if ($parts eq 'Xside') {
-    @n_to_x = (0, 1);
-    @n_to_y = (1, 1);
-    $self->{'endpoints_dir'} = [ 4, 4 ];
-  } elsif ($parts eq '3mid') {
+  if ($parts eq '4') {
+    @n_to_x = (0, -1, -1,  0);
+    @n_to_y = (0, 0,  -1, -1);
+    $self->{'endpoints_dir'} = [ 0, 1, 2, 3 ];
+  } elsif ($parts eq '1' || $parts eq 'octant' || $parts eq 'octant_up') {
     @n_to_x = (0);
     @n_to_y = (0);
-    $self->{'endpoints_dir'} = [ 2 ];  # for numbering
-  } elsif ($parts eq '3side') {
+    $self->{'endpoints_dir'} = [ 0 ];
+  } elsif ($parts eq 'wedge') {
+    @n_to_x = (0, -1);
+    @n_to_y = (0, 0);
+    $self->{'endpoints_dir'} = [ 0, 1 ];
+  } elsif ($parts eq 'single') {
     @n_to_x = (0);
     @n_to_y = (0);
-    $self->{'endpoints_dir'} = [ 2 ];  # for numbering
+    $self->{'endpoints_dir'} = [ 0 ];
   } else {
-    @n_to_x = (0);
-    @n_to_y = (0);
-    $self->{'endpoints_dir'} = [ 4 ];
-
- # } elsif ($start eq 'two') {
- #    @n_to_x = (0, -1);
- #    @n_to_y = (0, 0);
- #    $self->{'endpoints_dir'} = [ 0, 4 ];
- #  } elsif ($start eq 'three') {
- #    @n_to_x = (0, -1, -1);
- #    @n_to_y = (0, 0, -1);
- #    $self->{'endpoints_dir'} = [ 0, 6, 2 ];
- #  } elsif ($start eq 'four') {
- #    @n_to_x = (0, -1, -1, 0);
- #    @n_to_y = (0, 0, -1, -1);
- #    $self->{'endpoints_dir'} = [ 0, 2, 4, 6 ];
- #  } else {
     # croak "Unrecognised parts: ",$parts;
   }
   $self->{'n_to_x'} = \@n_to_x;
@@ -180,6 +132,7 @@ sub new {
     my $sn = $self->{'sq'}->xy_to_n($n_to_x[$n],$n_to_y[$n]);
     $xy_to_n[$sn] = $n;
     push @endpoints, $sn;
+    $self->{'sn_to_parent_sn'}->[$sn] = undef;
   }
   $self->{'endpoints'} = \@endpoints;
   $self->{'xy_to_n'} = \@xy_to_n;
@@ -189,6 +142,9 @@ sub new {
 
   return $self;
 }
+
+my @surround4_dx = (1, 0, -1,  0);
+my @surround4_dy = (0, 1,  0, -1);
 
 my @surround8_dx = (1, 1, 0, -1, -1, -1,  0,  1);
 my @surround8_dy = (0, 1, 1,  1,  0, -1, -1, -1);
@@ -204,6 +160,7 @@ sub _extend {
   my $xy_to_n = $self->{'xy_to_n'};
   my $n_to_x = $self->{'n_to_x'};
   my $n_to_y = $self->{'n_to_y'};
+  my $sn_to_parent_sn = $self->{'sn_to_parent_sn'};
 
   ### depth: scalar(@{$self->{'depth_to_n'}})
   ### endpoints count: scalar(@$endpoints)
@@ -218,75 +175,77 @@ sub _extend {
     my ($x,$y) = $sq->n_to_xy($endpoint_sn);
     ### endpoint: "$x,$y"
 
-  SURROUND: foreach my $i (0 .. $#surround8_dx) {
-      my $dir = ($dir+4 + $i) & 7;
-      my $x = $x + $surround8_dx[$dir];
-      my $y = $y + $surround8_dy[$dir];
-      if ($parts eq '1') {
-        if ($x < 0 || $y < 0) { next; }
-      }
-      # if ($parts eq 'side') {
-      #   if ($x < 0 || $y < 0) { next; }
-      # }
-      # } elsif ($parts eq '3side') {
-      #   if ($x < 0 && $y < 0) { next; }
-      # } elsif ($parts eq 'octant') {
-      #   if ($x < 0 || $y < 0 || $y > $x) { next; }
+  SURROUND: foreach my $i (0 .. $#surround4_dx) {
+      my $dx = $surround4_dx[$i];
+      my $dy = $surround4_dy[$i];
 
-      ### consider: "$x,$y"
-      my $sn = $sq->xy_to_n($x,$y);
-      if (defined $xy_to_n->[$sn]) {
-        ### already occupied ...
+      my $x1 = $x + $dx;
+      my $y1 = $y + $dy;
+      my $sn1 = $sq->xy_to_n($x1,$y1);
+
+      my $x2 = $x + $dx - $dy;  # diagonal rotate +45
+      my $y2 = $y + $dy + $dx;
+      my $sn2 = $sq->xy_to_n($x2,$y2);
+
+      my $x3 = $x - $dy;   # rotate +90
+      my $y3 = $y + $dx;
+      my $sn3 = $sq->xy_to_n($x3,$y3);
+
+      ### corner direction: "$i   $x1,$y1  $x2,$y2  $x3,$y3"
+
+      if (defined $xy_to_n->[$sn1]) {
+        ### sn1 already occupied ...
+        next;
+      }
+      if (defined $xy_to_n->[$sn2]) {
+        ### sn2 already occupied ...
+        next;
+      }
+      if (defined $xy_to_n->[$sn3]) {
+        ### sn3 already occupied ...
         next;
       }
 
-      my $count = 0;
-      foreach my $j (0 .. $#surround8_dx) {
-        my $x = $x + $surround8_dx[$j];
-        my $y = $y + $surround8_dy[$j];
-        if ($parts eq '1') {
-          # if ($x < -1 || $y < -1   # treating rest as occupied
-          #     || ($y > 2 && $x < 0)
-          #     || ($x > 2 && $y < 0)) { next SURROUND; }
-          $x = abs($x);    # treating as quarter of parts=4
-          $y = abs($y);
+      if ($parts eq '1' || $parts eq 'octant' || $parts eq 'octant_up') {
+        if ($x1 < 0 || $y1 < 0
+            || $x2 < 0 || $y2 < 0
+            || $x3 < 0 || $y3 < 0
+           ) {
+          next;
         }
-        if ($parts eq 'octant') {
-          if ($x < 0 || $y < ($x >= 3 ? 0 : -1) || $y > $x+2) { next SURROUND; }
-        }
-        if ($parts eq 'octant_up') {
-          if ($y < 0 || $x < ($y >= 3 ? 0 : -1) || $x > $y+2) { next SURROUND; }
-        }
-        if ($parts eq 'wedge') {
-          if ($x > $y+2 || $x < -$y-2) { next SURROUND; }
-        }
-        if ($parts eq '3mid') {
-          if ($x < 0 && $y < 0) { next SURROUND; }
-        }
-        if ($parts eq '3side') {
-          if ($x < 0 && $y <= 0) { next SURROUND; }
-        }
-        if ($parts eq 'side') {
-          if ($x < ($y >= 2 ? 0 : -1) || $y < ($x >= 4 ? 0 : -1)) { next SURROUND; }
-          # if ($x < -2 || $y < -2   # treating rest as occupied
-          #     || ($y > 3 && $x <= 0)
-          #     || ($y > 1 && $x < 0)
-          #     || ($x > 2 && $y < 0)) { next SURROUND; }
-          # if ($x < 0 || $y < 0) { next SURROUND; }
-        }
-        my $sn = $sq->xy_to_n($x,$y);
-        ### count: "$x,$y at sn=$sn is ".($xy_to_n->[$sn] // 'undef')
-        if (defined($xy_to_n->[$sn])) {
-          if ($count++) {
-            ### two or more surround ...
-            next SURROUND;
-          }
+      } elsif ($parts eq 'single') {
+        if ($x == 0 && $y == 0 && ($x1 < 0 || $y1 < 0
+                                   || $x2 < 0 || $y2 < 0
+                                   || $x3 < 0 || $y3 < 0
+                                  )) {
+          next;
         }
       }
-      push @new_endpoints, $sn;
-      push @new_endpoints_dir, $dir;
-      push @new_x, $x;
-      push @new_y, $y;
+
+      if (! ($parts eq 'wedge' && ($x1 < -1-$y1 || $x1 > $y1))
+          && ! ($parts eq 'octant' && ($y1 > $x1))
+          && ! ($parts eq 'octant_up' && ($x1 > $y1))) {
+        push @new_endpoints, $sn1;
+        push @new_x, $x1;
+        push @new_y, $y1;
+        $sn_to_parent_sn->[$sn1] = $endpoint_sn;
+      }
+      if (! ($parts eq 'wedge' && ($x2 < -1-$y2 || $x2 > $y2))
+          && ! ($parts eq 'octant' && ($y2 > $x2))
+          && ! ($parts eq 'octant_up' && ($x2 > $y2))) {
+        push @new_endpoints, $sn2;
+        push @new_x, $x2;
+        push @new_y, $y2;
+        $sn_to_parent_sn->[$sn2] = $endpoint_sn;
+      }
+      if (! ($parts eq 'wedge' && ($x3 < -1-$y3 || $x3 > $y3))
+          && ! ($parts eq 'octant' && ($y3 > $x3))
+          && ! ($parts eq 'octant_up' && ($x3 > $y3))) {
+        push @new_endpoints, $sn3;
+        push @new_x, $x3;
+        push @new_y, $y3;
+        $sn_to_parent_sn->[$sn3] = $endpoint_sn;
+      }
     }
   }
 
@@ -300,11 +259,12 @@ sub _extend {
 
   $self->{'endpoints'} = \@new_endpoints;
   $self->{'endpoints_dir'} = \@new_endpoints_dir;
+  return scalar(@new_endpoints);
 }
 
 sub n_to_xy {
   my ($self, $n) = @_;
-  ### OneOfEightByCells n_to_xy(): $n
+  ### LCornerTreeByCells n_to_xy(): $n
 
   if ($n < 0) { return; }
   if (is_infinite($n)) { return ($n,$n); }
@@ -325,7 +285,7 @@ sub n_to_xy {
   }
 
   while ($#{$self->{'n_to_x'}} < $n) {
-    _extend($self);
+    _extend($self) || return;
   }
 
   ### x: $self->{'n_to_x'}->[$n]
@@ -336,7 +296,7 @@ sub n_to_xy {
 
 sub xy_to_n {
   my ($self, $x, $y) = @_;
-  ### OneOfEightByCells xy_to_n(): "$x, $y"
+  ### LCornerTreeByCells xy_to_n(): "$x, $y"
 
   my ($depth,$exp) = round_down_pow (max(abs($x),abs($y))+3, 2);
   $depth = 2*$depth+2;
@@ -365,7 +325,7 @@ sub xy_to_n {
 # not exact
 sub rect_to_n_range {
   my ($self, $x1,$y1, $x2,$y2) = @_;
-  ### OneOfEightByCells rect_to_n_range(): "$x1,$y1  $x2,$y2"
+  ### LCornerTreeByCells rect_to_n_range(): "$x1,$y1  $x2,$y2"
 
   $x1 = round_nearest ($x1);
   $y1 = round_nearest ($y1);
@@ -420,29 +380,25 @@ sub tree_n_children {
   my $depth = $self->tree_n_to_depth($n) + 1;
   return
     sort {$a<=>$b}
-      grep { $self->tree_n_to_depth($_) == $depth }
+      grep { my $n_parent = $self->tree_n_parent($_);
+             (defined $n_parent && $n_parent == $n) }
         map { $self->xy_to_n_list($x + $surround8_dx[$_],
                                   $y + $surround8_dy[$_]) }
           0 .. $#surround8_dx;
 }
 sub tree_n_parent {
   my ($self, $n) = @_;
+  ### tree_n_parent(): $n
 
-  if ($n < 0) {
-    return undef;
-  }
   my ($x,$y) = $self->n_to_xy($n)
     or return undef;
-  my $parent_depth = $self->tree_n_to_depth($n) - 1;
-
-  foreach my $i (0 .. $#surround8_dx) {
-    my $pn = $self->xy_to_n($x + $surround8_dx[$i],
-                            $y + $surround8_dy[$i]);
-    if (defined $pn && $self->tree_n_to_depth($pn) == $parent_depth) {
-      return $pn;
-    }
+  my $sn = $self->{'sq'}->xy_to_n($x,$y);
+  $sn = $self->{'sn_to_parent_sn'}->[$sn];
+  if (! defined $sn) {
+    return undef;
   }
-  return undef;
+  ($x,$y) = $self->{'sq'}->n_to_xy($sn);
+  return $self->xy_to_n($x,$y);
 }
 
 1;

@@ -56,26 +56,16 @@ sub read_values {
     }
   } else {
     my $error = $@;
-
-    if (open FH, "< $ENV{HOME}/OEIS/stripped") {
-      (my $num = $anum) =~ s/^A//;
-      if (my $line = bsearch_textfile
-          (\*FH, sub {
-             my ($line) = @_;
-             $line =~ /^A(\d+)/ or return -1;
-             return ($1 <=> $num);
-           })) {
-        $line =~ s/A\d+ *,?//;
-        $line =~ s/\s+$//;
-        @bvalues = split /,/, $line;
-      }
-    } else {
+    @bvalues = read_stripped($anum);
+    if (! @bvalues) {
       MyTestHelpers::diag ("$anum not available: ", $error);
       return;
     }
   }
 
-  my $desc = "$anum has ".scalar(@bvalues)." values to $bvalues[-1]";
+  my $desc = "$anum has ".scalar(@bvalues)." values";
+  if (@bvalues) { $desc .= " to $bvalues[-1]"; }
+
   if (my $max_count = $option{'max_count'}) {
     if (@bvalues > $max_count) {
       $#bvalues = $option{'max_count'} - 1;
@@ -100,6 +90,24 @@ sub read_values {
   MyTestHelpers::diag ($desc);
 
   return (\@bvalues, $lo, $seq->{'filename'});
+}
+
+# return list of values, or empty list if not found
+sub read_stripped {
+  my ($anum) = @_;
+  open FH, "< $ENV{HOME}/OEIS/stripped"
+    or return;
+  (my $num = $anum) =~ s/^A//;
+  my $line = bsearch_textfile (\*FH, sub {
+       my ($line) = @_;
+       $line =~ /^A(\d+)/ or return -1;
+       return ($1 <=> $num);
+     })
+      || return;
+  
+  $line =~ s/A\d+ *,?//;
+  $line =~ s/\s+$//;
+  return split /,/, $line;
 }
 
 # with Y reckoned increasing downwards
@@ -198,7 +206,7 @@ sub join_values {
   foreach my $i (1 .. $#$aref) {
     my $value = $aref->[$i];
     if (! defined $value) { $value = 'undef'; }
-    last if length($str)+1+length($value) >= 75;
+    last if length($str)+1+length($value) >= 275;
     $str .= ',';
     $str .= $value;
   }

@@ -23,11 +23,9 @@ use strict;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 3;
+$VERSION = 4;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
-*_divrem = \&Math::PlanePath::_divrem;
-*_divrem_mutate = \&Math::PlanePath::_divrem_mutate;
 
 use Math::PlanePath::Base::Generic
   'is_infinite',
@@ -47,6 +45,40 @@ use constant n_start => 0;
 use constant class_x_negative => 0;
 use constant class_y_negative => 0;
 
+# Dir4 in base 4
+# max i=59[323] 3.50000  dx=1,dy=-1[1,-1]   -1.000
+# max i=239[3233] 3.70483  dx=2,dy=-1[2,-1]   -2.000
+# max i=3839[323333] 3.73375  dx=9,dy=-4[21,-10]   -2.250
+# max i=15359[3233333] 3.77528  dx=19,dy=-7[103,-13]   -2.714
+# max i=61439[32333333] 3.79015  dx=38,dy=-13[212,-31]   -2.923
+# max i=983039[3233333333] 3.79143  dx=153,dy=-52[2121,-310]   -2.942
+# dX =  2121212121212121212121212 = 0x 2666666666666
+# dY =  -303030303030303030303031 = -0x CCCCCCCCCCCD
+# dX =  2*16^k + 6*(16^k -1 ) / 15
+# dY =          12*(16^k -1 ) / 15 + 1
+# dY/dX = (12*(16^k -1) / 15 + 1) / (2*16^k + 6*(16^k -1) / 15)
+#      -> 12*(16^k -1) / 15 / (2*16^k + 6*(16^k -1)/15)
+#       = 12*(16^k -1) / (30*16^k + 6*(16^k -1))
+#      -> 12*16^k / (30*16^k + 6*(16^k))
+#       = 12/36
+#       = 1/3
+# which is dir4 = 3.79516723530087
+#
+# i=32333...33 = 15*4^k - 1         3300000000
+#    block 3
+#  +-------------+
+# 2|   |  |     1|
+#  |---|--|      |
+#  | 3 |  |      |
+#  +-------------+
+#  |   | T|      |
+#  |---|--|      |
+# 3|   |  |     0|
+#  +-------------+
+#
+use constant dir_maximum_dxdy => (3,-1); # supremum
+
+#------------------------------------------------------------------------------
 # state=0   state=4   state=8   state=12
 # 3 2       2 1       1 0       0 3
 # 0 1       3 0       2 3       1 2
@@ -280,6 +312,28 @@ See L<Math::PlanePath/FUNCTIONS> for behaviour common to all path classes.
 Create and return a new path object.
 
 =back
+
+=head1 FORMULAS
+
+=head2 Direction Maximum
+
+The C<dir_maximum_dxdy()> seems to occur at
+
+          base-4
+    N  = 323333...333
+    dX = 2121...2121212   (or 2121...12121)
+    dY = -3030...303031   (or  303...30310)
+
+which are
+
+    dX =    2*16^k + 6*(16^k -1)/15
+    dY = - (        12*(16^k -1)/15 + 1)
+
+    dY/dX -> -1/3   as k->infinity
+
+The pattern N=3233..333 [base4] probably has a geometric interpretation in
+the sub-blocks described above, but in any case the angles made by steps
+dX,dY approach a supremum dX=3,dY=-1.
 
 =head1 OEIS
 

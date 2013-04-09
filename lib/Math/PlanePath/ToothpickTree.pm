@@ -16,13 +16,39 @@
 # with Math-PlanePath-Toothpick.  If not, see <http://www.gnu.org/licenses/>.
 
 
+# cf A153003  total cells
+#    A153004  added cells
+#    A153005  total which are primes
+#      clipping parts=4 pattern to 3 quadrants,
+#      X=0,Y=0 as a half toothpick not counted
+#      X=0,Y=-1 as a half toothpick not counted
+#      X=1,Y=-1 "root" would begin at depth=1
+
+
 # A153001 toothpick converge of parts=3 added
 #         endless row without exceptions at 2^k points
 #
-# "45-deg" wedge
 # A160740 toothpick starting from 4 as cross
+#   doesn't maintain the XYeven=vertical, XYodd=horizontal
+#             |
+#             *
+#             |
+#      ---*--- ---*---
+#             |
+#             *
+#             |
+# A160426 cross with one long end for 5 initial toothpicks
+# A160730 right angle of 2 toothpicks
+# A168112 45-degree something related to 2 toothpick right-angle
+# A160732 T of 3 toothpicks
 #
-# cf A160172 T-tooth
+# A160158 Toothpick sequence starting from a segment of length 4 formed by two toothpicks.
+#      ---*---o---*---
+# 
+# cf A183004 toothpicks placed at ends, alternately vert,horiz
+#    A183148
+
+# cf A160172 T-toothpick sequence
 #
 # A139250 total cells OFFSET=0 value=0
 #    a(2^k) = A007583(k) = (2^(2n+1) + 1)/3
@@ -90,7 +116,7 @@ use strict;
 *min = \&Math::PlanePath::_min;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 3;
+$VERSION = 4;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -144,6 +170,29 @@ sub rsquared_minimum {
           : 0);
 }
 use constant tree_num_children_maximum => 2;
+
+
+# parts=1 Dir4 max 5,-4
+#                 14,-9
+#                 62,-33
+#                126,-65
+#            2*2^k-2, -2^k+1   -> 2,-1
+#
+# parts=2 dX=big,dY=-1 approaches 3.9999
+# parts=3 same as parts=1
+# parts=4 dX=0,dY=-1 South, apparently
+{
+  my @dir_maximum_dxdy = (undef,
+                          [2,-1],  # 1
+                          [0,0],   # 2
+                          [2,-1],  # 3
+                          [0,-1],  # parts=4
+                         );
+  sub dir_maximum_dxdy {
+    my ($self) = @_;
+    return @{$dir_maximum_dxdy[$self->{'parts'}]};
+  }
+}
 
 #------------------------------------------------------------------------------
 
@@ -729,6 +778,29 @@ sub tree_n_to_depth {
   return $depth;
 }
 
+sub tree_n_to_height {
+  my ($self, $n) = @_;
+  if (is_infinite($n)) {
+    return $n;
+  }
+  {
+    # infinite height on X=Y, X=Y-1 spines
+    my ($x,$y) = $self->n_to_xy($n);
+    $x = abs($x);
+    $y = abs($y);
+    if ($x == $y || $x == $y-1) {
+      return undef;
+    }
+  }
+  my @n = ($n);
+  my $height = 0;
+  for (;;) {
+    @n = map {$self->tree_n_children($_)} @n
+      or return $height;
+    $height++;
+  }
+}
+
 # Do a binary search for the bits of depth which give Ndepth <= N.
 #
 # Ndepth grows as roughly depth*depth, so this is about log4(N) many
@@ -1093,7 +1165,7 @@ sequence expanding through the plane by non-overlapping line segments as per
 
 David Applegate, Omar E. Pol, N.J.A. Sloane, "The Toothpick Sequence and
 Other Sequences from Cellular Automata", Congressus Numerantium, volume 206
-(2010), 157-191,
+(2010), 157-191
 
 http://www.research.att.com/~njas/doc/tooth.pdf
 
@@ -1133,8 +1205,8 @@ level.
                        ^
       -4   -3 -2  -1  X=0  1   2   3   4
 
-Each X,Y point is the centre of a toothpick of length 2.  The first
-toothpick is vertical at the origin X=0,Y=0.
+Each X,Y is the centre of a toothpick of length 2.  The first toothpick is
+vertical at the origin X=0,Y=0.
 
 A toothpick is added at each exposed end, perpendicular to that end.  So N=1
 and N=2 are added to the two ends of the initial N=0 toothpick.  Then points
@@ -1150,7 +1222,7 @@ N=3,4,5,6 are added at the four ends of those.
                               |       |           |       |
                                                ---9--- --10---
 
-Toothpicks are not added if they would overlap, which means no toothpick at
+Toothpicks are not added if they would overlap.  This means no toothpick at
 X=1,Y=0 where the ends of N=3 and N=6 meet, and likewise not at X=-1,Y=0
 where N=4 and N=5 meet.
 
@@ -1158,12 +1230,12 @@ The end of a new toothpick is allowed to touch an existing toothpick.  The
 first time this happens is N=15 where its left end touches N=3.
 
 The way each toothpick is perpendicular to the previous means that at even
-depth the toothpicks are vertical and odd depth they're horizontal (the
-initial N=0 is depth=0).  It also means the verticals are on "even" points
-X==Y mod 2 and the horizontals are on "odd" points X!=Y mod 2.
+depth the toothpicks are all vertical and on "even" points X==Y mod 2.
+Conversely at odd depth all toothpicks are horizontal and on "odd" points
+X!=Y mod 2.  (The initial N=0 is depth=0.)
 
-The children at a given depth are numbered in the same order as their
-parents and anti-clockwise when there's two children.
+The children at a given depth are numbered in order of their parents, and
+anti-clockwise around when there's two children.
 
             |       |
             4---1---3         points 3,4 numbered
@@ -1171,31 +1243,32 @@ parents and anti-clockwise when there's two children.
                 0
                 |
 
-Anti-clockwise is relative to the direction of the grandparent node.  So for
-example at N=1 its parent N=0 is downwards and the children of N=1 are then
-anti-clockwise around from there, hence to the right first for N=3 and to
-the left second for N=4.
+Anti-clockwise here is relative to the direction of the grandparent node.
+So for example at N=1 its parent N=0 is downwards and the children of N=1
+are then anti-clockwise around from there, hence first the right side for
+N=3 and then the left for N=4.
 
 =head2 Cellular Automaton
 
 The toothpick rule can also be expressed as growing into a cell which has
-just one of its two vertical or horizontal neighbours "ON", taking either
+just one of its two vertical or horizontal neighbours "ON", using either
 vertical or horizontal neighbours according to X+Y odd or even.
 
           Point            Grow
     ------------------   ------------------------------------------
-    X==Y mod 2, "even"   turn ON if 1 of 2 horizontal neighbours ON
-    X!=Y mod 2, "odd"    turn ON if 1 of 2 vertical neighbours ON
+    "even", X==Y mod 2   turn ON if 1 of 2 horizontal neighbours ON
+    "odd",  X!=Y mod 2    turn ON if 1 of 2 vertical neighbours ON
 
 For example X=0,Y=1 which is N=1 turns ON because it has a single vertical
 neighbour (the origin X=0,Y=0).  But the cell X=1,Y=0 never turns ON because
 initially its two vertical neighbours are OFF and then later at depth=3
-they're both ON.  Only when there's exactly one of the two neighbours ON, in
-the relevant direction, does the cell turn ON.
+they're both ON.  Only when there's exactly one of the two neighbours ON in
+the relevant direction does the cell turn ON.
 
 In the paper section 10 above this variation between odd and even points is
 reckoned as an automaton on a directed graph where even X,Y points have
-edges directed out horizontally and odd X,Y directed out vertically,
+edges directed out horizontally, and conversely odd X,Y points are directed
+out vertically.
 
          v          ^         v          ^         v
     <- -2,2  ---> -1,2  <--- 0,2  --->  1,2 <---  2,2 --
@@ -1213,10 +1286,11 @@ edges directed out horizontally and odd X,Y directed out vertically,
     <- -2,-2 ---> -1,-2 <--- 0,-2 ---> 1,-2 <--- 2,-2 ->
          ^          v         ^          v         ^
 
-The rule is then that a cell turns ON if one it's two neighbours, by outward
-directed edge, is ON.  For example X=0,Y=0 starts as ON then the cell above
-X=0,Y=1 considers its two outward-direction neighbours 0,0 and 0,2, of which
-just 0,0 is ON and so 0,1 turns ON, etc.
+The rule on this graphis then that a cell turns ON if precisely one of it's
+neighbours is ON, looking along the outward directed edges.  For example
+X=0,Y=0 starts as ON then the cell above X=0,Y=1 considers its two
+outward-edge neighbours 0,0 and 0,2, of which just 0,0 is ON and so 0,1
+turns ON.
 
 =head2 Replication
 
@@ -1266,7 +1340,7 @@ Each "A" toothpick is at a power-of-2 position,
    N = (8*4^k + 1)/3        N=3,11,43, etc
      = 222...223 in base4
 
-N=222..223 in base4 arises from the replication described above.  Each
+N=222..223 in base-4 arises from the replication described above.  Each
 replication is 4*N+2 of the previous, after the initial N=0,1,2.
 
 The "A" toothpick coming out of corner of block 2 is the only growth from a
@@ -1274,9 +1348,9 @@ depth=4^k level.  The sides of blocks 1 and 2 and blocks 2 and 3 have all
 endpoints meeting and so stop by the no-overlap rule, as can be seen for
 example N=35,36,37,38 across the top above.
 
-The number of points visited approaches 2/3 of the plane, as can be seen by
-the points count up to "A" as a fraction of the area (in all four
-quadrants),
+The number of points visited approaches 2/3 of the plane.  This be seen by
+expressing the count of points up to "A" as a fraction of the area (in all
+four quadrants) to there,
 
     N to "A"   (8*4^k + 1)/3      8/3 * 4^k
     -------- = -------------   -> --------- = 2/3
@@ -1567,6 +1641,7 @@ Sequences as
     parts=3
       A153006   total cells at given depth
       A152980    added cells at given depth
+      A153009   total cells values which are primes
 
       A153007   difference depth*(depth+1)/2 - total cells,
                  which is 0 at depth=2^k-1
@@ -1574,10 +1649,12 @@ Sequences as
     parts=2
       A152998   total cells at given depth
       A152968    added cells at given depth
+      A152999   total cells values which are primes
 
     parts=1
       A153000   total cells at given depth
       A152978    added cells at given depth
+      A153002   total cells values which are primes
 
 Drawings by Omar Pol
 
@@ -1590,6 +1667,14 @@ Drawings by Omar Pol
 
     parts=1
     http://www.polprimos.com/imagenespub/poltp016.jpg
+
+
+A153003, A153004, A153005 are another toothpick form where the parts=4 full
+pattern is clipped to 3 quadrants.  This is not the same as the parts=3
+corner pattern here.  The clipped form would have its X=1,Y=-1 cell either
+as a "root" but at depth=1, or as a 3rd child of X=0,Y=1.  Allowing the
+X=0,Y=0 and X=0,Y=-1 cells to be included would be a joined-up pattern, but
+then the depth totals would be 2 bigger than those OEIS entries.
 
 =head1 SEE ALSO
 
