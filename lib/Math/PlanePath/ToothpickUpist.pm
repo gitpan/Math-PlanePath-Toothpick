@@ -30,7 +30,7 @@ use 5.004;
 use strict;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 4;
+$VERSION = 5;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -69,6 +69,8 @@ use Math::PlanePath::Base::Digits
 use constant default_n_start => 0;
 use constant class_x_negative => 1;
 use constant class_y_negative => 0;
+use constant dy_minimum => 0; # across rows dY=0
+use constant dy_maximum => 1; # then up dY=1 at end
 use constant tree_num_children_maximum => 2;
 # use constant dir4_maximum => 2;          # West dX=-1,dY=0 at N=1
 # use constant dir_maximum_360  => 180;    # West

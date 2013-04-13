@@ -17,6 +17,9 @@ with Math-PlanePath-Toothpick.  If not, see <http://www.gnu.org/licenses/>.
 
 
 
+Version 5, April 2013
+    - LCornerTree,OneOfEight new parts=octant_up,wedge
+
 Version 4, April 2013
     - new dir_maximum_dxdy()
     - LCornerTree new parts=octant

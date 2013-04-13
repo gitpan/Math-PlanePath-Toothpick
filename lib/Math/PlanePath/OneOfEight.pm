@@ -28,7 +28,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 4;
+$VERSION = 5;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -44,19 +44,19 @@ use Math::PlanePath::Base::Digits
 
 use constant n_start => 0;
 use constant parameter_info_array =>
-  [ { name            => 'parts',
-      share_key       => 'parts_surroundoneeight',
-      display         => 'Parts',
-      type            => 'enum',
-      default         => '4',
-      choices         => ['4','1','octant','3mid','3side',
-                          # 'side'
-                         ],
-      choices_display => ['4','1','Octant','3 Mid','3 Side',
-                          # 'Side'
-                         ],
-      description     => 'Which parts of the plane to fill.',
-    },
+  [{ name            => 'parts',
+     share_key       => 'parts_surroundoneeight',
+     display         => 'Parts',
+     type            => 'enum',
+     default         => '4',
+     choices         => ['4','1','octant','octant_up','wedge','3mid', '3side',
+                         # 'side'
+                        ],
+     choices_display => ['4','1','Octant','Octant Up','Wedge','3 Mid','3 Side',
+                         # 'Side'
+                        ],
+     description     => 'Which parts of the plane to fill.',
+   },
   ];
 use constant class_x_negative => 1;
 use constant class_y_negative => 1;
@@ -135,7 +135,7 @@ use constant class_y_negative => 1;
          1         => [2,-1], # ESE
          octant    => [1,-1], # South-East
          octant_up => [0,-1], # N=12 South
-         wedge     => [1,-1], # South-East
+         wedge     => [0,-1], # South
          '3mid'    => [2,-1], # ESE
          '3side'   => [2,-1], # ESE
         );
@@ -2280,6 +2280,9 @@ Option C<parts =E<gt> 'octant'> confines the pattern to the first octant
         +-------------------------------------------------
          X=0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
 
+In this arrangement N=0,2,3,6,etc on the leading diagonal is the last N of
+each row (C<tree_depth_to_n_end()>)..
+
 The full pattern is symmetric on each side of the four diagonals X=Y, X=-Y.
 This octant is one of those eight symmetric parts.  It includes the diagonal
 which is shared if two octants are combined to make a quadrant.
@@ -2348,6 +2351,46 @@ It may look at first as if the square side block comprising the "upper" and
 "lower" blocks is entirely different from the central symmetric square
 (L</One Quadrant> above), but that's not so, the only difference is the
 offset branching from the diagonal which occurs in the "lower" part.
+
+=head2 Upper Octant
+
+Option C<parts =E<gt> 'octant_up'> confines the pattern to the upper octant
+0E<lt>=XE<lt>=Y of the first quadrant.
+
+=cut
+
+# math-image --path=OneOfEight,parts=octant_up --all --output=numbers --size=75x16
+
+=pod
+
+    parts => "octant_up"
+
+     15 |    66 65 64    63 62 61    60 59 58    57 56 55
+     14 |       50          49          46          45   
+     13 |       51 42 41 40 48          47 39 38 37      
+     12 |       52    34                      33         
+     11 |             35 32 31 30    29 28 27            
+     10 |       53    36    25          24               
+      9 |       54 43 44    26 23 22 21                  
+      8 |                         20                     
+      7 |    19 18 17    16 15 14                        
+      6 |       12          11                           
+      5 |       13 10  9  8                              
+      4 |              7                                 
+      3 |     6  5  4                                    
+      2 |        3                                       
+      1 |  2  1                                          
+    Y=0 |  0                                             
+        +-------------------------------------------------
+         X=0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+
+In this arrangement N=0,1,3,4,etc on the leading diagonal is the first N of
+each row (C<tree_depth_to_n()>).
+
+The pattern is a mirror image of parts=octant, but parts=octant_up is
+numbered starting on the diagonal and going around, whereas parts=octant is
+numbered going around from the pattern and ending on the diagonal.  The
+effect is to reverse the N values within each row.
 
 =head2 Three Mid
 
@@ -2489,6 +2532,30 @@ doubled in size by adding a "3mid" and two "3side"s.
                   |             |
                   +-------------+
 
+=head2 Wedge
+
+Option C<parts =E<gt> 'wedge'> confines the pattern to a V-shaped wedge
+-YE<lt>=XE<lt>=Y.
+
+=cut
+
+# math-image --path=OneOfEight,parts=wedge --all --output=numbers --size=75x16
+
+=pod
+
+    parts => "wedge"
+
+    37 36 35    34 33 32    31 30 29    28 27 26        7 
+       25          24          21          20           6 
+          19 18 17 23          22 16 15 14              5 
+             13                      12                 4 
+                11 10  9     8  7  6                    3 
+                    5           4                       2 
+                       3  2  1                          1 
+                          0                         <- Y=0
+    --------------------------------------------
+    -7 -6 -5 -4 -3 -2 -1 X=0 1  2  3  4  5  6  7 
+
 =head1 FUNCTIONS
 
 See L<Math::PlanePath/FUNCTIONS> for behaviour common to all path classes.
@@ -2503,9 +2570,11 @@ Create and return a new path object.  The C<parts> option (a string) can be
 
     "4"           full pattern (the default)
     "1"           single quadrant
-    "octant"      single octant wedge
+    "octant"      single octant
+    "octant_up"   single octant upper
     "3mid"        three quadrants, middle symmetric style
     "3side"       three quadrants, side style
+    "wedge"       V-shaped wedge
 
 =back
 
@@ -2623,7 +2692,7 @@ Sequences as
     parts=3mid
       A170880   total cells, tree_depth_to_n()
       A151728   added cells "v2"
-      A151727   added cells * 4
+      A151727   added cells "v2" * 4
       A151729   (added cells - 1) / 2
 
     parts=3side

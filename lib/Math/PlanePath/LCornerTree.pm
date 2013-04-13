@@ -45,7 +45,7 @@ use strict;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 4;
+$VERSION = 5;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -63,28 +63,17 @@ use Math::PlanePath::Base::Digits
 # use Smart::Comments;
 
 
-use constant default_n_start => 0;
+use constant n_start => 0;
 use constant parameter_info_array =>
   [ { name            => 'parts',
       share_key       => 'parts_lcornertree',
       display         => 'Parts',
       type            => 'enum',
       default         => '4',
-      choices         => ['4','3','2','1','octant',
-                          # 'octant_up','wedge',
-                         ],
-      choices_display => ['4','3','2','1','Octant',
-                          # 'Octant Up','Wedge',
-                         ],
+      choices         => ['4','3','2','1','octant','octant_up','wedge',],
+      choices_display => ['4','3','2','1','Octant','Octant Up','Wedge',],
       description     => 'Which parts of the plane to fill.',
     }
-    # { name        => 'n_start',
-    #   share_key   => 'n_start_0',
-    #   type        => 'integer',
-    #   default     => 0,
-    #   width       => 3,
-    #   description => 'Starting N.',
-    # },
   ];
 
 {
@@ -146,9 +135,6 @@ use constant tree_num_children_maximum => 3;
 
 sub new {
   my $self = shift->SUPER::new(@_);
-  if (! defined $self->{'n_start'}) {
-    $self->{'n_start'} = $self->default_n_start;
-  }
   $self->{'parts'} ||= 4;
   return $self;
 }
@@ -171,7 +157,7 @@ sub n_to_xy {
   my ($self, $n) = @_;
   ### LCornerTree n_to_xy(): $n
 
-  if ($n < $self->{'n_start'}) { return; }
+  if ($n < 0) { return; }
   if (is_infinite($n)) { return ($n,$n); }
   {
     my $int = int($n);
@@ -188,7 +174,6 @@ sub n_to_xy {
     $n = $int;       # BigFloat int() gives BigInt, use that
   }
 
-  $n = $n - $self->{'n_start'};  # N=0 basis
   if (is_infinite($n)) { return ($n,$n); }
 
   my $zero = ($n * 0); # inherit bignum 0
@@ -461,7 +446,7 @@ sub rect_to_n_range {
   ($xymax) = round_down_pow($xymax,2);
   ### $xymax
   ### depth_to_n: $self->tree_depth_to_n($xymax+1)
-  return ($self->{'n_start'},
+  return (0,
           $self->tree_depth_to_n(2*$xymax) - 1);
 }
 
@@ -501,15 +486,15 @@ sub tree_depth_to_n {
     $n *= $parts;
   }
 
-  return $n + $self->{'n_start'};
+  return $n;
 }
 
 sub tree_n_to_depth {
   my ($self, $n) = @_;
   ### LCornerTree n_to_xy(): $n
 
-  if ($n < $self->{'n_start'}) { return undef; }
-  $n = int($n) - $self->{'n_start'};  # N=0 basis
+  if ($n < 0) { return undef; }
+  $n = int($n);
   if (is_infinite($n)) {
     return $n;
   }
@@ -603,7 +588,7 @@ sub tree_n_children {
   my ($self, $n) = @_;
   ### LCornerTree tree_n_children(): $n
 
-  if ($n < $self->{'n_start'}) {
+  if ($n < 0) {
     ### before n_start ...
     return;
   }
@@ -657,7 +642,6 @@ sub tree_n_to_height {
   my ($self, $n) = @_;
   ### LCornerTree tree_n_to_height(): $n
 
-  $n = $n - $self->{'n_start'};
   if ($n < 0)          { return undef; }
   if (is_infinite($n)) { return $n; }
 
@@ -743,17 +727,17 @@ __END__
 #   my ($power, $exp) = round_down_pow (3*$n-2, 4);
 #   $exp -= 1;
 #   $power /= 4;
-# 
+#
 #   ### $power
 #   ### $exp
 #   ### pow base: 2 + 4*(4**$exp - 1)/3
-# 
+#
 #   $n -= ($power - 1)/3 * 4 + 2;
 #   ### n less pow base: $n
-# 
+#
 #   my @levelbits = (2**$exp);
 #   $power = 3**$exp;
-# 
+#
 #   # find the cumulative levelpoints total <= $n, being the start of the
 #   # level containing $n
 #   #
@@ -764,20 +748,20 @@ __END__
 #     ### $sub
 #     # $power*$factor;
 #     my $rem = $n - $sub;
-# 
+#
 #     ### $n
 #     ### $power
 #     ### $factor
 #     ### consider subtract: $sub
 #     ### $rem
-# 
+#
 #     if ($rem >= 0) {
 #       $n = $rem;
 #       push @levelbits, 2**$exp;
 #       $factor *= 3;
 #     }
 #   }
-# 
+#
 #   $n += $factor;
 #   if (1) {
 #     return ($n,$n+1,$n+2);
@@ -955,11 +939,11 @@ quadrants of the full pattern.
 
      4  |              18  17
      3  |  14  13  12  11  16
-     2  |  15   6   5  10 
-     1  |   3   2   4   9 
-    Y=0 |   0   1   7   8 
+     2  |  15   6   5  10
+     1  |   3   2   4   9
+    Y=0 |   0   1   7   8
         +---------------------
-          X=0   1   2   3   4 
+          X=0   1   2   3   4
 
 =head2 Half Plane
 
@@ -974,11 +958,11 @@ C<YE<gt>=0>, giving two symmetric parts above the X axis.
 
     parts => "2"
 
-    36  35                          34  33        4  
-    37  27  26  25  24  21  20  19  18  32        3  
-        28  12  11  23  22  10   9  17            2  
-        29  13   6   5   4   3   8  16            1  
-        30  31   7   1   0   2  14  15        <- Y=0 
+    36  35                          34  33        4
+    37  27  26  25  24  21  20  19  18  32        3
+        28  12  11  23  22  10   9  17            2
+        29  13   6   5   4   3   8  16            1
+        30  31   7   1   0   2  14  15        <- Y=0
     --------------------------------------
     -5  -4  -3  -2  -1  X=0  1   2   3   4
 
@@ -995,14 +979,14 @@ left similar to the way the tree grows from a power-of-2 corner X=2^k,Y=2^k.
 
     parts => "3"
 
-    55  54                          50  49        4  
-    56  43  42  41  40  28  27  26  25  48        3  
-        44  19  18  39  29  14  13  24            2  
-        45  20  10   9   5   4  12  23            1  
-        46  47  11   2   0   3  21  22        <- Y=0 
+    55  54                          50  49        4
+    56  43  42  41  40  28  27  26  25  48        3
+        44  19  18  39  29  14  13  24            2
+        45  20  10   9   5   4  12  23            1
+        46  47  11   2   0   3  21  22        <- Y=0
     ------------------+  1   8  38  37           -1
                       |  6   7  17  36           -2
-                      | 30  15  16  35    
+                      | 30  15  16  35
                       | 31  32  33  34  53
                       |             51  52
                          ^
@@ -1016,25 +1000,112 @@ pattern.
 
 =cut
 
-# math-image --path=LCornerTree,parts=octant, --all --output=numbers --size=50x7
+# math-image --path=LCornerTree,parts=octant --all --output=numbers --size=40x8
 
 =pod
 
     parts => "octant"
-           
-     6  |                          21 
-     5  |                      16  20 
-     4  |                  11  15  31 
-     3  |               9  10  14  30 
-     2  |           4   8  12  13  19 
-     1  |       2   3   7  22  17  18 
-    Y=0 |   0   1   5   6  23  24  25 
-        +-----------------------------
-          X=0   1   2   3   4   5   6
+
+     7  |                       35
+     6  |                    21 34
+     5  |                 16 20 33
+     4  |              11 15 31 32
+     3  |            9 10 14 30 29
+     2  |         4  8 12 13 19 28
+     1  |      2  3  7 22 17 18 27
+    Y=0 |   0  1  5  6 23 24 25 26
+        +--------------------------
+          X=0  1  2  3  4  5  6  7
 
 The points are numbered in the same sequence as the parts=1 quadrant, but
 with those above the X=Y diagonal omitted.  This means each N on the X=Y
 diagonal is the last of the depth level.
+
+=head2 Upper Octant
+
+Option C<parts =E<gt> 'octant_up'> confines the pattern to the upper eighth
+of the first quadrant.
+
+=cut
+
+# math-image --path=LCornerTree,parts=octant_up --all --output=numbers --size=50x8
+
+=pod
+
+    parts => "octant_up"
+
+     7  |  31 30 29 28 25 24 23 22
+     6  |  32 20 19 27 26 18 17
+     5  |  33 21 15 14 13 12
+     4  |  34 35 16 11 10
+     3  |   8  7  6  5
+     2  |   9  4  3
+     1  |   2  1
+    Y=0 |   0
+        +--------------------------
+          X=0  1  2  3  4  5  6  7
+
+The points are numbered in the same sequence as the parts=1 quadrant, but
+with those below the X=Y diagonal omitted.  This means each N on the X=Y
+diagonal is the first of the depth level.
+
+=head2 Wedge
+
+Option C<parts =E<gt> 'wedge'> confines the pattern to a wedge made of two
+octants, YE<gt>=X and YE<gt>=-1-X.
+
+=cut
+
+# math-image --path=LCornerTree,parts=wedge --all --output=numbers --size=80x8
+
+=pod
+
+    parts => "wedge"
+
+    71 70 69 68 65 64 63 62 53 52 51 50 47 46 45 44       7
+       43 42 67 66 41 40 61 54 37 36 49 48 35 34          6
+          33 32 31 30 39 60 55 38 27 26 25 24             5
+             23 22 29 58 59 56 57 28 21 20                4
+                19 18 17 16 13 12 11 10                   3
+                    9  8 15 14  7  6                      2
+                       5  4  3  2                         1
+                          1  0                           Y=0
+    -----------------------------------------------
+    -8 -7 -6 -5 -4 -3 -2 -1  0  1  2  3  4  5  6  7
+
+The points are numbered in the same sequence as the full parts=4 pattern,
+but restricted to the wedge portion.  This means each N on the right-hand
+X=Y diagonal is the first of the depth level and each N on the X=-1-Y
+left-hand diagonal is the last of the depth level.
+
+In this arrangement even N falls on "even" X,Y points X=Y mod 2.  Odd N
+falls on "odd" X,Y points X!=Y mod 2.
+
+     O  E  O  E  O  E  O  E
+        O  E  O  E  O  E
+           O  E  O  E
+              O  E
+
+The odd/even is true of N=0 and N=1.  For further points it's true due to
+the way the pattern repeats in 2^k depth levels.
+
+    --------------
+     \ 3 /  \ 1 /
+      \ /  2 \ /      <- Y=2^k
+       --------
+        \base/
+         \  /         <- Y=0
+
+The base part Y=0 to Y=2^k-1 repeats in block 1 and block 3.  The middle
+block 2 is also a repeat, less 2 points on the diagonals, but the right half
+of the base is rotated +90 degrees and the left half of the base rotated -90
+degrees to make the upside-down wedge.
+
+parts=2 and parts=4 forms also have an even number of points in each row,
+but they don't have N even on X,Y even the way the wedge does.  That's
+because parts=2 and parts=4 being on the "ragged" edge of the pattern which
+may be X,Y odd or even, whereas the wedge rows begin on the X=Y diagonal
+which is always X,Y even.
 
 =head2 Ulam Warburton
 
@@ -1052,20 +1123,20 @@ L<Math::PlanePath::UlamWarburtonQuarter> and using 2x2 blocks for each cell.
 
     parts=>1  non-leaf cells
                    ...
-    |  **  **  **  **  
-    |  **  **  **  **  
-    |    **      **    
-    |    **      **    
-    |  **  **  **  **  
-    |  **  **  **  **  
-    |        **        
-    |        **        
-    |  **  **  **  **  
-    |  **  **  **  **  
-    |    **      **    
-    |    **      **    
-    |  **  **  **  **  
-    |  **  **  **  **  
+    |  **  **  **  **
+    |  **  **  **  **
+    |    **      **
+    |    **      **
+    |  **  **  **  **
+    |  **  **  **  **
+    |        **
+    |        **
+    |  **  **  **  **
+    |  **  **  **  **
+    |    **      **
+    |    **      **
+    |  **  **  **  **
+    |  **  **  **  **
     | *
     +----------------
 
@@ -1091,6 +1162,8 @@ Create and return a new path object.  C<parts> (a string) can be
     "2"
     "1"
     "octant"
+    "octant_up"
+    "wedge"
 
 =back
 
@@ -1133,8 +1206,11 @@ Sequences as
                   cumulative 3^count1bits, tree_depth_to_n(d+1)
       A048883   added cells at given depth, 3^count1bits(n)
 
-    parts=octant
+    parts=octant,octant_up
       A162784   added cells at given depth, (3^count1bits(n) + 1)/2
+
+    parts=wedge
+      A151712   added cells at given depth, 3^count1bits(n) + 1
 
 Drawings by Omar Pol
 
@@ -1151,6 +1227,9 @@ Drawings by Omar Pol
       http://www.polprimos.com/imagenespub/polca011.jpg
       http://www.polprimos.com/imagenespub/polca012.jpg
       http://www.polprimos.com/imagenespub/polca014.jpg
+
+    parts=wedge
+      http://www.polprimos.com/imagenespub/polca032.jpg
 
 =head1 SEE ALSO
 
