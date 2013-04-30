@@ -15,6 +15,29 @@
 # You should have received a copy of the GNU General Public License along
 # with Math-PlanePath-Toothpick.  If not, see <http://www.gnu.org/licenses/>.
 
+
+
+#------------------------------------------------------------------------------
+# cf A183126 triplet around each exposed end, starting from length=1 two ends
+#    A183127 added  0,1,6,16,16,40,16,40,40,112,16
+#    http://www.math.vt.edu/people/layman/sequences/A183126.htm
+# added = 4 * 3^count1bits(depth) or thereabouts
+#
+#------------------------------------------------------------------------------
+# cf A183148 triplet around each exposed end, bounded to half-plane
+#    A183149 added 0,1,3,9,9,21,9,21,21,57,9,21,21,57,
+#    A183060
+#              .
+#              4
+#          . 4 . 4 .
+#              3
+#      .   . 3 . 3 .   .
+#      4   3   2   3   4
+#  . 4 . 3 . 2 . 2 . 3 . 4 .
+#      4   3   1   3   4
+#  -----------------------
+#
+#------------------------------------------------------------------------------
 # wedge odd/even
 
 #     1  1
@@ -38,6 +61,8 @@
 #        4  4        4  4
 #
 
+#------------------------------------------------------------------------------
+
 package Math::PlanePath::LCornerTree;
 use 5.004;
 use strict;
@@ -45,7 +70,7 @@ use strict;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 5;
+$VERSION = 6;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -73,7 +98,7 @@ use constant parameter_info_array =>
       choices         => ['4','3','2','1','octant','octant_up','wedge',],
       choices_display => ['4','3','2','1','Octant','Octant Up','Wedge',],
       description     => 'Which parts of the plane to fill.',
-    }
+    },
   ];
 
 {
@@ -104,7 +129,34 @@ use constant parameter_info_array =>
     return $y_negative{$self->{'parts'}};
   }
 }
-
+{
+  my %sumxy_minimum = (1         => 0,
+                       octant    => 0,
+                       octant_up => 0,
+                       wedge     => -1,  # X>=-Y-1 so X+Y>=-1
+                      );
+  sub sumxy_minimum {
+    my ($self) = @_;
+    return $sumxy_minimum{$self->{'parts'}};
+  }
+}
+{
+  my %diffxy_minimum = (octant => 0,  # octant X>=Y so X-Y>=0
+                       );
+  sub diffxy_minimum {
+    my ($self) = @_;
+    return $diffxy_minimum{$self->{'parts'}};
+  }
+}
+{
+  my %diffxy_maximum = (octant_up => 0,  # octant X<=Y so X-Y<=0
+                        wedge     => 0,  # wedge X<=Y so X-Y<=0
+                       );
+  sub diffxy_maximum {
+    my ($self) = @_;
+    return $diffxy_maximum{$self->{'parts'}};
+  }
+}
 use constant tree_num_children_maximum => 3;
 
 # parts=1 Dir4 max 12,-11
@@ -647,7 +699,6 @@ sub tree_n_to_height {
 
   my ($depthbits, $ndepth, $nwidth) = _n0_to_depthbits($n, $self->{'parts'});
   $n -= $ndepth;      # remaining offset into row
-  my @nbits = bit_split_lowtohigh($n);
 
   my $parts = $self->{'parts'};
   if ($parts eq 'octant_up') {
@@ -811,7 +862,7 @@ __END__
 #  3  2  4  9
 #  0  1  7  8
 
-=for stopwords eg Ryde Math-PlanePath-Toothpick Ulam Warburton Ulam-Warburton Nstart OEIS ie
+=for stopwords eg Ryde Math-PlanePath-Toothpick Ulam Warburton Ulam-Warburton Nstart OEIS ie Octant octants
 
 =head1 NAME
 
@@ -1144,6 +1195,29 @@ parts=4 gives the pattern of L<Math::PlanePath::UlamWarburton> but again
 turned 45 degrees and in 2x2 blocks.
 
 =pod
+
+=head2 Toothpicks
+
+The points can be regarded as the centres of toothpicks oriented diagonally
+and growing at exposed endpoints.
+
+        | \     /        parts=1 as toothpicks
+      1 |  3   2
+        |   \ /
+        |    .
+        |   / \
+    Y=0 |  0   1
+        | /     \
+        +------------
+         X=0   1
+
+Point N=0 is reckoned as a diagonal toothpick and the three N=1,2,3 grow
+from its exposed end.  At the next level another three grow from the exposed
+end of N=2.
+
+The toothpicks are oriented with the leading diagonal on "even" points X=Y
+mod 2, or on the opposite diagonal on "odd" points X!=Y mod 2.  A rotation
+by -45 degrees can be applied to make them horizontal and vertical instead.
 
 =head1 FUNCTIONS
 

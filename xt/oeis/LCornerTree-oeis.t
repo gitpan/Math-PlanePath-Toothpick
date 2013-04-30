@@ -45,6 +45,63 @@ sub path_tree_depth_to_width {
 }
 
 #------------------------------------------------------------------------------
+# A183126 - added cells parts=diag2
+
+# 16 = 2*(3+2+2)
+MyOEIS::compare_values
+  (anum => 'A183127',  # 0,1,6,16,16,40
+   func => sub {
+     my ($count) = @_;
+     require Math::PlanePath::LCornerTreeByCells;
+     my $path = Math::PlanePath::LCornerTreeByCells->new (parts => 'diag2');
+     my @got = (0);
+     for (my $depth = 0; @got < $count; $depth++) {
+       push @got, path_tree_depth_to_width($path,$depth);
+     }
+     return \@got;
+   });
+MyOEIS::compare_values
+  (anum => 'A183126',
+   func => sub {
+     my ($count) = @_;
+     require Math::PlanePath::LCornerTreeByCells;
+     my $path = Math::PlanePath::LCornerTreeByCells->new (parts => 'diag2');
+     my @got;
+     for (my $depth = 0; @got < $count; $depth++) {
+       push @got, $path->tree_depth_to_n($depth);
+     }
+     return \@got;
+   });
+
+#------------------------------------------------------------------------------
+# A183126 - added cells parts=diag
+
+MyOEIS::compare_values
+  (anum => 'A183149',
+   func => sub {
+     my ($count) = @_;
+     require Math::PlanePath::LCornerTreeByCells;
+     my $path = Math::PlanePath::LCornerTreeByCells->new (parts => 'diag');
+     my @got = (0);
+     for (my $depth = 0; @got < $count; $depth++) {
+       push @got, path_tree_depth_to_width($path,$depth);
+     }
+     return \@got;
+   });
+MyOEIS::compare_values
+  (anum => 'A183148',
+   func => sub {
+     my ($count) = @_;
+     require Math::PlanePath::LCornerTreeByCells;
+     my $path = Math::PlanePath::LCornerTreeByCells->new (parts => 'diag');
+     my @got;
+     for (my $depth = 0; @got < $count; $depth++) {
+       push @got, $path->tree_depth_to_n($depth);
+     }
+     return \@got;
+   });
+
+#------------------------------------------------------------------------------
 # A162784 - added cells parts=octant
 
 MyOEIS::compare_values

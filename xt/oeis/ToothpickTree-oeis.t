@@ -24,12 +24,12 @@
 # 	= 1+2*A139250(n)-A147614 the grid points covered
 # A160125 added squares+rectangles
 # A211008 squares of size 2^(k-1)
-# A160126 total/2
-# A160127 added/2
+# A160126 total squares+rectangles / 2
+# A160127 added squares+rectangles / 2
 # A159786 area squares&rectangles
-# A159787=3/4
-# A159788=1/2
-# A159789=1/4
+# A159787 3/4 area squares&rectangles
+# A159788 1/2 area squares&rectangles
+# A159789 1/4 area squares&rectangles
 
 
 use 5.004;
@@ -44,24 +44,32 @@ use MyTestHelpers;
 MyTestHelpers::nowarnings();
 use MyOEIS;
 
+use Math::PlanePath::Base::Digits 'round_down_pow';
 use Math::PlanePath::ToothpickTree;
 
 # uncomment this to run the ### lines
-#use Smart::Comments '###';
+# use Smart::Comments '###';
+
+# Return the number of points at $depth.
+sub path_tree_depth_to_width {
+  my ($path, $depth) = @_;
+  if (defined (my $n = $path->tree_depth_to_n($depth))
+      && defined (my $n_end = $path->tree_depth_to_n_end($depth))) {
+    return $n_end - $n + 1;
+  } else {
+    return undef;
+  }
+}
 
 
 #------------------------------------------------------------------------------
-# A153000 - parts=1 total cells
-
 # A168002 - parts=1 total cells mod 2, starting depth=1
-# cf A079559 
 MyOEIS::compare_values
   (anum => 'A168002',
    func => sub {
      my ($count) = @_;
      my $path = Math::PlanePath::ToothpickTree->new (parts => 1);
      my @got;
-     my $total = 0;
      for (my $depth = 1; @got < $count; $depth++) {
        my $n = $path->tree_depth_to_n($depth);
        push @got, $n % 2;
@@ -69,20 +77,134 @@ MyOEIS::compare_values
      return \@got;
    });
 
+# T(n) = A139250(n)   OFFSET=0
+# Q(n) = (T(n)-3)/4, n >= 2   paper section 3 end page 12
+#      = A153000(n-2)
+# T(n) = 4*Q(n)+3
+#
+# Q(2^k + rem) = Q(rem+1) + 2*Q(rem) + 2
+# Q(2^k + rem) == Q(rem+1) mod 2
+# Q(2^k-1 + rem) == Q(rem) mod 2
+# for rem>=1
+
+# T(pow+rem) = T(pow) + T(rem+1) + 2*T(rem) - 1
+# Q(pow+rem) = (T(pow+rem)-3)/4
+#   = (T(pow)-3 + 3 + T(rem+1)-3 + 3 + 2*T(rem)-6 + 6 - 1 - 3) / 4
+#   = (T(pow)-3)/4 + 3/4 + (T(rem+1)-3)/4 + 3/4 + (2*T(rem)-6)/4 + (6 - 1 - 3) / 4
+#   = Q(pow) + Q(rem+1) + 2*Q(rem) + 3/4 + 3/4 + (6 - 1 - 3) / 4
+#   = Q(pow) + Q(rem+1) + 2*Q(rem) + 2
+#
+# T(pow+rem) = T(pow) + T(rem+1) + 2*T(rem) - 1
+# 4*Q(pow+rem)+3 = 4*Q(pow)+3 + 4*Q(rem+1)+3 + 2*(4*Q(rem)+3) - 1
+# 4*Q(pow+rem) = 4*Q(pow) + 4*Q(rem+1) + 2*4*Q(rem) - 1 - 3+3+2*3+3
+#              = 4*Q(pow) + 4*Q(rem+1) + 2*4*Q(rem) + 8
+# Q(pow+rem) = Q(pow) + Q(rem+1) + 2*Q(rem) + 2
+#
+# Q(2^k) = (T(2^k)-3)/4
+#        = ((2*4^k+1)/3 - 3) / 4
+#        = ((2*4^k+1) - 9) / 12
+#        = (2*4^k - 8) / 12
+#        = (4^k - 4) / 6
+# quad(pow) = (4^k-4)/6          # with 4^k = pow*pow
+# quad(pow+1) = quad(pow) + 1   # the "A" toothpick
+# and for rem>=2
+# quad(pow+rem) = quad(rem+1) + 2*quad(rem) + 2
+# eg. quad(4+2) = quad(4) + quad(3) + 2*quad(2) + 2
+#               =   2     +   1     + 2*0       + 2  = 5
+# eg. quad(4+3) = quad(4) + quad(4) + 2*quad(3) + 2
+#               = 2 + 2 + 2*1 + 2 = 8
+#
+sub my_A153000 {
+  my ($n) = @_;
+  ### my_A153000(): $n
+  die "A153000($n)" if $n < 2;
+  if ($n == 2) { return 0; }
+  if ($n == 3) { return 1; }
+  my ($pow,$exp) = round_down_pow($n,2);
+  my $rem = $n - $pow;
+  if ($rem == 0) { return ($pow*$pow - 4) / 6; }
+  if ($rem == 1) { return my_A153000($pow) + 1; }
+  return my_A153000($pow) + my_A153000($rem+1) + 2*my_A153000($rem) + 2;
+
+  # my $q1 = my_A153000($rem+1);
+  # my $q2 = 2*my_A153000($rem);
+  # my $ret = $q1 + 2*$q2 + 2;
+  # ### $pow
+  # ### $rem
+  # ### $q1
+  # ### $q2
+  # ### $ret;
+  # return $ret;
+  return 99;
+}
+BEGIN {
+  use Memoize;
+  Memoize::memoize('my_A153000');
+}
 MyOEIS::compare_values
   (anum => 'A153000',
    func => sub {
      my ($count) = @_;
-     my $path = Math::PlanePath::ToothpickTree->new (parts => 1);
      my @got;
-     my $total = 0;
-     for (my $depth = 0; @got < $count; $depth++) {
-       push @got, $path->tree_depth_to_n($depth);
+     for (my $n = 2; @got < $count; $n++) {
+       push @got, my_A153000($n);
      }
      return \@got;
    });
 
-# A153002 primes among parts=1 total cells
+# cf A079559
+# fixed point of 0->0 1->110
+# 1                 1
+# 110               3
+# 1101100           7
+# 110110011011000   15
+# 01234567
+# A(2^k-1 + rem) = A(rem)
+# A(2^k-1 + 2^k-1) = 0
+#
+# 1 = 1
+# 2 = no
+# 3 = 3
+# 4 = 3 + 1
+# 5 = no
+# 6 = no
+# 7 = 7
+# 8 = 7 + 1
+# 9 = no
+# 10 = 7 + 3
+# 11 = 7 + 3 + 1
+# 12 = no
+# 13 = no
+# 14 = no
+# 1, 1, 0, 1, 1, 0, 0, 1, 1
+#
+# zeros run length A007814 count low 0-bits
+# run lengths abs(A088705)+1  A088705=delta A000120 count 1-bits
+# A005187 positions of 1s
+# A055938 positions of 0s
+MyOEIS::compare_values
+  (anum => 'A079559',
+   func => sub {
+     my ($count) = @_;
+     my @got;
+     for (my $n = 0; @got < $count; $n++) {
+       push @got, my_A079559($n);
+     }
+     return \@got;
+   });
+sub my_A079559 {
+  my ($n) = @_;
+  for (;;) {
+    my ($pow,$exp) = round_down_pow($n+1,2);
+    $n -= $pow-1;
+    if ($n == 0) { return 1; }
+    if ($n == $pow-1) { return 0; }
+  }
+}
+
+
+#------------------------------------------------------------------------------
+# A153002 parts=1 primes among total cells
 MyOEIS::compare_values
   (anum => 'A153002',
    func => sub {
@@ -95,6 +217,42 @@ MyOEIS::compare_values
        if (is_prime ($n)) {
          push @got, $n;
        }
+     }
+     return \@got;
+   });
+
+#------------------------------------------------------------------------------
+# A152999 - parts=2 primes among parts=2 total cells
+MyOEIS::compare_values
+  (anum => 'A152999',
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::ToothpickTree->new (parts => 2);
+     my @got;
+     my $total = 0;
+     for (my $depth = 0; @got < $count; $depth++) {
+       my $n = $path->tree_depth_to_n($depth);
+       if (is_prime ($n)) {
+         push @got, $n;
+       }
+     }
+     return \@got;
+   });
+
+
+#------------------------------------------------------------------------------
+# A153001 parts=3 added cells infinite row not across 2^k boundary
+
+MyOEIS::compare_values
+  (anum => 'A153001',
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::ToothpickTree->new (parts => 3);
+     my ($depth,$exp) = round_down_pow($count,2);
+     $depth *= 4;
+     my @got;
+     for ( ; @got < $count; $depth++) {
+       push @got, path_tree_depth_to_width($path, $depth);
      }
      return \@got;
    });
@@ -169,25 +327,6 @@ MyOEIS::compare_values
    func => sub {
      my ($count) = @_;
      my $path = Math::PlanePath::ToothpickTree->new (parts => 3);
-     my @got;
-     my $total = 0;
-     for (my $depth = 0; @got < $count; $depth++) {
-       my $n = $path->tree_depth_to_n($depth);
-       if (is_prime ($n)) {
-         push @got, $n;
-       }
-     }
-     return \@got;
-   });
-
-#------------------------------------------------------------------------------
-# A152999 primes among parts=2 total cells
-
-MyOEIS::compare_values
-  (anum => 'A152999',
-   func => sub {
-     my ($count) = @_;
-     my $path = Math::PlanePath::ToothpickTree->new (parts => 2);
      my @got;
      my $total = 0;
      for (my $depth = 0; @got < $count; $depth++) {
@@ -487,22 +626,6 @@ MyOEIS::compare_values
      return \@got;
    });
 
-
-#------------------------------------------------------------------------------
-# A152998 - parts=2 total cells
-
-MyOEIS::compare_values
-  (anum => 'A152998',
-   func => sub {
-     my ($count) = @_;
-     my $path = Math::PlanePath::ToothpickTree->new (parts => 2);
-     my @got;
-     my $total = 0;
-     for (my $depth = 0; @got < $count; $depth++) {
-       push @got, $path->tree_depth_to_n($depth);
-     }
-     return \@got;
-   });
 
 #------------------------------------------------------------------------------
 exit 0;

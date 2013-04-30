@@ -21,12 +21,12 @@ use 5.010;
 use strict;
 use Math::PlanePath::LCornerReplicate;
 use List::Util 'min', 'max';
+use Math::Trig 'pi';
 use Math::PlanePath::Base::Digits
   'round_down_pow',
   'bit_split_lowtohigh',
   'digit_split_lowtohigh',
   'digit_join_lowtohigh';
-use constant _PI => 4 * atan2(1,1);  # similar to Math::Complex
 
 {
   # max Dir4
@@ -95,7 +95,7 @@ use constant _PI => 4 * atan2(1,1);  # similar to Math::Complex
 {
   my $path = Math::PlanePath::LCornerReplicate->new;
   my ($dx,$dy) = $path->dir_maximum_dxdy;
-  my $degrees = atan2($dy,$dx) * (180 / _PI);
+  my $degrees = atan2($dy,$dx) * (180 / pi);
   my $dir4 = $degrees / 360 * 4 + 4;
   print "$dx,$dy  $degrees $dir4\n";
   exit 0;

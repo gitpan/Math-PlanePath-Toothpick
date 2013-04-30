@@ -32,7 +32,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 5;
+$VERSION = 6;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -167,8 +167,8 @@ sub new {
  #    @n_to_x = (0, -1, -1, 0);
  #    @n_to_y = (0, 0, -1, -1);
  #    $self->{'endpoints_dir'} = [ 0, 2, 4, 6 ];
- #  } else {
-    # croak "Unrecognised parts: ",$parts;
+  } else {
+    croak "Unrecognised parts: ",$parts;
   }
   $self->{'n_to_x'} = \@n_to_x;
   $self->{'n_to_y'} = \@n_to_y;

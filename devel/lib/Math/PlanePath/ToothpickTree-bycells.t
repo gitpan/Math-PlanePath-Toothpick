@@ -18,7 +18,7 @@
 # with Math-PlanePath-Toothpick.  If not, see <http://www.gnu.org/licenses/>.
 
 
-# Compare OneOfEight.pm and OneOfEightByCells.pm.
+# Compare ToothpickTree.pm and ToothpickTreeByCells.pm.
 #
 
 use 5.004;
@@ -33,8 +33,8 @@ MyTestHelpers::nowarnings();
 # uncomment this to run the ### lines
 #use Smart::Comments;
 
-require Math::PlanePath::OneOfEight;
-require Math::PlanePath::OneOfEightByCells;
+require Math::PlanePath::ToothpickTree;
+require Math::PlanePath::ToothpickTreeByCells;
 
 require Math::PlanePath::SquareSpiral;
 my $sq = Math::PlanePath::SquareSpiral->new;
@@ -52,35 +52,37 @@ my $report = sub {
   }
 };
 
-foreach my $parts ('octant_up', 'octant', '3side', 'side', '3mid', '1', '4') {
-  my $path = Math::PlanePath::OneOfEight->new (parts => $parts);
-  my $cells = Math::PlanePath::OneOfEightByCells->new (parts => $parts);
+foreach my $parts ('wedge', '1', 'octant', 'octant_up', '3', '4', '2',
+                  ) {
+  my $path = Math::PlanePath::ToothpickTree->new (parts => $parts);
+  my $cells = Math::PlanePath::ToothpickTreeByCells->new (parts => $parts);
 
   my $n = $path->n_start;
   my $sqn = $sq->n_start;
   my $sq_limit = 0;
 
-  for (my $depth = 0; $depth < 1024+10; $depth++) {
+  for (my $depth = 0; $depth < 64+10; $depth++) {
     my $n_depth = $path->tree_depth_to_n($depth);
     my $n_depth_end = $path->tree_depth_to_n_end($depth);
     {
       my $cells_n_depth = $cells->tree_depth_to_n($depth);
       unless ($n_depth == $cells_n_depth) {
-        &$report("parts=$parts tree_depth_to_n($depth) $n_depth cf cells $cells_n_depth");
+        &$report("parts=$parts tree_depth_to_n($depth) = $n_depth cf cells $cells_n_depth");
       }
     }
+
     for ( ; $n <= $n_depth_end; $n++) {
+      {
+        my $got_depth = $path->tree_n_to_depth($n);
+        unless (equal($got_depth, $depth)) {
+          &$report("parts=$parts tree_n_to_depth($n) got $got_depth want $depth");
+        }
+      }
       {
         my ($x,$y) = $path->n_to_xy($n);
         my ($cx,$cy) = $cells->n_to_xy($n);
         unless (equal($x,$cx) && equal($y,$cy)) {
           &$report("parts=$parts n_to_xy($n) depth=$depth got $x,$y cf cells $cx,$cy");
-        }
-      }
-      {
-        my $got_depth = $path->tree_n_to_depth($n);
-        unless (equal($got_depth, $depth)) {
-          &$report("parts=$parts tree_n_to_depth($n) got $got_depth want $depth");
         }
       }
     }

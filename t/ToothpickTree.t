@@ -20,7 +20,7 @@
 use 5.004;
 use strict;
 use Test;
-plan tests => 376;
+plan tests => 499;
 
 use lib 't';
 use MyTestHelpers;
@@ -36,7 +36,7 @@ require Math::PlanePath::ToothpickTree;
 # VERSION
 
 {
-  my $want_version = 5;
+  my $want_version = 6;
   ok ($Math::PlanePath::ToothpickTree::VERSION, $want_version,
       'VERSION variable');
   ok (Math::PlanePath::ToothpickTree->VERSION,  $want_version,
@@ -61,6 +61,99 @@ require Math::PlanePath::ToothpickTree;
       "VERSION object check $check_version");
 }
 
+
+
+#------------------------------------------------------------------------------
+# oct() formulas
+
+{
+  my $path = Math::PlanePath::ToothpickTree->new (parts => 'octant');
+  sub octant {
+    my ($d) = @_;
+    die "oops octant($d)" if $d < 2;
+    return $path->tree_depth_to_n($d-2);
+  }
+}
+{
+  sub quadrant {
+    my ($d) = @_;
+    die "oops quadrant($d)" if $d < 2;
+    if ($d == 2) { return 0; }
+    return octant($d) + octant($d-1) - $d + 3;
+  }
+  my $path = Math::PlanePath::ToothpickTree->new (parts => '1');
+  foreach my $d (2 .. 20) {
+    my $p = $path->tree_depth_to_n($d-2);
+    my $q = quadrant($d);
+    ok ($p, $q);
+  }
+}
+{
+  sub half {
+    my ($d) = @_;
+    die "oops half($d)" if $d < 1;
+    if ($d == 1) { return 0; }
+    return 2*quadrant($d) + 1;
+  }
+  my $path = Math::PlanePath::ToothpickTree->new (parts => '2');
+  foreach my $d (1 .. 20) {
+    my $p = $path->tree_depth_to_n($d-1);
+    my $h = half($d);
+    ok ($p, $h);
+  }
+}
+{
+  sub full {
+    my ($d) = @_;
+    if ($d == 0) { return 0; }
+    if ($d == 1) { return 1; }
+    return 4*quadrant($d) + 3;
+  }
+  my $path = Math::PlanePath::ToothpickTree->new (parts => '4');
+  foreach my $d (0 .. 20) {
+    my $p = $path->tree_depth_to_n($d);
+    my $f = full($d);
+    ok ($p, $f);
+  }
+}
+{
+  sub corner3_a {
+    my ($d) = @_;
+    if ($d == 0) { return 0; }
+    if ($d == 1) { return 1; }
+    return quadrant($d+1) + 2*quadrant($d) + 2;
+  }
+  sub corner3_b {
+    my ($d) = @_;
+    if ($d == 0) { return 0; }
+    if ($d == 1) { return 1; }
+    if ($d == 2) { return 3; }
+    return octant($d+1) + 3*octant($d) + 2*octant($d-1) - 3*$d + 10;
+  }
+  my $path = Math::PlanePath::ToothpickTree->new (parts => '3');
+  foreach my $d (0 .. 20) {
+    my $p = $path->tree_depth_to_n($d);
+    my $c = corner3_a($d);
+    ok ($p, $c);
+    $c = corner3_b($d);
+    ok ($p, $c);
+  }
+}
+{
+  sub wedge {
+    my ($d) = @_;
+    if ($d == 0) { return 0; }
+    if ($d == 1) { return 1; }
+    if ($d == 2) { return 2; }
+    return 2*octant($d-1) + 4;
+  }
+  my $path = Math::PlanePath::ToothpickTree->new (parts => 'wedge');
+  foreach my $d (0 .. 20) {
+    my $p = $path->tree_depth_to_n($d);
+    my $w = wedge($d);
+    ok ($p, $w);
+  }
+}
 
 
 #------------------------------------------------------------------------------
@@ -302,10 +395,10 @@ foreach my $parts (1 .. 4) {
 
 
 #------------------------------------------------------------------------------
-# _depth_to_quarter_added()
+# _depth_to_octant_added()
 
 {
-  my $path = Math::PlanePath::ToothpickTree->new (parts => 1);
+  my $path = Math::PlanePath::ToothpickTree->new (parts => 'octant');
 
   my $bad = 0;
   my $depth = 0;
@@ -313,10 +406,10 @@ foreach my $parts (1 .. 4) {
     my $n = $path->tree_depth_to_n($depth-2);
     my $next_n = $path->tree_depth_to_n($depth-1);
     my $want_add = $next_n - $n;
-    my $got_add = Math::PlanePath::ToothpickTree::_depth_to_quarter_added([$depth],[1],0);
+    my $got_add = Math::PlanePath::ToothpickTree::_depth_to_octant_added([$depth],[1],0);
 
     if ($got_add != $want_add) {
-      MyTestHelpers::diag ("_depth_to_quarter_added($depth) got $got_add want $want_add");
+      MyTestHelpers::diag ("_depth_to_octant_added($depth) got $got_add want $want_add");
       last if $bad++ > 10;
     }
   }

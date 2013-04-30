@@ -23,7 +23,7 @@ use strict;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 5;
+$VERSION = 6;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -206,9 +206,11 @@ sub rect_to_n_range {
       ### at: "min_state=$min_state  x_min=$x_min,y_min=$y_min"
       my $x_cmp = $x_min + $len;
       my $y_cmp = $y_min + $len;
-      my $c = ($x1 >= $x_cmp ? 2 : $x2 >= $x_cmp ? 1 : 0)
-        + ($y1 >= $y_cmp ? 6 : $y2 >= $y_cmp ? 3 : 0);
-      ### $c
+
+      # my $c = ($x1 >= $x_cmp ? 2 : $x2 >= $x_cmp ? 1 : 0)
+      #   + ($y1 >= $y_cmp ? 6 : $y2 >= $y_cmp ? 3 : 0);
+      # ### $c
+
       my $digit = $min_digit[3*$min_state
                              + ($x1 >= $x_cmp ? 2 : $x2 >= $x_cmp ? 1 : 0)
                              + ($y1 >= $y_cmp ? 6 : $y2 >= $y_cmp ? 3 : 0)];
@@ -245,7 +247,7 @@ sub rect_to_n_range {
 1;
 __END__
 
-=for stopwords eg Ryde Math-PlanePath-Toothpick Ulam Warburton Nstart OEIS ie
+=for stopwords eg Ryde Math-PlanePath-Toothpick Ulam Warburton Nstart OEIS ie dX,dY supremum
 
 =head1 NAME
 

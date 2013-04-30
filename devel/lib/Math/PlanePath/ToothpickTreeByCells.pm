@@ -63,7 +63,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 5;
+$VERSION = 6;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -82,16 +82,17 @@ use constant n_start => 0;
 
 use constant parameter_info_array =>
   [ { name      => 'parts',
-      share_key => 'parts_toothpickbycells',
+      share_key => 'parts_toothpicktreebycells',
       display   => 'Parts',
       type      => 'enum',
       default   => '4',
-      choices   => ['4','3','2','1',
-                    'cross','octant','octant_up',
+      choices   => ['4','3','2','1','octant','octant_up',
+                    'cross','two_horiz',
                     'wedge','wedge+1',
                     'unwedge_left','unwedge_left+1','unwedge_left_S',
                     'unwedge_down','unwedge_down+1','unwedge_down_W',
                     ],
+      description     => 'Which parts of the plane to fill, 1 to 4 quadrants.',
     },
   ];
 
@@ -104,7 +105,7 @@ sub new {
   my @n_to_x;
   my @n_to_y;
   my @endpoint_dirs;
-  if ($parts eq '4' || $parts eq '3'
+  if ($parts eq '4'
       || $parts eq 'wedge' || $parts eq 'wedge+1'
       || $parts eq 'unwedge_left' || $parts eq 'unwedge_left+1'
       || $parts eq 'unwedge_down+1'
@@ -114,18 +115,22 @@ sub new {
     @n_to_x = (0);
     @n_to_y = (0);
     @endpoint_dirs = (2);
-  } elsif ($parts eq '1' || $parts eq 'octant' || $parts eq 'octant_up') {
+  } elsif ($parts eq '1' || $parts eq 'octant') {
     @n_to_x = (1);
     @n_to_y = (1);
     @endpoint_dirs = (0);
+  } elsif ($parts eq 'octant_up') {
+    @n_to_x = (1);
+    @n_to_y = (2);
+    @endpoint_dirs = (1);
   } elsif ($parts eq '2') {
     @n_to_x = (0);
     @n_to_y = (1);
     @endpoint_dirs = (1);
   } elsif ($parts eq '3') {
-    @n_to_x = (0, -1, -1);
-    @n_to_y = (0, 0, -1);
-    @endpoint_dirs = (2, 3, 0);
+    @n_to_x = (0);
+    @n_to_y = (0);
+    @endpoint_dirs = (0);  # so N=1 is at X=0,Y=-1 
   } elsif ($parts eq 'cross') {
     @n_to_x = (0, -1, 1, 0);
     @n_to_y = (0, 0, 0, -2);

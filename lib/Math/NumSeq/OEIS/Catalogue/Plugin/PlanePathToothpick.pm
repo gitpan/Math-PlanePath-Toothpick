@@ -20,7 +20,7 @@ use 5.004;
 use strict;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 5;
+$VERSION = 6;
 use Math::NumSeq::OEIS::Catalogue::Plugin;
 @ISA = ('Math::NumSeq::OEIS::Catalogue::Plugin');
 
@@ -33,14 +33,14 @@ use constant info_arrayref =>
    { anum => 'A160410',
      class => 'Math::NumSeq::PlanePathN',
      parameters => [ planepath => 'LCornerTree',
-                     line_type => 'Depth_start'
-                   ]
+                     line_type => 'Depth_start',
+                   ],
    },
    { anum => 'A160412',
      class => 'Math::NumSeq::PlanePathN',
      parameters => [ planepath => 'LCornerTree,parts=3',
-                     line_type => 'Depth_start'
-                   ]
+                     line_type => 'Depth_start',
+                   ],
    },
 
    #---------------------------------------------------------------------------
@@ -49,8 +49,8 @@ use constant info_arrayref =>
    { anum => 'A062880',
      class => 'Math::NumSeq::PlanePathN',
      parameters => [ planepath => 'LCornerReplicate',
-                     line_type => 'Diagonal'
-                   ]
+                     line_type => 'Diagonal',
+                   ],
    },
 
    #---------------------------------------------------------------------------
@@ -59,26 +59,26 @@ use constant info_arrayref =>
    { anum => 'A151725',  # total
      class => 'Math::NumSeq::PlanePathN',
      parameters => [ planepath => 'OneOfEight',
-                     line_type => 'Depth_start'
-                   ]
+                     line_type => 'Depth_start',
+                   ],
    },
    { anum => 'A151735',
      class => 'Math::NumSeq::PlanePathN',
      parameters => [ planepath => 'OneOfEight,parts=1',
-                     line_type => 'Depth_start'
-                   ]
+                     line_type => 'Depth_start',
+                   ],
    },
    { anum => 'A170880',  # V2=3mid
      class => 'Math::NumSeq::PlanePathN',
      parameters => [ planepath => 'OneOfEight,parts=3mid',
-                     line_type => 'Depth_start'
-                   ]
+                     line_type => 'Depth_start',
+                   ],
    },
    { anum => 'A170879',  # V1=3side
      class => 'Math::NumSeq::PlanePathN',
      parameters => [ planepath => 'OneOfEight,parts=3side',
-                     line_type => 'Depth_start'
-                   ]
+                     line_type => 'Depth_start',
+                   ],
    },
 
    #---------------------------------------------------------------------------
@@ -87,26 +87,32 @@ use constant info_arrayref =>
    { anum => 'A139250',
      class => 'Math::NumSeq::PlanePathN',
      parameters => [ planepath => 'ToothpickTree',
-                     line_type => 'Depth_start'
-                   ]
+                     line_type => 'Depth_start',
+                   ],
    },
    { anum => 'A153006',
      class => 'Math::NumSeq::PlanePathN',
      parameters => [ planepath => 'ToothpickTree,parts=3',
-                     line_type => 'Depth_start'
-                   ]
+                     line_type => 'Depth_start',
+                   ],
    },
    { anum => 'A152998',
      class => 'Math::NumSeq::PlanePathN',
      parameters => [ planepath => 'ToothpickTree,parts=2',
-                     line_type => 'Depth_start'
-                   ]
+                     line_type => 'Depth_start',
+                   ],
    },
    { anum => 'A153000',
      class => 'Math::NumSeq::PlanePathN',
      parameters => [ planepath => 'ToothpickTree,parts=1',
-                     line_type => 'Depth_start'
-                   ]
+                     line_type => 'Depth_start',
+                   ],
+   },
+   { anum => 'A160406',
+     class => 'Math::NumSeq::PlanePathN',
+     parameters => [ planepath => 'ToothpickTree,parts=wedge',
+                     line_type => 'Depth_start',
+                   ],
    },
 
    #---------------------------------------------------------------------------
@@ -115,8 +121,8 @@ use constant info_arrayref =>
    { anum => 'A151566',
      class => 'Math::NumSeq::PlanePathN',
      parameters => [ planepath => 'ToothpickUpist',
-                     line_type => 'Depth_start'
-                   ]
+                     line_type => 'Depth_start',
+                   ],
    },
 
    #---------------------------------------------------------------------------

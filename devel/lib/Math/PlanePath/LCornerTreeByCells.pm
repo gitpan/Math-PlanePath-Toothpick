@@ -28,7 +28,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 5;
+$VERSION = 6;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -52,7 +52,9 @@ use constant parameter_info_array =>
       type            => 'enum',
       default         => '4',
       choices         => ['4','1','octant','octant_up',
-                          'wedge','single'],
+                          'wedge','single',
+                          'pair',
+                          'diag','diag2'],
       description     => 'Which parts of the plane to fill.',
     },
   ];
@@ -60,10 +62,11 @@ use constant class_x_negative => 1;
 use constant class_y_negative => 1;
 {
   my %x_negative = (1         => 0,
-                    single    => 1,
                     octant    => 0,
                     octant_up => 0,
                     wedge     => 1,
+                    single    => 1,
+                    pair      => 1,
                    );
   sub x_negative {
     my ($self) = @_;
@@ -76,6 +79,7 @@ use constant class_y_negative => 1;
                     octant    => 0,
                     octant_up => 0,
                     wedge     => 0,
+                    pair      => 1,
                    );
   sub y_negative {
     my ($self) = @_;
@@ -88,6 +92,7 @@ use constant class_y_negative => 1;
                    octant    => 0,
                    octant_up => 0,
                    wedge     => 0,
+                   pair      => undef,
                   );
   sub y_minimum {
     my ($self) = @_;
@@ -101,6 +106,7 @@ sub new {
 
   my $parts = ($self->{'parts'} ||= '4');
   my $start = ($self->{'start'} ||= 'one');
+  $self->{'depth_to_n'} = [0];
   my @n_to_x;
   my @n_to_y;
   if ($parts eq '4') {
@@ -119,12 +125,27 @@ sub new {
     @n_to_x = (0);
     @n_to_y = (0);
     $self->{'endpoints_dir'} = [ 0 ];
+  } elsif ($parts eq 'diag') {
+    @n_to_x = (0);
+    @n_to_y = (0);
+    $self->{'endpoints_dir'} = [ 0 ];
+    # @n_to_x = (1, 1, 0);
+    # @n_to_y = (0, 1, 1);
+    # $self->{'endpoints_dir'} = [ 3, 0, 1 ];
+  } elsif ($parts eq 'diag2') {
+    @n_to_x = (0, 1,1,0, -1,-1,0);
+    @n_to_y = (0, 0,1,1, 0,-1,-1);
+    $self->{'endpoints_dir'} = [ 0, 3,0,1, 1,2,3 ];
+    $self->{'depth_to_n'} = [0, 1];
+  } elsif ($parts eq 'pair') {
+    @n_to_x = (-1, 0);
+    @n_to_y = (0, 1);
+    $self->{'endpoints_dir'} = [ 2, 0 ];
   } else {
-    # croak "Unrecognised parts: ",$parts;
+    croak "Unrecognised parts: ",$parts;
   }
   $self->{'n_to_x'} = \@n_to_x;
   $self->{'n_to_y'} = \@n_to_y;
-  $self->{'depth_to_n'} = [0];
 
   my @endpoints;
   my @xy_to_n;
@@ -132,7 +153,9 @@ sub new {
     my $sn = $self->{'sq'}->xy_to_n($n_to_x[$n],$n_to_y[$n]);
     $xy_to_n[$sn] = $n;
     push @endpoints, $sn;
-    $self->{'sn_to_parent_sn'}->[$sn] = undef;
+    my $parent_sn = ($parts eq 'diag2' && $n > 0 ? $self->{'sq'}->xy_to_n(0,0)
+                     : undef);
+    $self->{'sn_to_parent_sn'}->[$sn] = $parent_sn;
   }
   $self->{'endpoints'} = \@endpoints;
   $self->{'xy_to_n'} = \@xy_to_n;
@@ -175,9 +198,9 @@ sub _extend {
     my ($x,$y) = $sq->n_to_xy($endpoint_sn);
     ### endpoint: "$x,$y"
 
-  SURROUND: foreach my $i (0 .. $#surround4_dx) {
-      my $dx = $surround4_dx[$i];
-      my $dy = $surround4_dy[$i];
+  SURROUND: foreach my $i (0 .. 0) {  # $#surround4_dx
+      my $dx = $surround4_dx[$dir];
+      my $dy = $surround4_dy[$dir];
 
       my $x1 = $x + $dx;
       my $y1 = $y + $dy;
@@ -191,7 +214,7 @@ sub _extend {
       my $y3 = $y + $dx;
       my $sn3 = $sq->xy_to_n($x3,$y3);
 
-      ### corner direction: "$i   $x1,$y1  $x2,$y2  $x3,$y3"
+      ### corner direction: "$dir   $x1,$y1  $x2,$y2  $x3,$y3"
 
       if (defined $xy_to_n->[$sn1]) {
         ### sn1 already occupied ...
@@ -211,6 +234,17 @@ sub _extend {
             || $x2 < 0 || $y2 < 0
             || $x3 < 0 || $y3 < 0
            ) {
+          ### outside first quardrant ...
+          next;
+        }
+      } elsif ($parts eq 'diag') {
+        if ($x!=$y && $x+$y <= 0) {
+          ### outside diagonal ...
+          next;
+        }
+      } elsif ($parts eq 'diag2') {
+        if ($x-$y != 0 && $x+$y >= -0 && $x+$y <= 0) {
+          ### diag2 not on diagonal ...
           next;
         }
       } elsif ($parts eq 'single') {
@@ -218,14 +252,18 @@ sub _extend {
                                    || $x2 < 0 || $y2 < 0
                                    || $x3 < 0 || $y3 < 0
                                   )) {
+          ### outside single ...
           next;
         }
       }
 
       if (! ($parts eq 'wedge' && ($x1 < -1-$y1 || $x1 > $y1))
           && ! ($parts eq 'octant' && ($y1 > $x1))
-          && ! ($parts eq 'octant_up' && ($x1 > $y1))) {
+          && ! ($parts eq 'octant_up' && ($x1 > $y1))
+          && ! ($parts eq 'diag2' && $x1 < 0 && $x1+$y1==0)
+         ) {
         push @new_endpoints, $sn1;
+        push @new_endpoints_dir, ($dir-1)&3;
         push @new_x, $x1;
         push @new_y, $y1;
         $sn_to_parent_sn->[$sn1] = $endpoint_sn;
@@ -234,20 +272,27 @@ sub _extend {
           && ! ($parts eq 'octant' && ($y2 > $x2))
           && ! ($parts eq 'octant_up' && ($x2 > $y2))) {
         push @new_endpoints, $sn2;
+        push @new_endpoints_dir, $dir;
         push @new_x, $x2;
         push @new_y, $y2;
         $sn_to_parent_sn->[$sn2] = $endpoint_sn;
       }
       if (! ($parts eq 'wedge' && ($x3 < -1-$y3 || $x3 > $y3))
           && ! ($parts eq 'octant' && ($y3 > $x3))
-          && ! ($parts eq 'octant_up' && ($x3 > $y3))) {
+          && ! ($parts eq 'octant_up' && ($x3 > $y3))
+          && ! ($parts eq 'diag2' && $x3 > 0 && $x3+$y3==0)
+         ) {
         push @new_endpoints, $sn3;
+        push @new_endpoints_dir, ($dir+1)&3;
         push @new_x, $x3;
         push @new_y, $y3;
         $sn_to_parent_sn->[$sn3] = $endpoint_sn;
       }
     }
   }
+
+  ### count new endpoints: scalar(@new_endpoints)
+  die "no new endpoints" if @new_endpoints == 0;
 
   my $n = scalar(@$n_to_x);
   push @{$self->{'depth_to_n'}}, $n;

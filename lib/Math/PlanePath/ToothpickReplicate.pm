@@ -33,7 +33,7 @@ use strict;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 5;
+$VERSION = 6;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -70,6 +70,7 @@ use Math::PlanePath::ToothpickTree;
 *rect_to_n_range = \&Math::PlanePath::ToothpickTree::rect_to_n_range;
 *x_minimum = \&Math::PlanePath::ToothpickTree::x_minimum;
 *y_minimum = \&Math::PlanePath::ToothpickTree::y_minimum;
+*sumxy_minimum = \&Math::PlanePath::ToothpickTree::sumxy_minimum;
 *rsquared_minimum = \&Math::PlanePath::ToothpickTree::rsquared_minimum;
 
 use constant parameter_info_array =>

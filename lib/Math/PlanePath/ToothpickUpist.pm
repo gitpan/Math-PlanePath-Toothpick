@@ -30,7 +30,7 @@ use 5.004;
 use strict;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 5;
+$VERSION = 6;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -69,6 +69,8 @@ use Math::PlanePath::Base::Digits
 use constant default_n_start => 0;
 use constant class_x_negative => 1;
 use constant class_y_negative => 0;
+use constant sumxy_minimum => 0;   # triangular X>=-Y
+use constant diffxy_maximum => 0;  # triangular X<=Y so X-Y<=0
 use constant dy_minimum => 0; # across rows dY=0
 use constant dy_maximum => 1; # then up dY=1 at end
 use constant tree_num_children_maximum => 2;

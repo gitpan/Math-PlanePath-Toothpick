@@ -17,6 +17,10 @@ with Math-PlanePath-Toothpick.  If not, see <http://www.gnu.org/licenses/>.
 
 
 
+Version 6, April 2013
+    - new sumxy_minimum(),sumxy_maximum(), diffxy_minimum(),diffxy_maximum(),
+    - ToothpickTree parts=octant,octant_up,wedge
+
 Version 5, April 2013
     - LCornerTree,OneOfEight new parts=octant_up,wedge
 

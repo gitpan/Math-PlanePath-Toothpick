@@ -28,7 +28,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 5;
+$VERSION = 6;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -107,6 +107,34 @@ use constant class_y_negative => 1;
   }
 }
 {
+  my %sumxy_minimum = (1         => 0,
+                       octant    => 0,
+                       octant_up => 0,
+                       wedge     => 0,  # X>=-Y so X+Y>=0
+                      );
+  sub sumxy_minimum {
+    my ($self) = @_;
+    return $sumxy_minimum{$self->{'parts'}};
+  }
+}
+{
+  my %diffxy_minimum = (octant => 0,  # Y<=X so X-Y>=0
+                       );
+  sub diffxy_minimum {
+    my ($self) = @_;
+    return $diffxy_minimum{$self->{'parts'}};
+  }
+}
+{
+  my %diffxy_maximum = (octant_up => 0,  # X<=Y so X+Y<=0
+                        wedge     => 0,  # X<=Y so X+Y<=0
+                       );
+  sub diffxy_maximum {
+    my ($self) = @_;
+    return $diffxy_maximum{$self->{'parts'}};
+  }
+}
+{
   my %tree_num_children_maximum = (4         => 8,
                                    1         => 5,
                                    octant    => 3,
@@ -127,29 +155,30 @@ use constant class_y_negative => 1;
 #           : 0);                         # origin X=0,Y=0
 # }
 
-{
-  # parts=1,3mid dx=2*2^k-3 dy=-2^k, it seems
-  # parts=3side  dx=2*2^k-5 dy=-2^k-2, it seems
-  my %dir_maximum_dxdy
-      = (4         => [0,-1], # South
-         1         => [2,-1], # ESE
-         octant    => [1,-1], # South-East
-         octant_up => [0,-1], # N=12 South
-         wedge     => [0,-1], # South
-         '3mid'    => [2,-1], # ESE
-         '3side'   => [2,-1], # ESE
-        );
-  sub dir_maximum_dxdy {
-    my ($self) = @_;
-    return @{$dir_maximum_dxdy{$self->{'parts'}}};
-  }
+# parts=1,3mid dx=2*2^k-3 dy=-2^k, it seems
+# parts=3side  dx=2*2^k-5 dy=-2^k-2, it seems
+my %dir_maximum_dxdy
+  = (4         => [0,-1], # South
+     1         => [2,-1], # ESE
+     octant    => [1,-1], # South-East
+     octant_up => [0,-1], # N=12 South
+     wedge     => [0,-1], # South
+     '3mid'    => [2,-1], # ESE
+     '3side'   => [2,-1], # ESE
+    );
+sub dir_maximum_dxdy {
+  my ($self) = @_;
+  return @{$dir_maximum_dxdy{$self->{'parts'}}};
 }
 
 #------------------------------------------------------------------------------
 
 sub new {
   my $self = shift->SUPER::new(@_);
-  $self->{'parts'} ||= '4';
+  my $parts = ($self->{'parts'} ||= '4');
+  if (! exists $dir_maximum_dxdy{$parts}) {
+    croak "Unrecognised parts: ",$parts;
+  }
   return $self;
 }
 
@@ -157,24 +186,23 @@ sub new {
 #------------------------------------------------------------------------------
 # n_to_xy()
 
-# use Smart::Comments;
+my %initial_n_to_xy
+  = (4         => [ [0,0], [1,0], [1,1], [0,1],
+                    [-1,1], [-1,0], [-1,-1], [0,-1], [1,-1] ],
+     1         => [ [0,0], [1,0], [1,1], [0,1] ],
+     octant    => [ [0,0], [1,0], [1,1] ],
+     octant_up => [ [0,0], [1,1], [0,1] ],
+     wedge     => [ [0,0], [1,1], [0,1], [-1,1] ],
+     '3mid'    => [ [0,0], [1,-1], [1,0], [1,1],
+                    [0,1], [-1,1] ],
 
-my %initial_n_to_xy = (4       => [ [0,0], [1,0], [1,1], [0,1],
-                                   [-1,1], [-1,0], [-1,-1], [0,-1], [1,-1] ],
-                       1       => [ [0,0], [1,0], [1,1], [0,1] ],
-                       octant    => [ [0,0], [1,0], [1,1] ],
-                       octant_up => [ [0,0], [1,1], [0,1] ],
-                       wedge     => [ [0,0], [1,1], [0,1], [-1,1] ],
-                       '3mid'  => [ [0,0], [1,-1], [1,0], [1,1],
-                                    [0,1], [-1,1] ],
+     # for 3side table up to N=8 because cell X=1,Y=2 at N=7
+     # is overlapped by two upper octants
+     '3side'   => [ [0,0], [1,-1], [1,0], [1,1],
+                    [1,-2], [2,-2], [2,2], [1,2], [0,2] ],
 
-                       # for 3side table up to N=8 because cell X=1,Y=2 at N=7
-                       # is overlapped by two upper octants
-                       '3side' => [ [0,0], [1,-1], [1,0], [1,1],
-                                    [1,-2], [2,-2], [2,2], [1,2], [0,2] ],
-
-                       side    => [ [0,0], [1,0], [1,1], [2,2], [1,2] ],
-                      );
+     side      => [ [0,0], [1,0], [1,1], [2,2], [1,2] ],
+    );
 
 #                     depth=0    1      2    3
 my @octant_small_n_to_v = ([0], [0,1], [2], [1,2,3]);
@@ -225,10 +253,11 @@ sub n_to_xy {
   # $vdx,$vdy is similar dx,dy which is "vertical".  Initially vdx=0,vdy=1
   # so vertical along the Y axis.
   #
-  # $mirror is true if in a "mirror image" such as the 0<=X<=Y part of the
-  # pattern.  The difference is that when plain points are numbered
-  # anti-clockwise "upwards" towards the diagonal, but when mirrored instead
-  # clockwise "down" from the diagonal.
+  # $mirror is true if in a "mirror image" such as upper octant 0<=X<=Y
+  # portion of the pattern.  The difference is that $mirror false has points
+  # numbered anti-clockwise "upwards" from the ragged edge towards the
+  # diagonal, but when $mirror is true instead clockwise "down" from the
+  # diagonal towards the ragged edge.
   #
   # When $mirror is true the octant generated is still reckoned as 0<=Y<=X,
   # but the $hdx,$hdy and $vdx,$vdy are suitably mangled so that this
@@ -631,10 +660,6 @@ sub n_to_xy {
   ### n_to_xy() return: "$x,$y  (depth=$depth n=$n)"
   return ($x,$y);
 }
-
-# no Smart::Comments;
-
-# use Smart::Comments;
 
 # ($depth, $nrem) = _n0_to_depth_and_rem($self,$n)
 #
@@ -1473,6 +1498,9 @@ sub tree_n_parent {
   return undef;
 }
 
+
+#------------------------------------------------------------------------------
+# tree_depth_to_n()
 #
 #    1        1  1
 #    2        9  1001
@@ -2106,7 +2134,7 @@ sub _log2_floor {
 1;
 __END__
 
-=for stopwords eg Ryde Math-PlanePath-Toothpick Nstart Nend Applegate Automata Congressus Numerantium ie Octant octant octants Ie OEIS
+=for stopwords eg Ryde Math-PlanePath-Toothpick Nstart Nend Applegate Automata Congressus Numerantium ie Octant octant octants oct Ie OEIS Ndepth
 
 =head1 NAME
 
@@ -2281,7 +2309,7 @@ Option C<parts =E<gt> 'octant'> confines the pattern to the first octant
          X=0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
 
 In this arrangement N=0,2,3,6,etc on the leading diagonal is the last N of
-each row (C<tree_depth_to_n_end()>)..
+each row (C<tree_depth_to_n_end()>).
 
 The full pattern is symmetric on each side of the four diagonals X=Y, X=-Y.
 This octant is one of those eight symmetric parts.  It includes the diagonal
@@ -2387,10 +2415,10 @@ Option C<parts =E<gt> 'octant_up'> confines the pattern to the upper octant
 In this arrangement N=0,1,3,4,etc on the leading diagonal is the first N of
 each row (C<tree_depth_to_n()>).
 
-The pattern is a mirror image of parts=octant, but parts=octant_up is
-numbered starting on the diagonal and going around, whereas parts=octant is
-numbered going around from the pattern and ending on the diagonal.  The
-effect is to reverse the N values within each row.
+The pattern is a mirror image of parts=octant, mirrored across the X=Y
+leading diagonal.  Points are still numbered anti-clockwise so the effect is
+to reverse the order.  "octant" numbers from the ragged edge to the
+diagonal, whereas "octant_up" numbers from the diagonal to the ragged edge.
 
 =head2 Three Mid
 
@@ -2572,9 +2600,9 @@ Create and return a new path object.  The C<parts> option (a string) can be
     "1"           single quadrant
     "octant"      single octant
     "octant_up"   single octant upper
+    "wedge"       V-shaped wedge
     "3mid"        three quadrants, middle symmetric style
     "3side"       three quadrants, side style
-    "wedge"       V-shaped wedge
 
 =back
 
@@ -2596,17 +2624,19 @@ depth level.  The possible number of children varies with the parts,
       4          0, 1, 2, 3, 5, 8
       1          0, 1, 2, 3, 5
     octant       0, 1, 2, 3
+    octant_up    0, 1, 2, 3
+    wedge        0, 1, 2, 3
     3mid         0, 1, 2, 3, 5
     3side        0,    2, 3
 
 For parts=4 there's 8 children at the initial N=0 and after that at most 5.
 
-For parts=3side a 1 child never occurs.  There's 1 child only at X=2^k,Y=2^k
-of the central diagonal and for parts=3side there's no such corner.
+For parts=3side a 1 child never occurs.  There's 1 child only on the central
+diagonal corner X=2^k,Y=2^k and for parts=3side there's no such corner.
 
-parts=4,1,3mid have 5 children growing from the 1-child of X=2^k,Y=2^k.  In
-an parts=octant there's only 3 children around that point since that pattern
-doesn't go above the X=Y diagonal.
+parts=4,1,3mid have 5 children growing out of the 1-child of the X=2^k,Y=2^k
+corner.  In an parts=octant, octant_up, and wedge there's only 3 children
+around that point since that pattern doesn't go above the X=Y diagonal.
 
 =back
 

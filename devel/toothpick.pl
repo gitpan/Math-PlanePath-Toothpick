@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2012 Kevin Ryde
+# Copyright 2012, 2013 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -22,8 +22,185 @@ use strict;
 use List::Util 'min', 'max';
 
 # uncomment this to run the ### lines
-#use Smart::Comments;
+# use Smart::Comments;
 
+
+
+{
+  # tree_depth_to_n() mod 2
+  require Math::PlanePath::ToothpickTree;
+  foreach my $parts (1, 2, 3, 4, 'octant', 'wedge') {
+    print "parts=$parts\n";
+    my $path = Math::PlanePath::ToothpickTree->new (parts => $parts);
+    my @values = map { $path->tree_depth_to_n($_) % 2 } 4 .. 40;
+    my $values = join(',',@values);
+    print "seek $values\n";
+    grep_for_values("parts=$parts", $values);
+    print "\n";
+  }
+  exit 0;
+
+  sub grep_for_values {
+    my ($name, $values) = @_;
+    # unless (system 'zgrep', '-F', '-e', $values, "$ENV{HOME}/OEIS/stripped.gz") {
+    #   print "  match $values\n";
+    #   print "  $name\n";
+    #   print "\n"
+    # }
+    # unless (system 'fgrep', '-e', $values, "$ENV{HOME}/OEIS/oeis-grep.txt") {
+    #   print "  match $values\n";
+    #   print "  $name\n";
+    #   print "\n"
+    # }
+    unless (system 'fgrep', '-e', $values, "$ENV{HOME}/OEIS/stripped") {
+      print "  match $values\n";
+      print "  $name\n";
+      print "\n"
+    }
+  }
+}
+
+{
+  # _depth_to_octant_added()
+
+  require Math::PlanePath::ToothpickTree;
+  require Math::PlanePath::ToothpickTreeByCells;
+  require Math::BaseCnv;
+  my $cells = Math::PlanePath::ToothpickTreeByCells->new (parts => 'octant');
+  my $path = Math::PlanePath::ToothpickTree->new (parts => 'octant');
+  for (my $depth = 0; $depth <= 66; $depth++) {
+    my $c = path_tree_depth_to_width($cells,$depth);
+    my $p = Math::PlanePath::ToothpickTree::_depth_to_octant_added
+      ([$depth+2], [1], 0);
+    my $diff = ($p == $c ? '' : '***');
+    my $d2 = $depth + 2;
+    if (is_pow2($d2)) { print "\n"; }
+    print "$depth  $d2  c=$c  p=$p$diff\n";
+  }
+  exit 0;
+
+  # Return the number of points at $depth.
+  sub path_tree_depth_to_width {
+    my ($path, $depth) = @_;
+    if (defined (my $n = $path->tree_depth_to_n($depth))
+        && defined (my $n_end = $path->tree_depth_to_n_end($depth))) {
+      return $n_end - $n + 1;
+    } else {
+      return undef;
+    }
+  }
+}
+
+{
+  # tree_depth_to_n() octant
+  # d=2  n=2           1
+  # d=6  n=8         100
+  # d=14 n=28      11100
+  # d=30 n=100   1100100
+  # d=62 n=372 101110100
+  # oct(2^(k+1)) = 4*oct(2^k)  base,extend,upper,lower
+  #              + 2           middle two unvisited
+  #              - (2^k - 2)   unduplicate upper,lower diagonal
+  #   = 4*oct(2^k) + 4 - 2^k
+  # oct(2^k)
+  #   = 4 - 2^(k-1) + 4*oct(2^(k-1))
+  #   = 4 - 2^(k-1) + 4*(4 - 2^(k-2) + oct(2^(k-2)))
+  #   = 4 - 2^(k-1) + 4*(4 - 2^(k-2) + 4*(4 - 2^(k-3) + 4*oct(2^(k-3))))
+  # 4*(1 + 4 + 16 + ... + 4^(k-2))
+  #   = 4*(4^(k-1) - 1)/3
+  # 2^(k-1) + 4*2^(k-2) + 16*2^(k-3) + ... + 4^(k-1)*1
+  #   = 2^(k-1) + 2^(k+0) + 2^(k+1) + ... + 2^(2k-2)
+  #   = 2^(k-1)*(1 + 2 + 4 + ... + 2^(k-2))
+  #   = 2^(k-1) * (2^(k-1) - 1)
+  #
+  # k=2;  (4 - 2^1 + 0) = 2
+  # k=3; 4 - 2^2 + 4*(4 - 2^1 + 0) = 8
+  # k=4; 4 - 2^3 + 4*(4 - 2^2 + 4*(4 - 2^1 + 0)) = 28
+  #      = 4 + 4*(4 + 4*(4))  - 2^3 + 4*(-2^2 + 4*(-2^1))
+  #
+  # oct(2^k) = 4*(4^(k-1) - 1)/3 - 2^(k-1)*(2^(k-1)-1)
+  #          = (4*(4^(k-1) - 1) - 3*2^(k-1)*(2^(k-1)-1) ) / 3
+  #          = (4*4^(k-1) - 4 - 3*4^(k-1) + 3*2^(k-1) ) / 3
+  #          = (4^(k-1) - 4 + 3*2^(k-1) ) / 3
+  #          = (4^(k-1) - 4)/3 + 2^(k-1)
+  #          = (4^k - 16)/12 + 2^(k-1)
+  # pow = 2^(k-1)
+  # oct(2*pow) = (pow*pow + 3*pow - 4)/3
+  # oct(pow) = (pow*(pow + 3) - 4)/3
+  #
+  # oct(pow+rem) = oct(pow) + 2*oct(rem) + oct(rem+1) - rem + 4
+  # oct(36) = oct(32) + 2*oct(4) + oct(5) - 4 + 4    want 107
+  #           100     + 2*2      + 3 - 4 + 4
+  #
+  # oct(pow + pow-1)
+  #   = oct(pow) + 2*oct(pow-1) + oct(pow) - (pow-1) + 4
+  #   = 2*oct(pow) - (pow-1) + 4 + 2*oct(pow-1)
+  #   = 2*oct(2^(k-1)) + 4*oct(2^(k-1)) + 8*oct(2^(k-1)) + ... + 2^(k-1)*oct(2)
+  #     + 2^(k-1) - 1 + 2^(k-2) - 1 + ... + 2^1 - 1
+  #     + 2^(k-1) * oct(3)
+  #
+  # 2^(k-1) - 1 + 2^(k-2) - 1 + ... + 2^1 - 1
+  #   = 2^k - 1 - k
+  #
+  require Math::PlanePath::ToothpickTree;
+  require Math::PlanePath::ToothpickTreeByCells;
+  require Math::BaseCnv;
+  my $cells = Math::PlanePath::ToothpickTreeByCells->new (parts => 'octant');
+  my $path = Math::PlanePath::ToothpickTree->new (parts => 'octant');
+  for (my $depth = 2; $depth <= 36; $depth++) {
+    my $depth = $depth-2;
+    my $n = $cells->tree_depth_to_n($depth);
+    my $n2 = Math::BaseCnv::cnv($n,10,2);
+    my $f = oct_pow_by_formula($depth);
+    my $p = $path->tree_depth_to_n($depth);
+    my $diff = ($p == $n ? '' : '***');
+    my $d2 = $depth + 2;
+    if (is_pow2($d2)) { print "\n"; }
+    print "$depth  $d2  n=$n  $n2  p=$p$diff   f=$f\n";
+  }
+
+  sub oct_pow_by_formula {
+    my ($depth) = @_;
+    $depth += 2;  # parts=4 basis
+    if ($depth <= 2) { return 0; }
+    if ($depth == 4) { return 2; }
+    $depth /= 2;
+    return (4*oct_pow_by_formula($depth-2)
+            + 4
+            - $depth
+           );
+  }
+  sub is_pow2 {
+    my ($n) = @_;
+    while ($n > 1) {
+      if ($n & 1) {
+        return 0;
+      }
+      $n >>= 1;
+    }
+    return ($n == 1);
+  }
+  exit 0;
+}
+{
+  # tree_n_to_depth()
+  require Math::PlanePath::ToothpickTreeByCells;
+  my $path = Math::PlanePath::ToothpickTreeByCells->new (parts => 'octant');
+  my $prev = -999;
+  my $count = 0;
+  my $total = 0;
+  for (my $n = 2; $n <= 256; $n *= 2) {
+    my $depth = $path->tree_n_to_depth($n);
+    if ($depth != $prev) {
+      print "$depth n=$n  added=$count  $total\n";
+      $count = 0;
+      $prev = $depth;
+    }
+    $count++;
+    $total++;
+  }
+  exit 0;
+}
 
 {
   # ascii art with toothpick lines
@@ -197,26 +374,6 @@ use List::Util 'min', 'max';
 }
 
 
-
-{
-  # tree_n_to_depth()
-  require Math::PlanePath::ToothpickTree;
-  my $path = Math::PlanePath::ToothpickTree->new (parts => 2);
-  my $prev = -999;
-  my $count = 0;
-  my $total = 0;
-  for (my $n = 0; $n <= 256; $n++) {
-    my $depth = $path->tree_n_to_depth($n);
-    if ($depth != $prev) {
-      print "$depth n=$n  added=$count  $total\n";
-      $count = 0;
-      $prev = $depth;
-    }
-    $count++;
-    $total++;
-  }
-  exit 0;
-}
 
 {
   #         |               |
