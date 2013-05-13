@@ -20,7 +20,7 @@
 use 5.004;
 use strict;
 use Test;
-plan tests => 97;
+plan tests => 220;
 
 use lib 't';
 use MyTestHelpers;
@@ -36,7 +36,7 @@ require Math::PlanePath::LCornerTree;
 # VERSION
 
 {
-  my $want_version = 6;
+  my $want_version = 7;
   ok ($Math::PlanePath::LCornerTree::VERSION, $want_version,
       'VERSION variable');
   ok (Math::PlanePath::LCornerTree->VERSION,  $want_version,
@@ -66,7 +66,31 @@ require Math::PlanePath::LCornerTree;
 # tree_depth_to_n()
 
 {
-  my @groups = ([ { parts => 'wedge' },
+  my @groups = ([ [ parts => 'diagonal-1' ], # is parts=diagonal plus 2*depth
+                  [ 7,  73 ],
+
+                  [ 0,  0 ],
+                  [ 1,  1 ],
+                  [ 2,  4 ],
+                  [ 3,  13 ],
+                  [ 4,  22 ],
+                  [ 5,  43 ],
+                  [ 6,  52 ],
+                  [ 7,  73 ],
+                  [ 8,  94 ],
+                ],
+                [ [ parts => 'diagonal' ], # is parts=wedge plus parts=1
+                  [ 0,  0 ],   # + 2+1 = 3
+                  [ 1,  3 ],   # + 4+3 = 7
+                  [ 2,  10 ],  # + 7
+                  [ 3,  17 ],  # + 10+9 = 19
+                  [ 4,  36 ],  # + 7
+                  [ 5,  43 ],  # + 19
+                  [ 6,  62 ],  # + 19
+                  [ 7,  81 ],  # + 28+27 = 55
+                  [ 8, 136 ],  #
+                ],
+                [ [ parts => 'wedge' ],
                   [ 0,  0 ],   # + 2
                   [ 1,  2 ],   # + 4
                   [ 2,  6 ],   # + 4
@@ -77,7 +101,7 @@ require Math::PlanePath::LCornerTree;
                   [ 7,  44 ],  # + 28
                   [ 8,  72 ],  #
                 ],
-                [ { parts => 'octant' },
+                [ [ parts => 'octant' ],
                   [ 0,  0 ],   # + 1
                   [ 1,  1 ],   # + 2
                   [ 2,  3 ],   # + 2
@@ -88,7 +112,7 @@ require Math::PlanePath::LCornerTree;
                   [ 7,  22 ],  # + 14
                   [ 8,  36 ],  #
                 ],
-                [ { parts => 1 },
+                [ [ parts => 1 ],
                   [ 0,  0 ],   # + 1
                   [ 1,  1 ],   # + 3
                   [ 2,  4 ],   # + 3
@@ -99,7 +123,7 @@ require Math::PlanePath::LCornerTree;
                   [ 7,  37 ],  # + 27
                   [ 8,  64 ],  #
                 ],
-                [ { parts => 4 },
+                [ [ parts => 4 ],
                   [ 0,  0 ],   # + 4*1
                   [ 1,  4 ],   # + 4*3
                   [ 2,  16 ],  # + 4*3
@@ -112,11 +136,24 @@ require Math::PlanePath::LCornerTree;
                 ]);
   foreach my $group (@groups) {
     my ($options, @data) = @$group;
-    my $path = Math::PlanePath::LCornerTree->new (%$options);
+    my $path = Math::PlanePath::LCornerTree->new (@$options);
     foreach my $elem (@data) {
-      my ($depth, $want_n) = @$elem;
-      my $got_n = $path->tree_depth_to_n ($depth);
-      ok ($got_n, $want_n, "tree_depth_to_n() parts=$options->{'parts'} depth=$depth");
+      my ($depth, $n) = @$elem;
+      {
+        my $want_n = $n;
+        my $got_n = $path->tree_depth_to_n ($depth);
+        ok ($got_n, $want_n, "tree_depth_to_n() depth=$depth");
+      }
+      {
+        my $want_depth = $depth;
+        my $got_depth = $path->tree_n_to_depth ($n);
+        ok ($got_depth, $want_depth, "@$options tree_n_to_depth() n=$n");
+      }
+      if ($depth > 0) {
+        my $want_depth = $depth - 1;
+        my $got_depth = $path->tree_n_to_depth ($n-1);
+        ok ($got_depth, $want_depth, "@$options tree_n_to_depth() n=$n");
+      }
     }
   }
 }

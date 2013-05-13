@@ -32,7 +32,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 6;
+$VERSION = 7;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -127,7 +127,7 @@ use constant class_y_negative => 1;
   sub y_minimum {
     my ($self) = @_;
     return $y_minimum{$self->{'parts'}};
-}
+  }
 }
 
 sub new {
@@ -150,26 +150,29 @@ sub new {
     @n_to_x = (0);
     @n_to_y = (0);
     $self->{'endpoints_dir'} = [ 2 ];  # for numbering
-  } else {
+  } elsif ($parts eq '4' || $parts eq '1'
+           || $parts eq 'octant' || $parts eq 'octant_up'
+           || $parts eq 'wedge') {
     @n_to_x = (0);
     @n_to_y = (0);
     $self->{'endpoints_dir'} = [ 4 ];
-
- # } elsif ($start eq 'two') {
- #    @n_to_x = (0, -1);
- #    @n_to_y = (0, 0);
- #    $self->{'endpoints_dir'} = [ 0, 4 ];
- #  } elsif ($start eq 'three') {
- #    @n_to_x = (0, -1, -1);
- #    @n_to_y = (0, 0, -1);
- #    $self->{'endpoints_dir'} = [ 0, 6, 2 ];
- #  } elsif ($start eq 'four') {
- #    @n_to_x = (0, -1, -1, 0);
- #    @n_to_y = (0, 0, -1, -1);
- #    $self->{'endpoints_dir'} = [ 0, 2, 4, 6 ];
   } else {
-    croak "Unrecognised parts: ",$parts;
+     croak "Unrecognised parts: ",$parts;
   }
+
+  # } elsif ($start eq 'two') {
+  #    @n_to_x = (0, -1);
+  #    @n_to_y = (0, 0);
+  #    $self->{'endpoints_dir'} = [ 0, 4 ];
+  #  } elsif ($start eq 'three') {
+  #    @n_to_x = (0, -1, -1);
+  #    @n_to_y = (0, 0, -1);
+  #    $self->{'endpoints_dir'} = [ 0, 6, 2 ];
+  #  } elsif ($start eq 'four') {
+  #    @n_to_x = (0, -1, -1, 0);
+  #    @n_to_y = (0, 0, -1, -1);
+  #    $self->{'endpoints_dir'} = [ 0, 2, 4, 6 ];
+
   $self->{'n_to_x'} = \@n_to_x;
   $self->{'n_to_y'} = \@n_to_y;
   $self->{'depth_to_n'} = [0];

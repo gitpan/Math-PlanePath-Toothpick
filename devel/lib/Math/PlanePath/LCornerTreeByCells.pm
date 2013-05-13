@@ -28,7 +28,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 6;
+$VERSION = 7;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -51,10 +51,10 @@ use constant parameter_info_array =>
       display         => 'Parts',
       type            => 'enum',
       default         => '4',
-      choices         => ['4','1','octant','octant_up',
+      choices         => ['4','2','1','octant','octant_up',
                           'wedge','single',
                           'pair',
-                          'diag','diag2'],
+                          'diagonal','diagonal-1','diagonal-2'],
       description     => 'Which parts of the plane to fill.',
     },
   ];
@@ -113,6 +113,10 @@ sub new {
     @n_to_x = (0, -1, -1,  0);
     @n_to_y = (0, 0,  -1, -1);
     $self->{'endpoints_dir'} = [ 0, 1, 2, 3 ];
+  } elsif ($parts eq '2') {
+    @n_to_x = (0, -1);
+    @n_to_y = (0, 0);
+    $self->{'endpoints_dir'} = [ 0, 1 ];
   } elsif ($parts eq '1' || $parts eq 'octant' || $parts eq 'octant_up') {
     @n_to_x = (0);
     @n_to_y = (0);
@@ -125,14 +129,15 @@ sub new {
     @n_to_x = (0);
     @n_to_y = (0);
     $self->{'endpoints_dir'} = [ 0 ];
-  } elsif ($parts eq 'diag') {
+  } elsif ($parts eq 'diagonal') {
+    @n_to_x = (0, 0, -1);
+    @n_to_y = (-1, 0, 0);
+    $self->{'endpoints_dir'} = [ 3, 0, 1 ];
+  } elsif ($parts eq 'diagonal-1') {
     @n_to_x = (0);
     @n_to_y = (0);
     $self->{'endpoints_dir'} = [ 0 ];
-    # @n_to_x = (1, 1, 0);
-    # @n_to_y = (0, 1, 1);
-    # $self->{'endpoints_dir'} = [ 3, 0, 1 ];
-  } elsif ($parts eq 'diag2') {
+  } elsif ($parts eq 'diagonal-2') {
     @n_to_x = (0, 1,1,0, -1,-1,0);
     @n_to_y = (0, 0,1,1, 0,-1,-1);
     $self->{'endpoints_dir'} = [ 0, 3,0,1, 1,2,3 ];
@@ -153,7 +158,7 @@ sub new {
     my $sn = $self->{'sq'}->xy_to_n($n_to_x[$n],$n_to_y[$n]);
     $xy_to_n[$sn] = $n;
     push @endpoints, $sn;
-    my $parent_sn = ($parts eq 'diag2' && $n > 0 ? $self->{'sq'}->xy_to_n(0,0)
+    my $parent_sn = ($parts eq 'diagonal-2' && $n > 0 ? $self->{'sq'}->xy_to_n(0,0)
                      : undef);
     $self->{'sn_to_parent_sn'}->[$sn] = $parent_sn;
   }
@@ -237,14 +242,24 @@ sub _extend {
           ### outside first quardrant ...
           next;
         }
-      } elsif ($parts eq 'diag') {
+      } elsif ($parts eq '2') {
+        if ($y1 < 0 || $y2 < 0 || $y3 < 0) {
+          ### outside upper half-plane ...
+          next;
+        }
+      } elsif ($parts eq 'diagonal') {
+        # if ($x!=$y && $x+$y <= 0) {
+        #   ### outside diagonal ...
+        #   next;
+        # }
+      } elsif ($parts eq 'diagonal-1') {
         if ($x!=$y && $x+$y <= 0) {
           ### outside diagonal ...
           next;
         }
-      } elsif ($parts eq 'diag2') {
+      } elsif ($parts eq 'diagonal-2') {
         if ($x-$y != 0 && $x+$y >= -0 && $x+$y <= 0) {
-          ### diag2 not on diagonal ...
+          ### diagonal-2 not on diagonal ...
           next;
         }
       } elsif ($parts eq 'single') {
@@ -260,7 +275,8 @@ sub _extend {
       if (! ($parts eq 'wedge' && ($x1 < -1-$y1 || $x1 > $y1))
           && ! ($parts eq 'octant' && ($y1 > $x1))
           && ! ($parts eq 'octant_up' && ($x1 > $y1))
-          && ! ($parts eq 'diag2' && $x1 < 0 && $x1+$y1==0)
+          && ! ($parts eq 'diagonal' && $x1+$y1 < -1)
+          && ! ($parts eq 'diagonal-2' && $x1 < 0 && $x1+$y1==0)
          ) {
         push @new_endpoints, $sn1;
         push @new_endpoints_dir, ($dir-1)&3;
@@ -270,7 +286,9 @@ sub _extend {
       }
       if (! ($parts eq 'wedge' && ($x2 < -1-$y2 || $x2 > $y2))
           && ! ($parts eq 'octant' && ($y2 > $x2))
-          && ! ($parts eq 'octant_up' && ($x2 > $y2))) {
+          && ! ($parts eq 'octant_up' && ($x2 > $y2))
+          && ! ($parts eq 'diagonal' && $x2+$y2 < -1)
+         ) {
         push @new_endpoints, $sn2;
         push @new_endpoints_dir, $dir;
         push @new_x, $x2;
@@ -280,7 +298,8 @@ sub _extend {
       if (! ($parts eq 'wedge' && ($x3 < -1-$y3 || $x3 > $y3))
           && ! ($parts eq 'octant' && ($y3 > $x3))
           && ! ($parts eq 'octant_up' && ($x3 > $y3))
-          && ! ($parts eq 'diag2' && $x3 > 0 && $x3+$y3==0)
+          && ! ($parts eq 'diagonal' && $x3+$y3 < -1)
+          && ! ($parts eq 'diagonal-2' && $x3 > 0 && $x3+$y3==0)
          ) {
         push @new_endpoints, $sn3;
         push @new_endpoints_dir, ($dir+1)&3;

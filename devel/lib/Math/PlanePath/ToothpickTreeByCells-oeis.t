@@ -61,22 +61,6 @@ MyOEIS::compare_values
 # use Memoize;
 # BEGIN { Memoize::memoize('wedge_formula'); }
 
-# A160407 - wedge added
-MyOEIS::compare_values
-  (anum => 'A160407',
-   max_count => $max_count,
-   func => sub {
-     my ($count) = @_;
-     my $path = Math::PlanePath::ToothpickTreeByCells->new (parts => 'wedge');
-     my @got;
-     for (my $depth = 0; @got < $count; $depth++) {
-       my $added = ($path->tree_depth_to_n($depth+1)
-                    - $path->tree_depth_to_n($depth));
-       push @got, $added;
-     }
-     return \@got;
-   });
-
 #------------------------------------------------------------------------------
 # A160158 - two toothpicks end-to-end
 

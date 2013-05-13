@@ -63,6 +63,21 @@ sub path_tree_depth_to_width {
 
 
 #------------------------------------------------------------------------------
+# A160407 - parts=wedge added
+
+MyOEIS::compare_values
+  (anum => 'A160407',
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::ToothpickTree->new (parts => 'wedge');
+     my @got;
+     for (my $depth = 0; @got < $count; $depth++) {
+       push @got, path_tree_depth_to_width($path, $depth);
+     }
+     return \@got;
+   });
+
+#------------------------------------------------------------------------------
 # A168002 - parts=1 total cells mod 2, starting depth=1
 MyOEIS::compare_values
   (anum => 'A168002',
@@ -380,8 +395,7 @@ MyOEIS::compare_values
      my $path = Math::PlanePath::ToothpickTree->new (parts => 1);
      my @got;
      for (my $depth = 0; @got < $count; $depth++) {
-       push @got, ($path->tree_depth_to_n($depth+1)
-                   - $path->tree_depth_to_n($depth));
+       push @got, path_tree_depth_to_width($path, $depth);
      }
      return \@got;
    });
@@ -397,8 +411,7 @@ MyOEIS::compare_values
      my $path = Math::PlanePath::ToothpickTree->new (parts => 2);
      my @got;
      for (my $depth = 0; @got < $count; $depth++) {
-       push @got, ($path->tree_depth_to_n($depth+1)
-                   - $path->tree_depth_to_n($depth));
+       push @got, path_tree_depth_to_width($path, $depth);
      }
      return \@got;
    });
@@ -414,8 +427,7 @@ MyOEIS::compare_values
      my $path = Math::PlanePath::ToothpickTree->new (parts => 3);
      my @got;
      for (my $depth = 0; @got < $count; $depth++) {
-       push @got, ($path->tree_depth_to_n($depth+1)
-                   - $path->tree_depth_to_n($depth));
+       push @got, path_tree_depth_to_width($path, $depth);
      }
      return \@got;
    });
@@ -431,8 +443,7 @@ MyOEIS::compare_values
      my $path = Math::PlanePath::ToothpickTree->new (parts => 4);
      my @got = (0);
      for (my $depth = 0; @got < $count; $depth++) {
-       push @got, ($path->tree_depth_to_n($depth+1)
-                   - $path->tree_depth_to_n($depth));
+       push @got, path_tree_depth_to_width($path, $depth);
      }
      return \@got;
    });
@@ -514,10 +525,8 @@ MyOEIS::compare_values
      my @got;
      my $total = 0;
      for (my $depth = 0; @got < $count; $depth+=2) {
-       $total -= ($path->tree_depth_to_n($depth+1)
-                  - $path->tree_depth_to_n($depth));
-       $total += ($path->tree_depth_to_n($depth+2)
-                  - $path->tree_depth_to_n($depth+1));
+       $total -= path_tree_depth_to_width($path, $depth);
+       $total += path_tree_depth_to_width($path, $depth+1);
        push @got, $total;
      }
      return \@got;
@@ -534,8 +543,7 @@ MyOEIS::compare_values
      my @got = (0);
      my $n = $path->n_start;
      for (my $depth = 1; @got < $count; $depth+=2) {
-       push @got, ($path->tree_depth_to_n($depth+1)
-                   - $path->tree_depth_to_n($depth));
+       push @got, path_tree_depth_to_width($path, $depth);
      }
      return \@got;
    });
@@ -551,8 +559,7 @@ MyOEIS::compare_values
      my @got;
      my $n = $path->n_start;
      for (my $depth = 0; @got < $count; $depth+=2) {
-       push @got, ($path->tree_depth_to_n($depth+1)
-                   - $path->tree_depth_to_n($depth));
+       push @got, path_tree_depth_to_width($path, $depth);
      }
      return \@got;
    });
@@ -569,8 +576,7 @@ MyOEIS::compare_values
      my $n = $path->n_start;
      my $total = 0;
      for (my $depth = 0; @got < $count; $depth+=2) {
-       $total += ($path->tree_depth_to_n($depth+1)
-                  - $path->tree_depth_to_n($depth));
+       $total += path_tree_depth_to_width($path, $depth);
        push @got, $total;
      }
      return \@got;
@@ -589,8 +595,7 @@ MyOEIS::compare_values
      my $total = 0;
      for (my $depth = 1; @got < $count; $depth+=2) {
        push @got, $total;
-       $total += ($path->tree_depth_to_n($depth+1)
-                  - $path->tree_depth_to_n($depth));
+       $total += path_tree_depth_to_width($path, $depth);
      }
      return \@got;
    });

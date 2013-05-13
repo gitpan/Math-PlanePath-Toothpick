@@ -20,7 +20,7 @@ use 5.004;
 use strict;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 6;
+$VERSION = 7;
 use Math::NumSeq::OEIS::Catalogue::Plugin;
 @ISA = ('Math::NumSeq::OEIS::Catalogue::Plugin');
 
@@ -30,7 +30,8 @@ use constant info_arrayref =>
    #---------------------------------------------------------------------------
    # LCornerTree
 
-   { anum => 'A160410',
+   
+   { anum => 'A160410', # catalogued here pending anything simpler
      class => 'Math::NumSeq::PlanePathN',
      parameters => [ planepath => 'LCornerTree',
                      line_type => 'Depth_start',
@@ -39,6 +40,12 @@ use constant info_arrayref =>
    { anum => 'A160412',
      class => 'Math::NumSeq::PlanePathN',
      parameters => [ planepath => 'LCornerTree,parts=3',
+                     line_type => 'Depth_start',
+                   ],
+   },
+   { anum => 'A183148',
+     class => 'Math::NumSeq::PlanePathN',
+     parameters => [ planepath => 'LCornerTree,parts=diagonal-1',
                      line_type => 'Depth_start',
                    ],
    },

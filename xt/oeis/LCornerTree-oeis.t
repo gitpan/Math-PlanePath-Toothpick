@@ -45,7 +45,53 @@ sub path_tree_depth_to_width {
 }
 
 #------------------------------------------------------------------------------
-# A183126 - added cells parts=diag2
+# A151712 - added cells parts=wedge
+
+MyOEIS::compare_values
+  (anum => 'A151712',
+   func => sub {
+     my ($count) = @_;
+     require Math::PlanePath::LCornerTreeByCells;
+     my $path = Math::PlanePath::LCornerTreeByCells->new (parts => 'wedge');
+     my @got;
+     for (my $depth = 0; @got < $count; $depth++) {
+       push @got, path_tree_depth_to_width($path,$depth);
+     }
+     return \@got;
+   });
+
+#------------------------------------------------------------------------------
+# A183149 - added cells parts=diagonal-1
+
+# Half plane, points at boundary Y=0 are considered not exposed and no
+# growth from there.
+#
+#            *       *        
+#            |       |        
+#            2       3        
+#            |       |        
+#    *---2---*---2---*---3---*
+#            |       |        
+#            1       3        
+#            |       |         
+#            *       *        
+#
+
+MyOEIS::compare_values
+  (anum => 'A183149',
+   func => sub {
+     my ($count) = @_;
+     require Math::PlanePath::LCornerTreeByCells;
+     my $path = Math::PlanePath::LCornerTreeByCells->new (parts => 'diagonal-1');
+     my @got = (0);
+     for (my $depth = 0; @got < $count; $depth++) {
+       push @got, path_tree_depth_to_width($path,$depth);
+     }
+     return \@got;
+   });
+
+#------------------------------------------------------------------------------
+# A183126 - added cells parts=diagonal-2
 
 # 16 = 2*(3+2+2)
 MyOEIS::compare_values
@@ -53,7 +99,7 @@ MyOEIS::compare_values
    func => sub {
      my ($count) = @_;
      require Math::PlanePath::LCornerTreeByCells;
-     my $path = Math::PlanePath::LCornerTreeByCells->new (parts => 'diag2');
+     my $path = Math::PlanePath::LCornerTreeByCells->new (parts => 'diagonal-2');
      my @got = (0);
      for (my $depth = 0; @got < $count; $depth++) {
        push @got, path_tree_depth_to_width($path,$depth);
@@ -65,35 +111,7 @@ MyOEIS::compare_values
    func => sub {
      my ($count) = @_;
      require Math::PlanePath::LCornerTreeByCells;
-     my $path = Math::PlanePath::LCornerTreeByCells->new (parts => 'diag2');
-     my @got;
-     for (my $depth = 0; @got < $count; $depth++) {
-       push @got, $path->tree_depth_to_n($depth);
-     }
-     return \@got;
-   });
-
-#------------------------------------------------------------------------------
-# A183126 - added cells parts=diag
-
-MyOEIS::compare_values
-  (anum => 'A183149',
-   func => sub {
-     my ($count) = @_;
-     require Math::PlanePath::LCornerTreeByCells;
-     my $path = Math::PlanePath::LCornerTreeByCells->new (parts => 'diag');
-     my @got = (0);
-     for (my $depth = 0; @got < $count; $depth++) {
-       push @got, path_tree_depth_to_width($path,$depth);
-     }
-     return \@got;
-   });
-MyOEIS::compare_values
-  (anum => 'A183148',
-   func => sub {
-     my ($count) = @_;
-     require Math::PlanePath::LCornerTreeByCells;
-     my $path = Math::PlanePath::LCornerTreeByCells->new (parts => 'diag');
+     my $path = Math::PlanePath::LCornerTreeByCells->new (parts => 'diagonal-2');
      my @got;
      for (my $depth = 0; @got < $count; $depth++) {
        push @got, $path->tree_depth_to_n($depth);
@@ -117,21 +135,6 @@ MyOEIS::compare_values
    });
 
 #------------------------------------------------------------------------------
-# A160410 - total cells parts=4
-
-MyOEIS::compare_values
-  (anum => 'A160410',
-   func => sub {
-     my ($count) = @_;
-     my $path = Math::PlanePath::LCornerTree->new;
-     my @got;
-     for (my $depth = 0; @got < $count; $depth++) {
-       push @got, $path->tree_depth_to_n($depth);
-     }
-     return \@got;
-   });
-
-#------------------------------------------------------------------------------
 # A161411 - added cells parts=4
 
 MyOEIS::compare_values
@@ -142,21 +145,6 @@ MyOEIS::compare_values
      my @got;
      for (my $depth = 0; @got < $count; $depth++) {
        push @got, path_tree_depth_to_width($path,$depth);
-     }
-     return \@got;
-   });
-
-#------------------------------------------------------------------------------
-# A160412 - total cells parts=3
-
-MyOEIS::compare_values
-  (anum => 'A160412',
-   func => sub {
-     my ($count) = @_;
-     my $path = Math::PlanePath::LCornerTree->new (parts => 3);
-     my @got;
-     for (my $depth = 0; @got < $count; $depth++) {
-       push @got, $path->tree_depth_to_n($depth);
      }
      return \@got;
    });
@@ -177,7 +165,7 @@ MyOEIS::compare_values
    });
 
 #------------------------------------------------------------------------------
-# A130665 - total cells parts=1
+# A130665 - total cells parts=1, without initial 0
 
 MyOEIS::compare_values
   (anum => 'A130665',

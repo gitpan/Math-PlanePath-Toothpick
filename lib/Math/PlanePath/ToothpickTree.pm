@@ -134,7 +134,7 @@ use Carp;
 *min = \&Math::PlanePath::_min;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 6;
+$VERSION = 7;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -302,10 +302,7 @@ my %parts_depth_adjust = (4         => 0,
 
 sub new {
   my $self = shift->SUPER::new(@_);
-  my $parts = $self->{'parts'};
-  if (! defined $parts) {
-    $parts = $self->{'parts'} = 4;
-  }
+  my $parts = ($self->{'parts'} ||= 4);
   if (! exists $parts_depth_adjust{$parts}) {
     croak "Unrecognised parts: ",$parts;
   }
@@ -2308,6 +2305,9 @@ Sequences as follows, and images by Omar Pol.
       A153000   total cells to given depth
       A152978    added cells at given depth
       A153002   total cells values which are primes
+      A168002   total cells mod 2, equals A079559 which is 0 or 1
+                 according to n representable as sum of 2^k-1
+
       http://www.polprimos.com/imagenespub/poltp016.jpg
 
     parts=wedge
@@ -2315,12 +2315,11 @@ Sequences as follows, and images by Omar Pol.
       A160407    added cells at given depth
       http://www.polprimos.com/imagenespub/poltp406.jpg
 
-Further sequences A153003, A153004, A153005 are another toothpick form
-clipped to 3 quadrants.  They're not the same as the parts=3 corner pattern
-here.  A153003 would have its X=1,Y=-1 cell as a "root" but at depth=1, or
-as a 3rd child of X=0,Y=1.  Allowing the X=0,Y=0 and X=0,Y=-1 cells to be
-included would be a joined-up pattern, but then the depth totals would be 2
-bigger than those OEIS entries.
+Further A153003, A153004, A153005 are another toothpick form clipped to 3
+quadrants.  They're not the same as the parts=3 corner pattern here.
+A153003 would have its X=1,Y=-1 cell as a 3rd child of X=0,Y=1.  Allowing
+the X=0,Y=0 and X=0,Y=-1 cells to be included would be a joined-up pattern,
+but then the depth totals would be 2 bigger than those OEIS entries.
 
 =head1 SEE ALSO
 

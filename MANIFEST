@@ -6,9 +6,9 @@ debian/copyright
 debian/rules
 debian/source/format
 debian/watch
-devel/lcorner-replicate.pl
 devel/lcorner-single.pl
 devel/lcorner-tree-triplets.pl
+devel/lcorner-tree.pl
 devel/lib/Math/PlanePath/EToothpickTree-oeis.t
 devel/lib/Math/PlanePath/EToothpickTree.pm
 devel/lib/Math/PlanePath/LCornerSingle.pm
@@ -20,6 +20,7 @@ devel/lib/Math/PlanePath/OneOfEightByCells.pm
 devel/lib/Math/PlanePath/OneOfSixByCells.pm
 devel/lib/Math/PlanePath/PeninsulaBridge-oeis.t
 devel/lib/Math/PlanePath/PeninsulaBridge.pm
+devel/lib/Math/PlanePath/ToothpickSpiral.pm
 devel/lib/Math/PlanePath/ToothpickTree-bycells.t
 devel/lib/Math/PlanePath/ToothpickTreeByCells-oeis.t
 devel/lib/Math/PlanePath/ToothpickTreeByCells.pm
