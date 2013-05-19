@@ -33,7 +33,7 @@ use strict;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 7;
+$VERSION = 8;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -74,7 +74,16 @@ use Math::PlanePath::ToothpickTree;
 *rsquared_minimum = \&Math::PlanePath::ToothpickTree::rsquared_minimum;
 
 use constant parameter_info_array =>
-  Math::PlanePath::ToothpickTree->parameter_info_array;
+  [ { name      => 'parts',
+      share_key => 'parts_toothpickreplicate',
+      display   => 'Parts',
+      type      => 'enum',
+      default   => '4',
+      choices   => ['4','3','2','1'],
+      choices_display => ['4','3','2','1'],
+      description => 'Which parts of the pattern to generate.',
+    },
+  ];
 
 use constant n_start => 0;
 use constant class_x_negative => 1;
@@ -182,7 +191,7 @@ sub n_to_xy {
   my $vdx = 0;
   my $vdy = 1;
 
-  if ($parts == 2) {
+  if ($parts eq '2') {
     if ($n == 0) {
       return (0,1);
     }

@@ -34,7 +34,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 7;
+$VERSION = 8;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 

@@ -16,6 +16,9 @@ You should have received a copy of the GNU General Public License along
 with Math-PlanePath-Toothpick.  If not, see <http://www.gnu.org/licenses/>.
 
 
+Version 8, May 2013
+    - ToothpickReplicate fix parameter_info_array() choices only 4,3,2,1
+
 Version 7, May 2013
     - LCornerTree new parts=diagonal,diagonal-1
 

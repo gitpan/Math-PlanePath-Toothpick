@@ -32,7 +32,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 7;
+$VERSION = 8;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -138,7 +138,7 @@ sub new {
   my $start = ($self->{'start'} ||= 'one');
   my @n_to_x;
   my @n_to_y;
-  if ($parts eq 'Xside') {
+  if ($parts eq 'side') {
     @n_to_x = (0, 1);
     @n_to_y = (1, 1);
     $self->{'endpoints_dir'} = [ 4, 4 ];
