@@ -20,7 +20,7 @@ use 5.004;
 use strict;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 8;
+$VERSION = 9;
 use Math::NumSeq::OEIS::Catalogue::Plugin;
 @ISA = ('Math::NumSeq::OEIS::Catalogue::Plugin');
 
@@ -118,6 +118,12 @@ use constant info_arrayref =>
    { anum => 'A160406',
      class => 'Math::NumSeq::PlanePathN',
      parameters => [ planepath => 'ToothpickTree,parts=wedge',
+                     line_type => 'Depth_start',
+                   ],
+   },
+   { anum => 'A160158',
+     class => 'Math::NumSeq::PlanePathN',
+     parameters => [ planepath => 'ToothpickTree,parts=two_horiz',
                      line_type => 'Depth_start',
                    ],
    },

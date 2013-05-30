@@ -53,6 +53,7 @@
 
 #------------------------------------------------------------------------------
 
+
 package Math::PlanePath::LCornerTree;
 use 5.004;
 use strict;
@@ -61,7 +62,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 8;
+$VERSION = 9;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -86,11 +87,13 @@ use constant parameter_info_array =>
       display         => 'Parts',
       type            => 'enum',
       default         => '4',
-      choices         => ['4','3','2','1','octant','octant_up',
-                          'wedge','diagonal','diagonal-1',
+      choices         => ['4','3','2','1',
+                          'octant','octant+1','octant_up','octant_up+1',
+                          'wedge','wedge+1','diagonal','diagonal-1',
                          ],
-      choices_display => ['4','3','2','1','Octant','Octant Up',
-                          'Wedge','Diagonal','Diagonal 1',
+      choices_display => ['4','3','2','1',
+                          'Octant','Octant+1','Octant Up','Octant Up+1',
+                          'Wedge','Wedge+1','Diagonal','Diagonal 1',
                          ],
       description     => 'Which parts of the plane to fill.',
     },
@@ -102,8 +105,11 @@ use constant parameter_info_array =>
                     2             => 1,
                     1             => 0,
                     octant        => 0,
+                    'octant+1'    => 0,
                     octant_up     => 0,
+                    'octant_up+1' => 0,
                     wedge         => 1,
+                    'wedge+1'     => 1,
                     diagonal      => 1,
                     'diagonal-1'  => 1,
                    );
@@ -118,8 +124,11 @@ use constant parameter_info_array =>
                     2             => 0,
                     1             => 0,
                     octant        => 0,
+                    'octant+1'    => 0,
                     octant_up     => 0,
+                    'octant_up+1' => 0,
                     wedge         => 0,
+                    'wedge+1'     => 0,
                     diagonal      => 1,
                     'diagonal-1'  => 1,
                    );
@@ -131,8 +140,11 @@ use constant parameter_info_array =>
 {
   my %sumxy_minimum = (1             => 0,
                        octant        => 0,
+                       'octant+1'    => 0,
                        octant_up     => 0,
+                       'octant_up+1' => 0,
                        wedge         => -1,  # X>=-Y-1 so X+Y>=-1
+                       'wedge+1'     => -2,  # X>=-Y-2 so X+Y>=-2
                        diagonal      => -1,
                        'diagonal-1'  => 0,   # X>=-Y
                       );
@@ -142,7 +154,8 @@ use constant parameter_info_array =>
   }
 }
 {
-  my %diffxy_minimum = (octant => 0,  # octant X>=Y so X-Y>=0
+  my %diffxy_minimum = (octant     => 0,   # octant X>=Y so X-Y>=0
+                        'octant+1' => -1,  # octant X>=Y-1 so X-Y>=-1
                        );
   sub diffxy_minimum {
     my ($self) = @_;
@@ -150,8 +163,10 @@ use constant parameter_info_array =>
   }
 }
 {
-  my %diffxy_maximum = (octant_up => 0,  # octant X<=Y so X-Y<=0
-                        wedge     => 0,  # wedge X<=Y so X-Y<=0
+  my %diffxy_maximum = (octant_up     => 0,  # octant_up   X<=Y so X-Y<=0
+                        'octant_up+1' => 1,  # octant_up+1 X<=Y+1 so X-Y<=1
+                        wedge         => 0,  # wedge X<=Y so X-Y<=0
+                       'wedge+1'      => 1,  # wedge+1 X>=Y+1 so X-Y>=1
                        );
   sub diffxy_maximum {
     my ($self) = @_;
@@ -170,15 +185,18 @@ use constant tree_num_children_maximum => 3;
 # parts=3  dX=big,dY=-1
 # parts=4  dx=0,dy=-1 at N=1
 {
-  my %dir_maximum_dxdy = (1            => [3,-2],  # supremum
-                          2            => [0,0],   # supremum
-                          3            => [0,0],   # supremum
-                          4            => [0,-1],  # N=1 dX=0,dY=-1
-                          octant       => [0,-2],  # N=4 dX=0,dY=-2
-                          octant_up    => [0,-1],  # N=8 dX=0,dY=-1
-                          wedge        => [0,-1],  # N=13 dX=0,dY=-1
-                          diagonal     => [2,-2],  # N=2 South-East
-                          'diagonal-1' => [3,-3],  # N=12 South-East
+  my %dir_maximum_dxdy = (1             => [3,-2],  # supremum
+                          2             => [0,0],   # supremum
+                          3             => [0,0],   # supremum
+                          4             => [0,-1],  # N=1  dX=0,dY=-1 South
+                          octant        => [0,-2],  # N=4  dX=0,dY=-2 South
+                          'octant+1'    => [1,-2],  # N=6  dX=1,dY=-2 SSE
+                          octant_up     => [0,-1],  # N=8  dX=0,dY=-1 South
+                          'octant_up+1' => [0,-1],  # N=11 dX=0,dY=-1 South
+                          wedge         => [0,-1],  # N=13 dX=0,dY=-1 South
+                          'wedge+1'     => [0,-1],  # N=6  dX=0,dY=-1 South
+                          diagonal      => [2,-2],  # N=2  South-East
+                          'diagonal-1'  => [3,-3],  # N=12 South-East
                          );
   sub dir_maximum_dxdy {
     my ($self) = @_;
@@ -189,15 +207,18 @@ use constant tree_num_children_maximum => 3;
 #------------------------------------------------------------------------------
 
 # how many toplevel root nodes in the tree of given $parts
-my %parts_to_numroots = (4            => 4,
-                         3            => 3,
-                         2            => 2,
-                         1            => 1,
-                         octant       => 1,
-                         octant_up    => 1,
-                         wedge        => 2,
-                         diagonal     => 3,
-                         'diagonal-1' => 1,
+my %parts_to_numroots = (4             => 4,
+                         3             => 3,
+                         2             => 2,
+                         1             => 1,
+                         octant        => 1,
+                         'octant+1'    => 1,
+                         octant_up     => 1,
+                         'octant_up+1' => 1,
+                         wedge         => 2,
+                         'wedge+1'     => 2,
+                         diagonal      => 3,
+                         'diagonal-1'  => 1,
                         );
 
 sub new {
@@ -256,8 +277,10 @@ sub n_to_xy {
   ### $nwidth
   ### $parts
   ### $depthbits
+  ### assert: $nwidth == $self->tree_depth_to_n(1+digit_join_lowtohigh($depthbits,2,$n*0)) - $self->tree_depth_to_n(digit_join_lowtohigh($depthbits,2,$n*0))
 
-  $n -= $ndepth;  # N remainder offset into row
+  $n -= $ndepth;
+  ### N remainder offset into row: $n
   ### assert: $n >= 0
   ### assert: $n < $nwidth
 
@@ -271,6 +294,18 @@ sub n_to_xy {
       $n += $noct - 1;
       $quad = 0;
     } else {
+      $n -= $noct;
+      $quad = 1;
+    }
+  } elsif ($parts eq 'wedge+1') {
+    ### assert: $nwidth % 2 == 0
+    my $noct = $nwidth/2;
+    if ($n < $noct) {
+      ### first half, add to N: $noct - 3
+      $n += $noct - 3;
+      $quad = 0;
+    } else {
+      ### second half ...
       $n -= $noct;
       $quad = 1;
     }
@@ -330,6 +365,8 @@ sub n_to_xy {
     $quad = 0;
     if ($parts eq 'octant_up') {
       $n += $nwidth - 1;
+    } elsif ($parts eq 'octant_up+1') {
+      $n += $nwidth - 3;
     }
   }
   ### $quad
@@ -403,12 +440,22 @@ sub xy_to_n {
 
   } elsif ($parts eq 'octant') {
     if ($y < 0 || $y > $x) { return undef; }
+  } elsif ($parts eq 'octant+1') {
+    if ($x < 0 || $y < 0 || $y > $x+1) { return undef; }
 
   } elsif ($parts eq 'octant_up') {
     if ($x < 0 || $x > $y) { return undef; }
+  } elsif ($parts eq 'octant_up+1') {
+    if ($y < 0 || $x < 0 || $x > $y+1) { return undef; }
 
   } elsif ($parts eq 'wedge') {
     if ($x < -1-$y || $x > $y) { return undef; }
+    if ($x < 0) {
+      ($x,$y) = ($y,-1-$x); # rotate -90 and offset
+      $quad = 1;
+    }
+  } elsif ($parts eq 'wedge+1') {
+    if ($y < 0 || $x < -2-$y || $x > $y+1) { return undef; }
     if ($x < 0) {
       ($x,$y) = ($y,-1-$x); # rotate -90 and offset
       $quad = 1;
@@ -529,7 +576,8 @@ sub xy_to_n {
     ### quad npower: $quad * 3**scalar(@ndigits)
     $n += $quad * 3**scalar(@ndigits);
   }
-  if ($parts eq 'octant_up' || $parts eq 'wedge'
+  if ($parts eq 'octant_up' || $parts eq 'octant_up+1'
+      || $parts eq 'wedge' || $parts eq 'wedge+1'
       || $parts eq 'diagonal' || $parts eq 'diagonal-1') {
     $n -= (3**scalar(@ndigits) - 1) / 2;
   }
@@ -538,6 +586,11 @@ sub xy_to_n {
   if ($parts eq 'diagonal-1') {
     if ($depth) { $n += 1; }
     $depth += 1;
+  }
+  if ($parts eq 'octant_up+1') {
+    if ($depth) { $n += 1; }
+  } elsif ($parts eq 'wedge+1') {
+    if ($depth) { $n += 1; }
   }
 
   ### @depthbits
@@ -567,14 +620,23 @@ sub rect_to_n_range {
   if ($parts eq 'octant') {
     if ($y2 < 0 || $x2 < $y1) { return (1,0); }
     $xymax = $x2;
+  } elsif ($parts eq 'octant+1') {
+    if ($x2 < 0 || $y2 < 0 || $y1 > $x2+1) { return (1,0); }
+    $xymax = $x2+1;
 
   } elsif ($parts eq 'octant_up') {
     if ($x2 < 0 || $y2 < $x1) { return (1,0); }
     $xymax = $y2;
+  } elsif ($parts eq 'octant_up+1') {
+    if ($x2 < 0 || $y2 < 0 || $x1 > $y2+1) { return (1,0); }
+    $xymax = $y2+1;
 
   } elsif ($parts eq 'wedge') {
     if ($x2 < -1-$y2 || $x1 > $y2) { return (1,0); }
     $xymax = $y2;
+  } elsif ($parts eq 'wedge+1') {
+    if ($x2 < -2-$y2 || $x1 > $y2+1) { return (1,0); }
+    $xymax = $y2+1;
 
   } else {
     $xymax = max($x2,$y2);
@@ -653,8 +715,14 @@ sub tree_depth_to_n {
 
   if ($parts eq 'octant' || $parts eq 'octant_up') {
     $n = ($n + $depth) / 2;
+  } elsif ($parts eq 'octant+1' || $parts eq 'octant_up+1') {
+    $n = ($n + 3*$depth) / 2;
+    if ($depth) { $n -= 1; }
   } elsif ($parts eq 'wedge') {
     $n += $depth;
+  } elsif ($parts eq 'wedge+1') {
+    $n += 3*$depth;
+    if ($depth) { $n -= 2; }
   } elsif ($parts eq 'diagonal') {
     $n = 2*$n + $depth;
   } elsif ($parts eq 'diagonal-1') {
@@ -689,10 +757,17 @@ sub tree_n_to_depth {
 }
 
 # nwidth = 4^k next 4^(k-1) or to 3*4^(k-1)
+#
 # octant nwidth = (4^k + 2^k)/2
 #               = 2^k*(2^k+1)/2
 # next (4^(k-1) + 2^(k-1))/2
 #      = 2^(k-1)*(2^(k-1) + 1)/2
+#
+#       0 1 2   4      6     8          12            16
+# oct   0,1,4,7,13,16,22,28,43,46,52,58,73,79,94,109,151,154,160,166,
+# oct+1 0,1,3,5,10,12,17,22,36,38,43,48,62,67,81, 95,136,138,143,148,
+#
+# wedge+1 0,2,8,14,26,32,44,56,86,92,104,116,146,158,188,218,302,308,320,332,
 #
 sub _n0_to_depthbits {
   my ($n, $parts) = @_;
@@ -701,7 +776,7 @@ sub _n0_to_depthbits {
 
   my $numroots = $parts_to_numroots{$parts};
   if ($n < $numroots) {
-    ### root point ...
+    ### root point, depth=0 ...
     return ([], 0, $numroots); # $n is in row depth=0
   }
 
@@ -710,9 +785,18 @@ sub _n0_to_depthbits {
   if ($parts eq 'octant' || $parts eq 'octant_up') {
     ($nmore, $bitpos) = round_down_pow (2*$n, 4);
     $nhalf = 2**$bitpos;
+  } elsif ($parts eq 'octant+1' || $parts eq 'octant_up+1') {
+    ($nmore, $bitpos) = round_down_pow (2*$n, 4);
+    $nhalf = 2**$bitpos;
+    $ndepth = -1;
+
   } elsif ($parts eq 'wedge') {
     ($nmore, $bitpos) = round_down_pow ($n, 4);
     $nhalf = 2**$bitpos;
+  } elsif ($parts eq 'wedge+1') {
+    ($nmore, $bitpos) = round_down_pow ($n, 4);
+    $nhalf = 2**$bitpos;
+    $ndepth = -2;
 
   } elsif ($parts eq 'diagonal') {
     ($nmore, $bitpos) = round_down_pow ($n/2, 4);
@@ -745,10 +829,15 @@ sub _n0_to_depthbits {
     my $ncmp;
     if ($parts eq 'wedge' || $parts eq 'diagonal') {
       $ncmp = $ndepth + $nmore + $nhalf;
+    } elsif ($parts eq 'wedge+1') {
+      $ncmp = $ndepth + $nmore + 3*$nhalf;
     } elsif ($parts eq 'diagonal-1') {
       $ncmp = $ndepth + $nmore + 3*$nhalf;
     } elsif ($nhalf) { # octant, octant_up
       $ncmp = $ndepth + ($nmore + $nhalf)/2;
+      if ($parts eq 'octant+1' || $parts eq 'octant_up+1') {
+        $ncmp += $nhalf;
+      }
     } else {
       $ncmp = $ndepth + $nmore;
     }
@@ -779,12 +868,17 @@ sub _n0_to_depthbits {
 
   if ($parts eq 'wedge' || $parts eq 'diagonal') {
     $nmore += 1;
+  } elsif ($parts eq 'wedge+1') {
+    $nmore += 3;
   } elsif ($parts eq 'diagonal-1') {
     $nmore += 3;
+  } elsif ($parts eq 'octant+1' || $parts eq 'octant_up+1') {
+    $nmore = ($nmore + 3) / 2;
   } elsif ($nhalf) {
     ### assert: $nmore % 2 == 1
     $nmore = ($nmore + 1) / 2;
   }
+
   return (\@depthbits, $ndepth, $nmore);
 }
 
@@ -846,9 +940,9 @@ sub tree_n_parent {
   return undef;
 }
 
-sub tree_n_to_height {
+sub tree_n_to_subheight {
   my ($self, $n) = @_;
-  ### LCornerTree tree_n_to_height(): $n
+  ### LCornerTree tree_n_to_subheight(): $n
 
   if ($n < 0)          { return undef; }
   if (is_infinite($n)) { return $n; }
@@ -857,17 +951,42 @@ sub tree_n_to_height {
   $n -= $ndepth;      # remaining offset into row
 
   my $parts = $self->{'parts'};
-  if ($parts eq 'octant_up') {
+  if ($parts eq 'octant+1') {
+    if ($ndepth > 0 && $n == $nwidth-1) {
+      return 0;  # last point in each row doesn't grow, except N=0
+    }
+
+  } elsif ($parts eq 'octant_up') {
     # add to second half of parts=1 row
     $n += $nwidth - 1;
 
+  } elsif ($parts eq 'octant_up+1') {
+    if ($ndepth > 0 && $n == 0) {
+      return 0;  # first point in each row doesn't grow, except N=0
+    }
+    # add to second half of parts=1 row
+    $n += $nwidth - 1;
+    if ($ndepth > 0) { $n -= 1; }
+
   } elsif ($parts eq 'wedge') {
     # swap row halves into style of parts=1
-    my $nhalf = $nwidth/2;
-    if ($n < $nhalf) {
-      $n += $nhalf-1;
+    my $noct = $nwidth/2;
+    if ($n < $noct) {
+      $n += $noct-1;
     } else {
-      $n -= $nhalf;
+      $n -= $noct;
+    }
+
+  } elsif ($parts eq 'wedge+1') {
+    if ($ndepth > 0 && ($n == 0 || $n == $nwidth-1)) {
+      return 0;  # first and last points don't grow, except N=0,N=1
+    }
+    # swap row halves into style of parts=1
+    my $noct = $nwidth/2;
+    if ($n < $noct) {
+      $n += $noct-3;
+    } else {
+      $n -= $noct;
     }
 
   } elsif ($parts eq 'diagonal') {
@@ -1063,8 +1182,9 @@ Math::PlanePath::LCornerTree -- cellular automaton growing at exposed corners
 =head1 DESCRIPTION
 
 This is the pattern of a cellular automaton growing by 3 cells at exposed
-corners.  Points are numbered anti-clockwise within their level.  The
-default is four quadrants starting from four initial cells N=0 to N=3,
+corners.  Points are numbered by a breadth-first tree traversal and
+anti-clockwise at each node.  The default is four quadrants starting from
+four initial cells N=0 to N=3,
 
     68  67                          66  65      4
     69  41  40  39  38  35  34  33  32  64      3
@@ -1185,9 +1305,9 @@ from its exposed end.  At the next level another three grow from the exposed
 end of N=2.  Only an exposed end grows.  If two toothpick ends touch then
 they don't grow.
 
-The toothpicks are oriented on the leading diagonal for "even" points X=Y
-mod 2 and on the opposite diagonal for "odd" points X!=Y mod 2.  A rotation
-by 45 degrees can be applied to make them horizontal and vertical instead.
+The toothpicks are oriented on the leading diagonal for "even" X=Y mod 2 and
+on the opposite diagonal for "odd" points X!=Y mod 2.  A rotation by 45
+degrees can be applied to make them horizontal and vertical instead.
 
 =head2 One Quadrant
 
@@ -1235,7 +1355,7 @@ C<YE<gt>=0>, giving two symmetric parts above the X axis.
 =head2 Three Parts
 
 Option C<parts =E<gt> '3'> is three replications arranged in a corner down and
-left similar to the way the tree grows from a power-of-2 corner X=2^k,Y=2^k.
+left.
 
 =cut
 
@@ -1257,6 +1377,10 @@ left similar to the way the tree grows from a power-of-2 corner X=2^k,Y=2^k.
                       |             51  52
                          ^
     -5  -4  -3  -2  -1  X=0  1   2   3   4
+
+This is similar to the way the tree grows from a power-of-2 corner
+X=2^k,Y=2^k, but here the numbering is the centre quadrant first, then the
+lower, then the left.  (Whereas at a corner it would be clockwise around.)
 
 =head2 One Octant
 
@@ -1287,6 +1411,32 @@ The points are numbered in the same sequence as the parts=1 quadrant, but
 with those above the X=Y diagonal omitted.  This means each N on the X=Y
 diagonal is the last of the depth level.
 
+=head2 One Octant Plus One
+
+Option C<parts =E<gt> 'octant+1'> confines the pattern to the first eighth
+plus an additional diagonal above the eighth.  This means each point on the
+diagonal has 3 children but the children above the diagonal don't grow any
+further.
+
+=cut
+
+# math-image --path=LCornerTree,parts=octant+1 --all --output=numbers --size=36x9
+
+=pod
+
+    parts => "octant+1"
+
+     7  |                    42 41
+     6  |                 27 26 40
+     5  |              21 20 25 39
+     4  |           15 14 19 37 38
+     3  |        12 11 13 18 36 35
+     2  |      6  5 10 16 17 24 34
+     1  |   3  2  4  9 28 22 23 33
+    Y=0 |   0  1  7  8 29 30 31 32
+        +--------------------------
+          X=0  1  2  3  4  5  6  7
+
 =head2 Upper Octant
 
 Option C<parts =E<gt> 'octant_up'> confines the pattern to the upper eighth
@@ -1315,10 +1465,38 @@ The points are numbered in the same sequence as the parts=1 quadrant, but
 with those below the X=Y diagonal omitted.  This means each N on the X=Y
 diagonal is the first of the depth level.
 
+=head2 Upper Octant Plus One
+
+Option C<parts =E<gt> 'octant_up+1'> confines the pattern to the upper
+eighth of the first quadrant, plus an extra diagonal below.
+
+=cut
+
+# math-image --path=LCornerTree,parts=octant_up+1 --all --output=numbers --size=35x8
+
+=pod
+
+    parts => "octant_up+1"
+
+     7  |  38 37 36 35 32 31 30 29
+     6  |  39 26 25 34 33 24 23 28
+     5  |  40 27 20 19 18 17 22
+     4  |  41 42 21 15 14 16
+     3  |  11 10  9  8 13
+     2  |  12  6  5  7
+     1  |   3  2  4
+    Y=0 |   0  1
+        +--------------------------
+          X=0  1  2  3  4  5  6  7
+
+This corresponds to the parts=octant+1 above, but the numbering is still
+clockwise so goes from the diagonal to the axis whereas parts=octant+1 goes
+from the axis to the diagonal.
+
 =head2 Wedge
 
-Option C<parts =E<gt> 'wedge'> confines the pattern to a wedge made of two
-octants, YE<gt>=X and YE<gt>=-1-X.
+Option C<parts =E<gt> 'wedge'> confines the pattern to a wedge -Y-1 E<lt>= X
+E<lt>= Y and YE<gt>=0.
 
 =cut
 
@@ -1344,13 +1522,16 @@ but restricted to the wedge portion.  This means each N on the right-hand
 X=Y diagonal is the first of the depth level and each N on the X=-1-Y
 left-hand diagonal is the last of the depth level.
 
-In this arrangement even N falls on "even" X,Y points X=Y mod 2.  Odd N
-falls on "odd" X,Y points X!=Y mod 2.
+In this arrangement even N falls on "even" points X=Y mod 2.  Odd N falls on
+"odd" points X!=Y mod 2.
 
-     O  E  O  E  O  E  O  E
-        O  E  O  E  O  E
-           O  E  O  E
-              O  E
+     O  E  O  E  O  E  O  E           3
+        O  E  O  E  O  E              2
+           O  E  O  E                 1
+              O  E               <-  Y=0
+
+                 ^
+    -4 -3 -2 -1 X=0 1  2  3
 
 The odd/even is true of N=0 and N=1 and then for further points it's true
 due to the way the pattern repeats in 2^k depth levels.
@@ -1373,6 +1554,51 @@ the numbering of parts=2 and parts=4 means each row begins on the "ragged"
 edge of the pattern which may be X,Y odd or even, whereas each wedge row
 begins on the X=Y diagonal which is always X,Y even.
 
+In terms of toothpick triplets described above (L</Toothpicks>), the wedge
+corresponds to an initial two toothpicks at right angles then growing into a
+single quadrant, when rotated -45 degrees to have the toothpicks vertical
+and horizontal.  Toothpicks on the edges of the quadrant are restricted to 2
+children and all other open ends have 3.
+
+    |              parts => "wedge"
+    5              as toothpicks
+    |
+    .--4--
+    |     |
+    1     3
+    |     |
+    +--0--.--2--
+
+=head2 Wedge Plus One
+
+Option C<parts =E<gt> 'wedge+1'> confines the pattern to a wedge -Y-2 E<lt>=
+X E<lt>= Y+1 and YE<gt>=0.  This is the parts=wedge above with an extra
+diagonal on each side.
+
+=cut
+
+# math-image --path=LCornerTree,parts=wedge+1 --all --output=numbers --size=80x8
+
+=pod
+
+    parts => "wedge"
+
+    84 83 82 81 78 77 76 75 66 65 64 63 60 59 58 57        7
+    85 54 53 80 79 52 51 74 67 48 47 62 61 46 45 56        6
+       55 42 41 40 39 50 73 68 49 36 35 34 33 44           5
+          43 30 29 38 71 72 69 70 37 28 27 32              4
+             31 24 23 22 21 18 17 16 15 26                 3
+                25 12 11 20 19 10  9 14                    2
+                   13  6  5  4  3  8                       1
+                       7  1  0  2                         Y=0
+    -----------------------------------------------
+    -8 -7 -6 -5 -4 -3 -2 -1  0  1  2  3  4  5  6  7
+
+As per parts=wedge each tree row has an even number of points and like that
+form odd/even N falls on even/odd X,Y.  Here the first N of each tree row is
+an "odd" point X=Y+1 so it's even N on odd X,Y and odd N on even X,Y.  The
+initial N=0 and N=1 are exceptions to this rule.
+
 =head2 Diagonal
 
 Option C<parts =E<gt> 'diagonal'> confines the pattern to a diagonal
@@ -1386,28 +1612,28 @@ half-plane XE<gt>=Y-1,
 
     parts => "diagonal"
 
-    35  34  33  32  29  28  27  26         3   
+    35  34  33  32  29  28  27  26         3
       \  |   | /      \  |   | /
-        16  15--31  30--14  13--25         2   
+        16  15--31  30--14  13--25         2
           \  |           | /
-             9   8   7   6--12--24         1   
+             9   8   7   6--12--24         1
                \ |   | /     | \
-                 2   1---5  22  23        Y=0  
+                 2   1---5  22  23        Y=0
 
-                     0 - 4  21  20        -1   
+                     0 - 4  21  20        -1
                        \     | /
-                         3--11--19        -2   
+                         3--11--19        -2
                            \
-                            10--18        -3   
+                            10--18        -3
                               \
-                                17        -4   
+                                17        -4
                      ^
     -4  -3  -2  -1  X=0  1  2  3  4  5  6  7
 
 =head2 Diagonal One
 
-Option C<parts =E<gt> 'diagonal-1'> is a diagonal starting from a single
-point and confined to a diagonal half-plane XE<gt>=Y,
+Option C<parts =E<gt> 'diagonal-1'> starts from a single point and is
+confined to a diagonal half-plane XE<gt>=Y,
 
 =cut
 
@@ -1419,28 +1645,29 @@ point and confined to a diagonal half-plane XE<gt>=Y,
 
     41  40  39  38  35  34  33  32         4
       \  |   | /      \  |   | /
-    42--20  19--37  36--18  17--31         3    
-          \  |           | /                    
-        21--11  10   9   8--16--30         2    
-               \ |   | /    | \                 
-            12---3   2---7  28  29         1    
-                 | /                            
-                 0---1---6  27  26     <- Y=0   
-                     |  \     | /               
-                     4   5  15--25        -1    
-                         | \                    
-                        13  14--24        -2    
-                             | \                
-                            22  23        -3    
-                 ^                         
+    42--20  19--37  36--18  17--31         3
+          \  |           | /
+        21--11  10   9   8--16--30         2
+               \ |   | /    | \
+            12---3   2---7  28  29         1
+                 | /
+                 0---1---6  27  26     <- Y=0
+                     |  \     | /
+                     4   5--15--25        -1
+                         | \
+                        13  14--24        -2
+                             | \
+                            22  23        -3
+                 ^
     -3  -2  -1  X=0  1   2   3   4
 
 In this pattern the edge points such as N=1,5,14 all have 3 children, so
-there's always 0, 1 or 3 children as per the full pattern.  The square
-section beginning N=2 corresponds to the origin in the full pattern, so the
-initial single point here makes it one depth level later.
+there's always 0 or 3 children as per the full pattern.  The square section
+beginning N=2 corresponds to the origin in the full pattern, so the initial
+single point here makes it one depth level later.
 
-This pattern is OEIS A183148 half-plane of toothpick triplets by Omar Pol.
+As toothpicks this pattern is OEIS A183148 half-plane of toothpick triplets
+by Omar Pol.
 
 =over
 
@@ -1448,10 +1675,10 @@ http://oeis.org/A183148
 
 =back
 
-Turning the pattern +45 degrees and drawing toothpicks and per
-L</Toothpicks> above gives
+Turning the pattern +45 degrees and drawing toothpicks per L</Toothpicks>
+above gives
 
-                   |  
+                   |
                    8
                    |
             ---8---.---7---
@@ -1459,7 +1686,7 @@ L</Toothpicks> above gives
            9       3       6
            |       |       |
     --10---.---2---.---1---.---5---
-           |       |       |    
+           |       |       |
           11       0       4
            |       |       |
 
@@ -1482,7 +1709,7 @@ L</Toothpicks> above gives
 =head2 Ulam Warburton
 
 Taking just the non-leaf nodes gives the pattern of the Ulam-Warburton
-cellular automaton oriented on the diagonal as per
+cellular automaton oriented at 45-degrees as per
 L<Math::PlanePath::UlamWarburtonQuarter> and using 2x2 blocks for each cell.
 
 =cut
@@ -1493,9 +1720,7 @@ L<Math::PlanePath::UlamWarburtonQuarter> and using 2x2 blocks for each cell.
 
 =pod
 
-    parts=>1  non-leaf cells
-                   ...
-    |  **  **  **  **
+    |  **  **  **  **        parts=>1  non-leaf cells
     |  **  **  **  **
     |    **      **
     |    **      **
@@ -1534,8 +1759,13 @@ Create and return a new path object.  The C<parts> option (a string) can be
     "2"
     "1"
     "octant"
+    "octant+1"
     "octant_up"
+    "octant_up+1"
     "wedge"
+    "wedge+1"
+    "diagonal"
+    "diagonal-1"
 
 =back
 
@@ -1548,13 +1778,25 @@ Create and return a new path object.  The C<parts> option (a string) can be
 Return the children of C<$n>, or an empty list if C<$n> has no children
 (including when C<$n E<lt> 0>, ie. before the start of the path).
 
-X<3-tree>For parts=1,2,3,4 each point has either 0 or 3 children.  Such a
+The possible number of children under a node is
+
+                 parts                    possible num children
+    -------------------------------       ---------------------
+    4, 3, 2, 1                      \ 
+    octant+1, octant_up+1, wedge+1, |            0,    3
+    diagonal-1                      /
+    
+    octant, octant_up, wedge        \            0, 2, 3
+    diagonal                        /
+
+X<3-tree>For parts=4,3,2,etc each point has either 0 or 3 children.  Such a
 tree is sometimes called a "3-tree".  The children of a corner C<$n> are the
 three cells adjacent to it turned "on" at the next depth.  A non-corner has
 no children.
 
-For parts=octant the points on the X=Y diagonal always have 2 children and
-the rest is 0 or 3 children.
+For parts=octant etc the points on the X=Y diagonal have only 2 children
+since the pattern is confined to on or below that diagonal.  All other
+points have either 0 or 3 as per the full patterns.
 
 =back
 

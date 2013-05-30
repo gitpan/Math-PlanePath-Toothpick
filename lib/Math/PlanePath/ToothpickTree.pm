@@ -134,7 +134,7 @@ use Carp;
 *min = \&Math::PlanePath::_min;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 8;
+$VERSION = 9;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -173,6 +173,8 @@ use constant class_y_negative => 1;
                     octant    => 0,
                     octant_up => 0,
                     wedge     => 1,
+                    'wedge+1' => 1,
+                    two_horiz => 1,
                    );
   sub x_negative {
     my ($self) = @_;
@@ -198,6 +200,7 @@ use constant class_y_negative => 1;
                     octant    => 0,
                     octant_up => 0,
                     wedge     => 0,
+                    two_horiz => 1,
                    );
   sub y_negative {
     my ($self) = @_;
@@ -210,7 +213,8 @@ use constant class_y_negative => 1;
                    octant    => 1,
                    octant_up => 2,
                    wedge     => 0,
-                   # otherwise no minimum so undef
+                   'wedge+1' => -1,
+                   # otherwise no minimum, undef
                   );
   sub y_minimum {
     my ($self) = @_;
@@ -223,7 +227,8 @@ use constant class_y_negative => 1;
                        octant    => 2,  # X=1,Y=1
                        octant_up => 3,  # X=1,Y=2
                        wedge     => 0,  # X=0,Y=0
-                       # otherwise no minimum so undef
+                       'wedge+1' => -1,
+                       # otherwise no minimum, undef
                       );
   sub sumxy_minimum {
     my ($self) = @_;
@@ -242,6 +247,7 @@ use constant class_y_negative => 1;
 {
   my %diffxy_maximum = (octant_up => 0,  # Y>=X so X-Y<=0
                         wedge     => 0,  # Y>=X so X-Y<=0
+                        'wedge+1' => 1,
                        );
   sub diffxy_maximum {
     my ($self) = @_;
@@ -269,18 +275,19 @@ use constant tree_num_children_maximum => 2;
 #                 62,-33
 #                126,-65
 #            2*2^k-2, -2^k+1   -> 2,-1
-#
-# parts=2 dX=big,dY=-1 approaches 3.9999
 # parts=3 same as parts=1
+#
 # parts=4 dX=0,dY=-1 South, apparently
 {
-  my %dir_maximum_dxdy = (4         => [0,-2], # at N=1 South dY=-2
-                          2         => [0,0],  # supremum
+  my %dir_maximum_dxdy = (4         => [0,-2], # at N=1 South dX=0,dY=-2
+                          2         => [0,0],  # supremum, dX=big,dY=-1
                           3         => [2,-1], # supremum
                           1         => [2,-1], # supremum
                           octant    => [1,-2], # at N=4
                           octant_up => [0,-2], # at N=16 South
                           wedge     => [0,-2], # at N=35 South
+                          'wedge+1' => [0,0],  # supremum, dX=big,dY=-1
+                          two_horiz => [0,0],  # supremum, dX=big,dY=-1
                          );
   sub dir_maximum_dxdy {
     my ($self) = @_;
@@ -298,6 +305,8 @@ my %parts_depth_adjust = (4         => 0,
                           octant    => 2,
                           octant_up => 2,
                           wedge     => 0,
+                          'wedge+1' => 0,
+                          two_horiz => 2,
                          );
 
 sub new {
@@ -320,8 +329,13 @@ my %initial_n_to_xy
      # 1         => [ ],
      # octant    => [ ],
      # octant_up => [ ],
-     wedge     => [ [0,0],  [0,1],  [1,1],[-1,1] ],
+     wedge     => [ [0,0],  [0,1],         [1,1],[-1,1] ],
+     # 'wedge+1' => [ [0,0],  [0,1],[0,-1],  [1,1],[-1,1] ],
+     two_horiz   => [ [1,0],[-1,0],  [2,0],[-2,0],
+                      [2,-1],[2,1],[-2,1],[-2,-1] ],
     );
+# use Smart::Comments;
+
 sub n_to_xy {
   my ($self, $n) = @_;
   ### ToothpickTree n_to_xy(): $n
@@ -356,438 +370,287 @@ sub n_to_xy {
 
 
 
-#  if (1 || $parts eq 'octant' || $parts eq 'octant_up')
-{
-    (my $depth, $n) = _n0_to_depth_and_rem($self, $n);
-    ### $depth
-    ### remainder n: $n
+  (my $depth, $n) = _n0_to_depth_and_rem($self, $n);
+  ### $depth
+  ### remainder n: $n
 
-    # $hdx,$hdy is the dx,dy offsets which is "horizontal".  Initially this is
-    # hdx=1,hdy=0 so horizontal along the X axis, but subsequent blocks rotate
-    # around or mirror to point other directions.
-    #
-    # $vdx,$vdy is similar dx,dy which is "vertical".  Initially vdx=0,vdy=1
-    # so vertical along the Y axis.
-    #
-    # $mirror is true if in a "mirror image" block.  The difference is that in
-    # a plain block points are numbered around anti-clockwise, but when
-    # mirrored they're numbered clockwise.
-    #
-    my $x = 0;
-    my $y = 0;
-    my $hdx = 1;
-    my $hdy = 0;
-    my $vdx = 0;
-    my $vdy = 1;
-    my $mirror = 0;
-    $depth += $parts_depth_adjust{$parts};
-    ### depth in parts=4 style: $depth
+  # $hdx,$hdy is the dx,dy offsets which is "horizontal".  Initially this is
+  # hdx=1,hdy=0 so horizontal along the X axis, but subsequent blocks rotate
+  # around or mirror to point other directions.
+  #
+  # $vdx,$vdy is similar dx,dy which is "vertical".  Initially vdx=0,vdy=1
+  # so vertical along the Y axis.
+  #
+  # $mirror is true if in a "mirror image" block.  The difference is that in
+  # a plain block points are numbered around anti-clockwise, but when
+  # mirrored they're numbered clockwise.
+  #
+  my $x = 0;
+  my $y = 0;
+  my $hdx = 1;
+  my $hdy = 0;
+  my $vdx = 0;
+  my $vdy = 1;
+  my $mirror = 0;
+  $depth += $parts_depth_adjust{$parts};
+  ### depth in parts=4 style: $depth
 
-    if ($parts eq 'octant') {
+  if ($parts eq 'octant') {
 
-    } elsif ($parts eq 'octant_up') {
+  } elsif ($parts eq 'octant_up') {
+    $mirror = 1;
+    $y = 1;
+    $hdx = 0; $hdy = 1;  # initial transpose X,Y
+    $vdx = 1; $vdy = 0;
+
+  } elsif ($parts eq 'wedge') {
+    $depth -= 1;
+    $y = 1;
+    $hdx = 0; $hdy = 1; $vdy = 0;
+    my $add = _depth_to_octant_added([$depth],[1],$zero);
+    if ($n < $add) {
+      # right half
       $mirror = 1;
-      $y = 1;
-      $hdx = 0; $hdy = 1;  # initial transpose X,Y
-      $vdx = 1; $vdy = 0;
-
-    } elsif ($parts eq 'wedge') {
-      $depth -= 1;
-      $y = 1;
-      $hdx = 0; $hdy = 1; $vdy = 0;
-      my $add = _depth_to_octant_added([$depth],[1],$zero);
-      if ($n < $add) {
-        # right half
-        $mirror = 1;
-        $vdx = 1;
-      } else {
-        # left half
-        $n -= $add;
-        $vdx = -1;
-      }
-
+      $vdx = 1;
     } else {
-      my $add = _depth_to_octant_added([$depth],[1],$zero);
+      # left half
+      $n -= $add;
+      $vdx = -1;
+    }
+
+  } elsif ($parts eq 'two_horiz') {
+    my $add = _depth_to_octant_added([$depth],[1],$zero);
+    if ($n < $add) {
+      ### first eighth ...
+      $hdx = 0; $hdy = -1; $vdx = 1; $vdy = 0;
+      $y = 1;
+    } else {
+      my $add3 = _depth_to_octant_added([$depth-3],[1],$zero);
+      my $quad = $add + $add3 - 1;
+      my $half = 2*$quad;
       ### $add
+      ### $add3
+      ### $quad
+      ### $half
+      if ($n >= $half) {
+        $n -= $half;
+        $hdx = -1; $vdy = -1;  # rotate 180
+      }
+      if ($n < $quad) {
+        if ($n < $add) {
+          ### fifth octant ...
+          $hdx = 0; $hdy = 1; $vdx = -1; $vdy = 0;
+          $y = -1;
 
-      if ($parts eq '3') {
-        my $add_plus1 = _depth_to_octant_added([$depth+1],[1],$zero);
-        my $add_quad = $add_plus1 + $add - 1;
-        ### parts=3 lower quad: $add_quad
-        if ($n < $add_quad) {
-          ### initial block 1, rotate 90 ...
-          $depth += 1;
-          $add = $add_plus1;
-          $x = -1;
-          $hdx = 0; $hdy = -1; $vdx = 1; $vdy = 0;
-          $parts = '1';
         } else {
-          # now parts=2 style remaining
-          $n -= $add_quad;
+          ### second/sixth eighth ...
+          $n -= $add - 1;  # and unduplicate spine
+          $x = 2*$hdx;
+          $depth -= 3;
+          $mirror = 1;
+          $hdy = -$hdy; $vdy = -$vdy; # reflect across X axis
+        }
+      } else {
+        $n -= $quad;
+        if ($n < $add3-1) {
+          ### third/seventh eighth ...
+          $depth -= 3;
+          $x = 2*$hdx;
+        } else {
+          ### fourth/eighth eighth ...
+          $n -= $add3-1;
+          $y = -$vdy;
+          $mirror = 1;
+          ($hdx,$hdy, $vdx,$vdy) = ($vdx,$vdy, $hdx,$hdy);   # transpose X,Y
+        }
+      }
+    }
+
+  } else {
+    my $add = _depth_to_octant_added([$depth],[1],$zero);
+    ### $add
+
+    if ($parts eq '3') {
+      my $add_plus1 = _depth_to_octant_added([$depth+1],[1],$zero);
+      my $add_quad = $add_plus1 + $add - 1;
+      ### parts=3 lower quad: $add_quad
+      if ($n < $add_quad) {
+        ### initial block 1, rotate 90 ...
+        $depth += 1;
+        $add = $add_plus1;
+        $x = -1;
+        $hdx = 0; $hdy = -1; $vdx = 1; $vdy = 0;
+        $parts = '1';
+      } else {
+        # now parts=2 style remaining
+        $n -= $add_quad;
+      }
+    }
+
+    if ($parts ne '1') {
+      my $add_sub1 = _depth_to_octant_added([$depth-1], [1], $zero);
+      my $add_quad = $add + $add_sub1 - 1;
+
+      if ($parts eq '4') {
+        my $add_half = 2*$add_quad;
+        if ($n >= $add_half) {
+          $n -= $add_half;
+          $hdx = -1; $vdy = -1;  # rotate 180
         }
       }
 
-      if ($parts ne '1') {
-        my $add_sub1 = _depth_to_octant_added([$depth-1], [1], $zero);
-        my $add_quad = $add + $add_sub1 - 1;
+      # parts=2 style two quadrants
+      if ($n >= $add_quad) {
+        ### second quadrant ...
+        $n -= $add_quad;
 
-        if ($parts eq '4') {
-          my $add_half = 2*$add_quad;
-          if ($n >= $add_half) {
-            $n -= $add_half;
-            $hdx = -1; $vdy = -1;  # rotate 180
-          }
+        if ($n >= $add_sub1) {
+          ### fourth octant ...
+          $n -= $add_sub1;
+          $n += 1;  # unduplicate diagonal
+          $mirror = 1;
+          $hdx = -$hdx; $hdy = -$hdy; # reflect horizontally
+        } else {
+          ### third octant ...
+          $depth -= 1;
+          ($hdx,$hdy, $vdx,$vdy)    # rotate -90
+            = ($vdx,$vdy, -$hdx,-$hdy);
+          $x += $hdx;
+          $y += $hdy;
         }
-
-        # parts=2 style two quadrants
-        if ($n >= $add_quad) {
-          ### second quadrant ...
-          $n -= $add_quad;
-
-          if ($n >= $add_sub1) {
-            ### fourth octant ...
-            $n -= $add_sub1;
-            $n += 1;  # unduplicate diagonal
-            $mirror = 1;
-            $hdx = -$hdx; $hdy = -$hdy; # reflect horizontally
-          } else {
-            ### third octant ...
-            $depth -= 1;
-            ($hdx,$hdy, $vdx,$vdy)    # rotate -90
-              = ($vdx,$vdy, -$hdx,-$hdy);
-            $x += $hdx;
-            $y += $hdy;
-          }
-          $add = $n+1;
-        }
+        $add = $n+1;
       }
+    }
 
-      ### first quadrant split: "add=$add   n=$n depth=$depth"
-      if ($n >= $add) {
-        ### top half of quad ...
-        $depth -= 1;
-        $n -= $add;
-        $n += 1;  # unduplicate diagonal
-        $mirror ^= 1;
+    ### first quadrant split: "add=$add   n=$n depth=$depth"
+    if ($n >= $add) {
+      ### top half of quad ...
+      $depth -= 1;
+      $n -= $add;
+      $n += 1;  # unduplicate diagonal
+      $mirror ^= 1;
+      $x += $vdx;
+      $y += $vdy;
+      ($hdx,$hdy, $vdx,$vdy)    # transpose X,Y
+        = ($vdx,$vdy, $hdx,$hdy);
+      ### transpose to: "hdxy=$hdx,$hdy  vdxy=$vdx,$vdy  n=$n depth=$depth"
+    }
+  }
+  ### in parts=4 style: "n=$n depth=$depth   x=$x y=$y   hdxy=$hdx,$hdy vdxy=$vdx,$vdy"
+
+  my ($pow,$exp) = round_down_pow ($depth, 2);
+  for ( ; --$exp >= 0; $pow /=2) {
+    ### at: "pow=$pow depth=$depth n=$n mirror=$mirror  xy=$x,$y  h=$hdx,$hdy v=$vdx,$vdy"
+
+    if ($depth < $pow) {
+      ### block 0 ...
+      next;
+    }
+    $depth -= $pow;
+
+    if ($depth == $pow-1) {
+      ### pow-1 end toothpick ...
+      $x += $pow * ($hdx + $vdx) - $hdx;
+      $y += $pow * ($hdy + $vdy) - $hdy;
+      last;
+    }
+
+    $x += $pow/2 * ($hdx + $vdx);
+    $y += $pow/2 * ($hdy + $vdy);
+    ### diagonal to: "depth=$depth  xy=$x,$y"
+
+    if ($depth == 0) {
+      ### toothpick A ...
+      last;
+    }
+    if ($depth == 1) {
+      ### toothpick B,other up,down ...
+      if ($exp && $n == $mirror) {
+        ### toothpick other (down): "subtract vdxdy=$vdx,$vdy"
+        $x -= $vdx;
+        $y -= $vdy;
+      } else {
+        ### toothpick B (up): "add vdxdy=$vdx,$vdy"
         $x += $vdx;
         $y += $vdy;
-        ($hdx,$hdy, $vdx,$vdy)    # transpose X,Y
-          = ($vdx,$vdy, $hdx,$hdy);
-        ### transpose to: "hdxy=$hdx,$hdy  vdxy=$vdx,$vdy  n=$n depth=$depth"
       }
+      last;
     }
 
-    ### in parts=4 style: "n=$n depth=$depth   x=$x y=$y"
+    if ($mirror) {
+      #     /
+      #    /3
+      #   /--
+      #  /|\2
+      # /0|1\
+      my $add = _depth_to_octant_added([$depth],[1],$zero);
+      ### add in mirror block2,3: $add
 
-    my ($pow,$exp) = round_down_pow ($depth, 2);
-    for ( ; --$exp >= 0; $pow /=2) {
-      ### at: "pow=$pow depth=$depth n=$n mirror=$mirror  xy=$x,$y  h=$hdx,$hdy v=$vdx,$vdy"
-
-      if ($depth < $pow) {
-        ### block 0 ...
+      if ($n < $add) {
+        ### mirror block 3, same ...
         next;
       }
-      $depth -= $pow;
+      $n -= $add;
 
-      if ($depth == $pow-1) {
-        ### pow-1 end toothpick ...
-        $x += $pow * ($hdx + $vdx) - $hdx;
-        $y += $pow * ($hdy + $vdy) - $hdy;
-        last;
+      if ($n < $add) {
+        ### mirror block 2, unmirror, vertical invert ...
+        $vdx = -$vdx;
+        $vdy = -$vdy;
+        $mirror = 0;
+        next;
       }
+      $n -= $add;
+      $n += 1;  # undouble upper/lower diagonal
 
-      $x += $pow/2 * ($hdx + $vdx);
-      $y += $pow/2 * ($hdy + $vdy);
-      ### diagonal to: "depth=$depth  xy=$x,$y"
+      ### mirror block 1, rotate 90 ...
+      ### assert: $n < _depth_to_octant_added([$depth+1],[1],$zero);
+      $depth += 1;
+      $x -= $hdx; # offset
+      $y -= $hdy;
+      ($hdx,$hdy, $vdx,$vdy)    # rotate 90 in direction v toward h
+        = (-$vdx,-$vdy, $hdx,$hdy);
 
-      if ($depth == 0) {
-        ### toothpick A ...
-        last;
-      }
-      if ($depth == 1) {
-        ### toothpick B,other up,down ...
-        if ($exp && $n == $mirror) {
-          ### toothpick other (down): "subtract vdxdy=$vdx,$vdy"
-          $x -= $vdx;
-          $y -= $vdy;
-        } else {
-          ### toothpick B (up): "add vdxdy=$vdx,$vdy"
-          $x += $vdx;
-          $y += $vdy;
-        }
-        last;
-      }
+    } else {
+      ### assert: $mirror==0
+      #     /
+      #    /3
+      #   /--
+      #  /|\2
+      # /0|1\
 
-      if ($mirror) {
-        #     /
-        #    /3
-        #   /--
-        #  /|\2
-        # /0|1\
-        my $add = _depth_to_octant_added([$depth],[1],$zero);
-        ### add in mirror block2,3: $add
-
+      if ($depth+1 < $pow) {
+        my $add = _depth_to_octant_added([$depth+1],[1],$zero) - 1;
+        ### add in block1, sans diagonal: $add
         if ($n < $add) {
-          ### mirror block 3, same ...
+          ### block 1 "lower", rotate +90 ...
+          $depth += 1;
+          $x -= $hdx; # offset
+          $y -= $hdy;
+          ($hdx,$hdy, $vdx,$vdy)    # rotate 90 in direction v toward h
+            = (-$vdx,-$vdy, $hdx,$hdy);
           next;
         }
         $n -= $add;
+      }
 
-        if ($n < $add) {
-          ### mirror block 2, unmirror, vertical invert ...
-          $vdx = -$vdx;
-          $vdy = -$vdy;
-          $mirror = 0;
-          next;
-        }
-        $n -= $add;
-        $n += 1;  # undouble upper/lower diagonal
+      my $add = _depth_to_octant_added([$depth],[1],$zero);
+      ### add in block2: $add
 
-        ### mirror block 1, rotate 90 ...
-        ### assert: $n < _depth_to_octant_added([$depth+1],[1],$zero);
-        $depth += 1;
-        $x -= $hdx; # offset
-        $y -= $hdy;
-        ($hdx,$hdy, $vdx,$vdy)    # rotate 90 in direction v toward h
-          = (-$vdx,-$vdy, $hdx,$hdy);
-
+      if ($n < $add) {
+        ### block 2 "upper", vertical invert ...
+        $vdx = -$vdx;
+        $vdy = -$vdy;
+        $mirror = 1;
       } else {
-        ### assert: $mirror==0
-        #     /
-        #    /3
-        #   /--
-        #  /|\2
-        # /0|1\
-
-        if ($depth+1 < $pow) {
-          my $add = _depth_to_octant_added([$depth+1],[1],$zero) - 1;
-          ### add in block1, sans diagonal: $add
-          if ($n < $add) {
-            ### block 1 "lower", rotate +90 ...
-            $depth += 1;
-            $x -= $hdx; # offset
-            $y -= $hdy;
-            ($hdx,$hdy, $vdx,$vdy)    # rotate 90 in direction v toward h
-              = (-$vdx,-$vdy, $hdx,$hdy);
-            next;
-          }
-          $n -= $add;
-        }
-
-        my $add = _depth_to_octant_added([$depth],[1],$zero);
-        ### add in block2: $add
-
-        if ($n < $add) {
-          ### block 2 "upper", vertical invert ...
-          $vdx = -$vdx;
-          $vdy = -$vdy;
-          $mirror = 1;
-        } else {
-          ### block 3 "extend", same ...
-          $n -= $add;
-          ### assert: $n < $add
-        }
+        ### block 3 "extend", same ...
+        $n -= $add;
+        ### assert: $n < $add
       }
     }
-
-    ### n_to_xy() return: "$x,$y  (depth=$depth n=$n)"
-    return ($x,$y);
   }
 
-
-
-
-
-
-
-  # {
-  #   (my $depth, $n) = _n0_to_depth_and_rem($self, $n);
-  #   ### $depth
-  #   ### remainder n: $n
-  #
-  #   # $hdx,$hdy is the dx,dy offsets which is "horizontal".  Initially this is
-  #   # hdx=1,hdy=0 so horizontal along the X axis, but subsequent blocks rotate
-  #   # around or mirror to point other directions.
-  #   #
-  #   # $vdx,$vdy is similar dx,dy which is "vertical".  Initially vdx=0,vdy=1
-  #   # so vertical along the Y axis.
-  #   #
-  #   # $mirror is true if in a "mirror image" block.  The difference is that in
-  #   # a plain block points are numbered around anti-clockwise, but when
-  #   # mirrored they're numbered clockwise.
-  #   #
-  #   my $x = 0;
-  #   my $y = 0;
-  #   my $hdx = 1;
-  #   my $hdy = 0;
-  #   my $vdx = 0;
-  #   my $vdy = 1;
-  #   my $mirror = 0;
-  #
-  #   if ($parts eq 'octant') {
-  #     $depth += 2;
-  #
-  #   } elsif ($parts eq '1') {
-  #     $depth += 2;
-  #
-  #   } elsif ($parts eq '2') {
-  #     $depth += 1;
-  #     my $add = _depth_to_quarter_added([$depth],[1],$zero);
-  #     if ($n >= $add) {
-  #       $n -= $add;
-  #       $hdx = -1; # mirror
-  #       $mirror = 1;
-  #     }
-  #   } elsif ($parts eq '3') {
-  #     my $add = _depth_to_quarter_added([$depth+1],[1],$zero);
-  #     if ($n < $add) {
-  #       ### initial part 1, rotate 90 ...
-  #       $depth += 1;
-  #       $x -= 1;
-  #       $hdx = 0;
-  #       $hdy = -1;
-  #       $vdx = 1;
-  #       $vdy = 0;
-  #     } else {
-  #       $n -= $add;
-  #       $add = _depth_to_quarter_added([$depth],[1],$zero);
-  #       if ($n >= $add) {
-  #         ### initial part 3, mirror ...
-  #         $n -= $add;
-  #         $hdx = -1;
-  #         $mirror = 1;
-  #       } else {
-  #         ### initial part 2, unchanged ...
-  #       }
-  #     }
-  #
-  #   } elsif ($parts eq '4') {
-  #     my $add = _depth_to_quarter_added([$depth],[1],$zero);
-  #     if ($n >= 2*$add) {
-  #       ### initial rotate 180 ...
-  #       $n -= 2*$add;
-  #       $hdx = -1;
-  #       $vdy = -1;
-  #     }
-  #     if ($n >= $add) {
-  #       ### initial mirror ...
-  #       $n -= $add;
-  #       $hdx = -$hdx;
-  #       $mirror = 1;
-  #     }
-  #   }
-  #
-  #   ### adjusted to parts4 style depth: "depth=$depth remainder n=$n"
-  #
-  #   my ($pow,$exp) = round_down_pow ($depth, 2);
-  #   for ( ; --$exp >= 0; $pow /=2) {
-  #     ### at: "pow=$pow depth=$depth n=$n mirror=$mirror  xy=$x,$y  h=$hdx,$hdy v=$vdx,$vdy"
-  #
-  #     if ($depth < $pow) {
-  #       ### part 0 ...
-  #       next;
-  #     }
-  #
-  #     $x += $pow/2 * ($hdx + $vdx);
-  #     $y += $pow/2 * ($hdy + $vdy);
-  #     $depth -= $pow;
-  #     ### diagonal to: "depth=$depth  xy=$x,$y"
-  #
-  #     if ($depth == 0) {
-  #       ### toothpick A ...
-  #       last;
-  #     }
-  #     if ($depth == 1) {
-  #       ### toothpick other+B ...
-  #       if ($exp && $n == $mirror) {
-  #         ### toothpick other (down): "subtract vdxdy=$vdx,$vdy"
-  #         $x -= $vdx;
-  #         $y -= $vdy;
-  #       } else {
-  #         ### toothpick B (up): "add vdxdy=$vdx,$vdy"
-  #         $x += $vdx;
-  #         $y += $vdy;
-  #       }
-  #       last;
-  #     }
-  #     if ($depth == $pow-1) {
-  #       ### last toothpick ...
-  #       $x += $pow/2 * ($hdx + $vdx);
-  #       $y += $pow/2 * ($hdy + $vdy);
-  #       $x -= $hdx;
-  #       $y -= $hdy;
-  #       last;
-  #     }
-  #
-  #     if ($mirror) {
-  #       #
-  #       # 2 1
-  #       # 3 0
-  #       #
-  #       my $add = _depth_to_quarter_added([$depth],[1],$zero);
-  #       ### mirror add in block1,2: $add
-  #
-  #       if ($n < $add) {
-  #         ### mirror block 1, unmirror ...
-  #         $hdx = -$hdx;
-  #         $hdy = -$hdy;
-  #         $mirror = 0;
-  #         next;
-  #       }
-  #       $n -= $add;
-  #
-  #       if ($n < $add) {
-  #         ### mirror part 2, same ...
-  #         next;
-  #       }
-  #       $n -= $add;
-  #
-  #       ### mirror part 3, rotate -90 ...
-  #       $depth += 1;
-  #       $x -= $hdx; # offset
-  #       $y -= $hdy;
-  #       ($hdx,$hdy, $vdx,$vdy)    # rotate 90 in direction v toward h
-  #         = (-$vdx,-$vdy, $hdx,$hdy);
-  #       ### assert: $n < $add
-  #
-  #     } else {
-  #       # not $mirror
-  #       if ($depth+1 < $pow) {
-  #         my $add = _depth_to_quarter_added([$depth+1],[1],$zero);
-  #         ### add in block1: $add
-  #
-  #         if ($n < $add) {
-  #           ### part 1, rotate +90 ...
-  #           $depth += 1;
-  #           $x -= $hdx; # offset
-  #           $y -= $hdy;
-  #           ($hdx,$hdy, $vdx,$vdy)    # rotate 90 in direction v toward h
-  #             = (-$vdx,-$vdy, $hdx,$hdy);
-  #           next;
-  #         }
-  #         $n -= $add;
-  #       }
-  #
-  #       my $add = _depth_to_quarter_added([$depth],[1],$zero);
-  #       ### add in part2,3: $add
-  #
-  #       if ($n < $add) {
-  #         ### part 2, same ...
-  #         next;
-  #       }
-  #       $n -= $add;
-  #
-  #       ### part 3, mirror ...
-  #       $hdx = -$hdx;
-  #       $hdy = -$hdy;
-  #       $mirror = 1;
-  #       ### assert: $n < $add
-  #     }
-  #   }
-  #
-  #   ### n_to_xy() return: "$x,$y  (depth=$depth n=$n)"
-  #   return ($x,$y);
-  # }
+  ### n_to_xy() return: "$x,$y  (depth=$depth n=$n)"
+  return ($x,$y);
 }
 # use Smart::Comments;
 
@@ -808,278 +671,332 @@ sub xy_to_n {
 
   my $parts = $self->{'parts'};
 
+  if ($parts eq 'octant') {
+    # if ($x < 1 || $y < 1 || $y > $x+1) { return undef; }
+    $depth_adjust = 2;
 
-  if (1 || $parts eq 'octant'
-      || $parts eq 'octant_up'
-      || $parts eq 'wedge'
-     ) {
+  } elsif ($parts eq 'octant_up') {
+    # if ($x > $y || $x < 1 || $y < 2) { return undef; }
+    ($x,$y) = ($y-1,$x);
+    $mirror = 1;
+    $depth_adjust = 2;
 
-    if ($parts eq 'octant') {
-      # if ($x < 1 || $y < 1 || $y > $x+1) { return undef; }
-      $depth_adjust = 2;
+  } elsif ($parts eq 'wedge') {
+    if ($x > $y || $x < -$y) { return undef; }
+    $depth_adjust = -1;
+    $y -= 1;
+    if ($y <= 0) {
+      if ($y < 0) { return 0; }  #  X=0,Y=0 N=0
+      # otherwise Y=1
+      if ($x == 0) { return 1; }
+      if ($x == 1) { return 2; }
+      if ($x == -1) { return 3; }
+    }
 
-    } elsif ($parts eq 'octant_up') {
-      # if ($x > $y || $x < 1 || $y < 2) { return undef; }
-      ($x,$y) = ($y-1,$x);
+    if ($x >= 0) {
+      ### wedge X positive half, transpose ...
+      ($x,$y) = ($y,$x);
       $mirror = 1;
+    } else {
+      ### wedge X negative half, rotate -90 ...
+      ($x,$y) = ($y,-$x);  # rotate -90
+      push @add_offset, 0;
+      push @add_mult, 1;
+    }
+    ### wedge: "x=$x y=$y"
+
+  } elsif ($parts eq 'two_horiz') {
+    if ($x == -1 && $y == 0) { return 1; }
+    if ($x == -2 && $y == 0) { return 3; }
+
+    #   if ($y < 0) { return 0; }  #  X=0,Y=0 N=0
+    #   # otherwise Y=1
+    #   if ($x == 0) { return 1; }
+    #   if ($x == 1) { return 2; }
+    #   if ($x == -1) { return 3; }
+    # }
+
+    my $mult = 0;
+    my $mult3 = 0;
+    if ($x < 0) {
+      $x = -$x; $y = -$y;  # rotate 180
+      $mult = 2;
+      $mult3 = 2;
+      $n -= 2; # unduplicate shared diagonals in first two quarters
+      ### rotate 180 to: "$x,$y"
+    }
+    if ($y > 0) {
+      $mult++;
+      $mult3++;
+      $n -= 1; # unduplicate shared diagonal in first quarter
+      if ($x < $y+2) {
+        ### fourth/eighth eighth ...
+        $depth_adjust = 2;
+        $mult3++;
+        $n -= 1; # unduplicate shared diagonal
+        ($x,$y) = ($y+1,$x);  # transpose and offset
+        $mirror = 1;
+      } else {
+        ### third/seventh eighth ...
+        $x -= 2;
+        $depth_adjust = -1;
+      }
+    } else { # $y < 0
+      if ($x > 2-$y) {
+        ### second/sixth eighth ...
+        $y = -$y;  # mirror across X axis
+        $x -= 2;
+        $mirror = 1;
+        $mult++;
+        $n -= 1; # unduplicate shared diagonal
+        $depth_adjust = -1;
+      } else {
+        ### first/fifth eighth ...
+        ($x,$y) = (1-$y,$x);  # rotate +90 and offset
+        $depth_adjust = 2;
+      }
+    }
+    if ($mult) {
+      push @add_offset, $depth_adjust - 2;
+      push @add_mult,   $mult;
+      if ($mult3) {
+        push @add_offset, $depth_adjust + 1;
+        push @add_mult,   $mult3;
+      }
+    }
+
+  } else {
+
+    if ($parts eq '1') {
+      if ($x < 1 || $y < 1) { return undef; }
       $depth_adjust = 2;
 
-    } elsif ($parts eq 'wedge') {
-      if ($x > $y || $x < -$y) { return undef; }
-      $depth_adjust = -1;
-      $y -= 1;
-      if ($y <= 0) {
-        if ($y < 0) { return 0; }  #  X=0,Y=0 N=0
-        # otherwise Y=1
-        if ($x == 0) { return 1; }
-        if ($x == 1) { return 2; }
-        if ($x == -1) { return 3; }
+    } elsif ($parts eq '2') {
+      if ($y < 1) { return undef; }
+      if ($x == 0) {
+        if ($y == 1) { return 0; }
       }
-
-      if ($x >= 0) {
-        ### wedge X positive half, transpose ...
-        ($x,$y) = ($y,$x);
-        $mirror = 1;
-      } else {
-        ### wedge X negative half, rotate -90 ...
-        ($x,$y) = ($y,-$x);  # rotate -90
-        push @add_offset, 0;
-        push @add_mult, 1;
+      if ($y == 1) {
+        if ($x == 1) { return 1; }
+        if ($x == -1) { return 2; }
       }
-      ### wedge: "x=$x y=$y"
+      $depth_adjust = 1;
 
-    } else {
-
-      if ($parts eq '1') {
-        if ($x < 1 || $y < 1) { return undef; }
-        $depth_adjust = 2;
-
-      } elsif ($parts eq '2') {
-        if ($y < 1) { return undef; }
-        if ($x == 0) {
-          if ($y == 1) { return 0; }
+    } elsif ($parts eq '3') {
+      if ($x == 0) {
+        if ($y == 0)  { return 0; }
+        if ($y == -1) { return 1; }
+        if ($y == 1)  { return 2; }
+      }
+      if ($y < 0) {
+        if ($x < 0) {
+          return undef;
         }
-        if ($y == 1) {
-          if ($x == 1) { return 1; }
-          if ($x == -1) { return 2; }
-        }
+        ### parts=3 rotate +90 ...
+        ($x,$y) = (-$y,$x+1);
         $depth_adjust = 1;
-
-      } elsif ($parts eq '3') {
-        if ($x == 0) {
-          if ($y == 0)  { return 0; }
-          if ($y == -1) { return 1; }
-          if ($y == 1)  { return 2; }
-        }
-        if ($y < 0) {
-          if ($x < 0) {
-            return undef;
-          }
-          ### parts=3 rotate +90 ...
-          ($x,$y) = (-$y,$x+1);
-          $depth_adjust = 1;
-        } else {
-          push @add_offset, -1,0;  # one quadrant
-          push @add_mult,   1,1;
-          $n -= 1; # unduplicate shared diagonal
-        }
-
       } else {
-        ### assert: $parts eq '4'
-        if ($x == 0) {
-          if ($y == 0)  { return 0; }
-          if ($y == 1)  { return 1; }
-          if ($y == -1) { return 2; }
-        }
-        if ($y < 0) {
-          $x = -$x; $y = -$y;  # rotate 180
-          push @add_offset, 0,1;  # two quadrants
-          push @add_mult,   2,2;
-          $n -= 2; # unduplicate shared diagonal
-        }
-      }
-
-      if ($x < 0) {
-        ### X negative mirror ...
-        $x = -$x;
-        $mirror = 1;
-        push @add_offset, 0,1;  # one quadrant
-        push @add_mult, 1,1;
+        push @add_offset, -1,0;  # one quadrant
+        push @add_mult,   1,1;
         $n -= 1; # unduplicate shared diagonal
       }
 
-      if ($y <= $x) {
-        ### lower octant ...
-        if ($mirror) {
-          push @add_offset, 1;
-          push @add_mult, 1;
-          $n -= 1; # unduplicate shared diagonal
-        }
-      } else {
-        ### upper octant ...
-        ($x,$y) = ($y-1,$x);
-        foreach (@add_offset) { $_-- }
-        $depth_adjust--;
-        if (! $mirror) {
-          push @add_offset, -1;
-          push @add_mult, 1;
-          $n -= 1; # unduplicate shared diagonal
-        }
-        $mirror ^= 1;
+    } else {
+      ### assert: $parts eq '4'
+      if ($x == 0) {
+        if ($y == 0)  { return 0; }
+        if ($y == 1)  { return 1; }
+        if ($y == -1) { return 2; }
+      }
+      if ($y < 0) {
+        $x = -$x; $y = -$y;  # rotate 180
+        push @add_offset, 0,1;  # two quadrants
+        push @add_mult,   2,2;
+        $n -= 2; # unduplicate shared diagonal
       }
     }
-    ### $depth_adjust
 
-    if ($x < 1|| $y < 1 || $y > $x+1) {
-      return undef;
+    if ($x < 0) {
+      ### X negative mirror ...
+      $x = -$x;
+      $mirror = 1;
+      push @add_offset, 0,1;  # one quadrant
+      push @add_mult, 1,1;
+      $n -= 1; # unduplicate shared diagonal
     }
 
-    my ($pow,$exp) = round_down_pow (max($x,$y-1), 2);
-    $pow *= 2;
-    if (is_infinite($exp)) {
-      return ($exp);
-    }
-
-    #     /
-    #    /3
-    #   /--
-    #  /|\2
-    # /0|1\
-
-    for (;;) {
-      ### at: "x=$x,y=$y  pow=$pow depth=$depth mirror=$mirror  n=$n"
-      ### assert: $x >= 1
-      ### assert: $y >= 1
-      ### assert: $y <= $x+1
-
-      # if ($x == $pow) {
-      #   if ($y == $pow) {
-      #   }
-      #   if ($y == $pow+1) {
-      #     ### toothpick B, stop ...
-      #     $depth += 2*$pow - 1;
-      #     $n += 1-$mirror;  # "other" first if not mirrored
-      #     last;
-      #   }
-      #   if ($y == $pow-1) {
-      #     ### toothpick other, stop ...
-      #     $depth += 2*$pow - 1;
-      #     $n += $mirror;  # B first if not mirrored
-      #     last;
-      #   }
-      # }
-
-      if ($x < $pow) {
-        if ($y == $pow && $x == $pow-1) {
-          ### toothpick A, stop ...
-          $depth += 2*$pow - 1;
-          last;
-        }
-        ### block 0, no action ...
-
-      } else {
-        $x -= $pow;
-        $y -= $pow;
-        $depth += 2*$pow;
-
-        if ($y == 0) {
-          if ($x == 0) {
-            ### toothpick B, stop ...
-            last;
-          } else {
-            return undef;
-          }
-
-        } elsif ($y > 0) {
-          ### block 3, same ...
-          if ($y == 1 && $x == 0) {
-            ### middle above point, stop ...
-            $depth += 1;
-            if (! $mirror) {
-              $n += 1;
-            }
-            last;
-          }
-          if (! $mirror) {
-            push @add_offset, $depth-1, $depth;  # past block 1,2
-            push @add_mult, 1, 1;
-            $n -= 1; # unduplicate shared diagonal
-          }
-
-        } else {
-          if ($y == -1 && $x == 0) {
-            ### middle below point, stop ...
-            $depth += 1;
-            if ($mirror) {
-              $n += 1;
-            }
-            last;
-          }
-          if ($x >= -$y) {
-            ### block 2, vertical flip mirror ...
-            if ($y > -1) {
-              return undef;  # no such point
-            }
-            $y = -$y;
-            if ($mirror) {
-              push @add_offset, $depth;  # past block 3
-              push @add_mult, 1;
-            } else {
-              push @add_offset, $depth-1;  # past block 1
-              push @add_mult, 1;
-              $n -= 1; # unduplicate shared diagonal
-            }
-            $mirror ^= 1;
-
-          } else {
-            ### block 1, rotate and offset ...
-            $depth -= 1;
-            ($x,$y) = (-$y,$x+1); # rotate +90, offset
-            if ($mirror) {
-              push @add_offset, $depth+1;  # past block 3,2
-              push @add_mult, 2;
-              $n -= 1; # unduplicate shared diagonal 2,1
-            }
-          }
-        }
+    if ($y <= $x) {
+      ### lower octant ...
+      if ($mirror) {
+        push @add_offset, 1;
+        push @add_mult, 1;
+        $n -= 1; # unduplicate shared diagonal
       }
+    } else {
+      ### upper octant ...
+      ($x,$y) = ($y-1,$x);
+      foreach (@add_offset) { $_-- }
+      $depth_adjust--;
+      if (! $mirror) {
+        push @add_offset, -1;
+        push @add_mult, 1;
+        $n -= 1; # unduplicate shared diagonal
+      }
+      $mirror ^= 1;
+    }
+  }
+  ### $depth_adjust
+  ### xy: "$x,$y"
 
-      if (--$exp < 0) {
-        ### final xy: "$x,$y"
-        if ($x == 1 && $y == 1) {
-          $depth += 2;
-        } elsif ($x == 1 && $y == 2) {
-          $depth += 3;
-        } else {
-          ### not in final position ...
-          return undef;
-        }
+  if ($x < 1|| $y < 1 || $y > $x+1) {
+    return undef;
+  }
+
+  my ($pow,$exp) = round_down_pow (max($x,$y-1), 2);
+  $pow *= 2;
+  if (is_infinite($exp)) {
+    return ($exp);
+  }
+
+  #     /
+  #    /3
+  #   /--
+  #  /|\2
+  # /0|1\
+
+  for (;;) {
+    ### at: "x=$x,y=$y  pow=$pow depth=$depth mirror=$mirror  n=$n"
+    ### assert: $x >= 1
+    ### assert: $y >= 1         || $y!=$y
+    ### assert: $y <= $x+1      || $y!=$y
+
+    # if ($x == $pow) {
+    #   if ($y == $pow) {
+    #   }
+    #   if ($y == $pow+1) {
+    #     ### toothpick B, stop ...
+    #     $depth += 2*$pow - 1;
+    #     $n += 1-$mirror;  # "other" first if not mirrored
+    #     last;
+    #   }
+    #   if ($y == $pow-1) {
+    #     ### toothpick other, stop ...
+    #     $depth += 2*$pow - 1;
+    #     $n += $mirror;  # B first if not mirrored
+    #     last;
+    #   }
+    # }
+
+    if ($x < $pow) {
+      if ($y == $pow && $x == $pow-1) {
+        ### toothpick A, stop ...
+        $depth += 2*$pow - 1;
         last;
       }
-      $pow /= 2;
-    }
+      ### block 0, no action ...
 
-    ### final depth: $depth - $depth_adjust
-    ### $n
-    ### depth_to_n: $self->tree_depth_to_n($depth - $depth_adjust)
-    ### add_offset: join(',',@add_offset)
-    ### add_mult:   join(',',@add_mult)
+    } else {
+      $x -= $pow;
+      $y -= $pow;
+      $depth += 2*$pow;
 
-    $n += $self->tree_depth_to_n($depth - $depth_adjust);
+      if ($y == 0) {
+        if ($x == 0) {
+          ### toothpick B, stop ...
+          last;
+        } else {
+          return undef;
+        }
 
-    if (@add_offset) {
-      foreach my $add_offset (@add_offset) {
-        $add_offset = $depth - $add_offset; # mutate array
-        ### add: "unadj depth=$add_offset", _depth_to_octant_added([$add_offset],[1], $zero)." x add_mult"
-        # .$add_mult[$i]
+      } elsif ($y > 0) {
+        ### block 3, same ...
+        if ($y == 1 && $x == 0) {
+          ### middle above point, stop ...
+          $depth += 1;
+          if (! $mirror) {
+            $n += 1;
+          }
+          last;
+        }
+        if (! $mirror) {
+          push @add_offset, $depth-1, $depth;  # past block 1,2
+          push @add_mult, 1, 1;
+          $n -= 1; # unduplicate shared diagonal
+        }
+
+      } else {
+        if ($y == -1 && $x == 0) {
+          ### middle below point, stop ...
+          $depth += 1;
+          if ($mirror) {
+            $n += 1;
+          }
+          last;
+        }
+        if ($x >= -$y) {
+          ### block 2, vertical flip mirror ...
+          if ($y > -1) {
+            return undef;  # no such point
+          }
+          $y = -$y;
+          if ($mirror) {
+            push @add_offset, $depth;  # past block 3
+            push @add_mult, 1;
+          } else {
+            push @add_offset, $depth-1;  # past block 1
+            push @add_mult, 1;
+            $n -= 1; # unduplicate shared diagonal
+          }
+          $mirror ^= 1;
+
+        } else {
+          ### block 1, rotate and offset ...
+          $depth -= 1;
+          ($x,$y) = (-$y,$x+1); # rotate +90, offset
+          if ($mirror) {
+            push @add_offset, $depth+1;  # past block 3,2
+            push @add_mult, 2;
+            $n -= 1; # unduplicate shared diagonal 2,1
+          }
+        }
       }
-      ### total add: _depth_to_octant_added ([@add_offset], [@add_mult], $zero)
-      $n += _depth_to_octant_added (\@add_offset, \@add_mult, $zero);
     }
 
-    ### xy_to_n() return n: $n
-    return $n;
+    if (--$exp < 0) {
+      ### final xy: "$x,$y"
+      if ($x == 1 && $y == 1) {
+        $depth += 2;
+      } elsif ($x == 1 && $y == 2) {
+        $depth += 3;
+      } else {
+        ### not in final position ...
+        return undef;
+      }
+      last;
+    }
+    $pow /= 2;
   }
+
+  ### final depth: $depth - $depth_adjust
+  ### $n
+  ### depth_to_n: $self->tree_depth_to_n($depth - $depth_adjust)
+  ### add_offset: join(',',@add_offset)
+  ### add_mult:   join(',',@add_mult)
+
+  $n += $self->tree_depth_to_n($depth - $depth_adjust);
+
+  if (@add_offset) {
+    foreach my $add_offset (@add_offset) {
+      $add_offset = $depth - $add_offset; # mutate array
+      ### add: "unadj depth=$add_offset", _depth_to_octant_added([$add_offset],[1], $zero)." x add_mult"
+      # .$add_mult[$i]
+    }
+    ### total add: _depth_to_octant_added ([@add_offset], [@add_mult], $zero)
+    $n += _depth_to_octant_added (\@add_offset, \@add_mult, $zero);
+  }
+
+  ### xy_to_n() return n: $n
+  return $n;
 }
 
 
@@ -1098,12 +1015,18 @@ sub rect_to_n_range {
   ($y1,$y2) = ($y2,$y1) if $y1 > $y2;
 
   my $parts = $self->{'parts'};
-  if ($parts eq 'wedge') {
+  if ($parts eq 'wedge' || $parts eq 'wedge+1') {
     my ($len,$level) = round_down_pow ($y2, 2);
     return (0, (8*$len*$len-5)/3 + 2*$len);
   }
 
-  if ($parts eq '4') {
+  if ($parts eq '4' || $parts eq 'two_horiz') {
+    if ($parts eq 'two_horiz') {
+      $x2 += 3;
+      $x1 -= 3;
+      $y2 += 2;
+      $y1 -= 2;
+    }
     my ($len,$level) = round_down_pow (max(-$x1,
                                            $x2,
                                            -1-$y1,
@@ -1181,12 +1104,17 @@ sub tree_n_children {
           (defined $n2 && $n2 > $n ? $n2 : ()));
 }
 
+#use Smart::Comments;
+
+my %parts_numroots = (two_horiz => 2,
+                      # everything else 1 root
+                     );
 sub tree_n_parent {
   my ($self, $n) = @_;
   ### tree_n_parent(): $n
 
   $n = int($n);
-  if ($n < 1) {
+  if ($n < ($parts_numroots{$self->{'parts'}} || 1)) {
     return undef;
   }
   my ($x,$y) = $self->n_to_xy($n)
@@ -1220,7 +1148,7 @@ sub tree_n_to_depth {
   return $depth;
 }
 
-sub tree_n_to_height {
+sub tree_n_to_subheight {
   my ($self, $n) = @_;
   if ($n < 0) {
     return undef;
@@ -1321,6 +1249,8 @@ my %depth_to_n_initial
      octant    => 0,
      octant_up => 0,
      wedge     => 4,
+     'wedge+1' => 3,
+     two_horiz => 0,
     );
 
 my %tree_depth_to_n = (4         => [ 0, 1, 3 ],
@@ -1330,7 +1260,11 @@ my %tree_depth_to_n = (4         => [ 0, 1, 3 ],
                        octant    => [ 0, 1    ],
                        octant_up => [ 0, 1    ],
                        wedge     => [ 0, 1, 2 ],
+                       'wedge+1' => [ 0, 1    ],
+                       two_horiz => [ 0, 2, 4 ],
                       );
+
+#use Smart::Comments;
 
 sub tree_depth_to_n {
   my ($self, $depth) = @_;
@@ -1388,6 +1322,17 @@ sub tree_depth_to_n {
     # wedge(depth) = 2*oct(depth-1) + 4
     @pending = ($depth-1);
     @mult = (2+$zero);
+
+  } elsif ($parts eq 'wedge+1') {
+    # wedge(depth) = 2*oct(depth-1) + depth - depth&1
+    $n += $depth - ($depth%2);
+    @pending = ($depth-1);
+    @mult = (2+$zero);
+
+  } elsif ($parts eq 'two_horiz') {
+    $n -= 4*$depth - 16;  # overlapping spines
+    @pending = ($depth,$depth-3);
+    @mult = ((4+$zero) x 2);
 
   } elsif ($parts eq '3') {
     @pending = ($depth+1,  $depth, $depth-1);
@@ -1636,8 +1581,8 @@ http://www.research.att.com/~njas/doc/tooth.pdf
 
 =back
 
-Points are numbered by growth levels and anti-clockwise around within the
-level.
+Points are numbered by a breadth-first tree traversal and anti-clockwise at
+each node.
 
 =cut
 
@@ -2313,6 +2258,7 @@ Sequences as follows, and images by Omar Pol.
     parts=wedge
       A160406   total cells to given depth
       A160407    added cells at given depth
+
       http://www.polprimos.com/imagenespub/poltp406.jpg
 
 Further A153003, A153004, A153005 are another toothpick form clipped to 3

@@ -20,11 +20,6 @@
 #         at 1 of 2 horizontally on even cells X=Y mod 2
 # is same as ToothpickTree.
 #
-# wedge
-# A160406 total cells
-# A160407 added
-# http://www.polprimos.com/imagenespub/poltp406.jpg
-#
 # unwedge_left   extra at left end of wedge region
 # A170886 total cells
 # A170887 added
@@ -63,7 +58,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 8;
+$VERSION = 9;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 

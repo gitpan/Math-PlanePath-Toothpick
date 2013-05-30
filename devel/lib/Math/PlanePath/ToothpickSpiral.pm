@@ -24,7 +24,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 8;
+$VERSION = 9;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -35,6 +35,26 @@ use Math::PlanePath::Base::Generic
 # uncomment this to run the ### lines
 # use Smart::Comments;
 
+
+use constant parameter_info_array =>
+  [ Math::PlanePath::Base::Generic::parameter_info_nstart1() ];
+
+use constant xy_is_visited => 1;
+use constant dx_minimum => -1;
+use constant dx_maximum => 1;
+use constant dy_minimum => -1;
+use constant dy_maximum => 1;
+use constant dir_maximum_dxdy => (0,-1); # South
+
+#------------------------------------------------------------------------------
+
+sub new {
+  my $self = shift->SUPER::new (@_);
+  if (! defined $self->{'n_start'}) {
+    $self->{'n_start'} = $self->default_n_start;
+  }
+  return $self;
+}
 
 #          51-50
 #           |  |
@@ -71,55 +91,38 @@ sub n_to_xy {
   my ($self, $n) = @_;
   ### ToothpickSpiral n_to_xy(): $n
 
+  $n = $n - ($self->{'n_start'}-1);  # to N=1 basis
   if ($n < 1) { return; }
   if (is_infinite($n)) { return ($n,$n); }
 
-  my $d = int((sqrt(2*$n-1) - 1) / 4);
-  $n -= ((8*$d + 4)*$d + 1);
+  my $y = int($n);
+  $n -= $y;         # $n = fraction part
+
+  my $d = int((sqrt(2*$y-1) - 1) / 4);
+  $d *= 2;          # counting rings 0,2,4,6,etc
+  $y -= (2*$d+2)*$d + 1;
+
   ### $d
-  ### n offset: $n
+  ### int offset into ring: $y
 
-  my $int = int($n);
-  $n -= $int;         # fraction part
-
-  if ($int < 4*$d+2) {
-    my ($half, $odd) = _divrem($int, 2);
-    if ($odd) {
-      return (-$n + 2*$d - $half,       $half+1);
-    } else {
-      return (      2*$d - $half,  $n + $half);
-    }
-  }
-  $int -= 4*$d+2;
-
-  if ($int < 4*$d+3) {
-    my ($half, $odd) = _divrem($int, 2);
-    if ($odd) {
-      return (-$n - $half - 1,        2*$d - $half);
-    } else {
-      return (    - $half - 1,  -$n + 2*$d - $half + 1);
-    }
-  }
-  $int -= 4*$d+3;
-
-  if ($int < 4*$d+3) {
-    my ($half, $odd) = _divrem($int, 2);
-    if ($odd) {
-      return (     $half - 2*$d - 1,  -$n - $half - 1);
-    } else {
-      return ($n + $half - 2*$d - 2,      - $half - 1);
-    }
-  }
-  $int -= 4*$d+3;
-
-  my ($half, $odd) = _divrem($int, 2);
+  ($y, my $odd) = _divrem($y, 2);
+  my $x = $d - $y;
   if ($odd) {
-    return (     $half,  $n + $half - 2*$d - 1);
+    $x = -$n + $x;
+    $y += 1;
   } else {
-    return ($n + $half,       $half - 2*$d - 2);
+    $y = $n + $y;
   }
+  # at this point $x,$y is a stairstep up towards the North-West starting
+  # from the X axis X=2*d,Y=0
 
-  return;
+  $d += 1;          # now counting rings 1,3,5,7,etc
+  if ($y <= 2*$d) {
+    return ($x, -abs($y-$d) + $d);
+  } else {
+    return (-$x - 2*$d - 2, abs($y-3*$d-1) -$d - 1);
+  }
+  return ($x,$y);
 
 }
 
@@ -140,9 +143,36 @@ sub _divrem {
 
 sub xy_to_n {
   my ($self, $x, $y) = @_;
+  # use Smart::Comments;
   ### ToothpickSpiral xy_to_n(): "$x, $y"
 
-  return undef;
+  $x = round_nearest($x);
+  $y = round_nearest($y);
+
+  if ($y > 0 && $x >= 0) {      # first quadrant
+    my $d = $x + $y;
+    my $odd = ($d % 2);
+    $d -= $odd;
+    return (2*$d+2)*$d + 2*$y - $odd + $self->{'n_start'};
+  }
+  if ($y >= 0 && $x < 0) {      # second quadrant
+    my $d = $y - $x;
+    my $odd = ($d % 2);
+    $d += $odd;
+    return (2*$d-4)*$d - 2*$x + $odd + $self->{'n_start'};
+  }
+  if ($x < 0) {                 # third quadrant
+    my $d = $x + $y;
+    my $odd = ($d % 2);
+    $d -= 1-$odd;
+    return (2*$d+4)*$d + 2 + 2*$x + $odd + $self->{'n_start'};
+  }
+
+  # fourth quadrant
+  my $d = $x - $y;
+  my $odd = ($d % 2);
+  $d -= 1-$odd;
+  return (2*$d+4)*$d + 2 + 2*$x + $odd + $self->{'n_start'};
 }
 
 # not exact
@@ -150,16 +180,168 @@ sub rect_to_n_range {
   my ($self, $x1,$y1, $x2,$y2) = @_;
   ### ToothpickSpiral rect_to_n_range(): "$x1,$y1  $x2,$y2"
 
-  $x1 = round_nearest ($x1);
-  $y1 = round_nearest ($y1);
-  $x2 = round_nearest ($x2);
-  $y2 = round_nearest ($y2);
+  $x1 = abs(round_nearest($x1));
+  $y1 = abs(round_nearest($y1));
+  $x2 = abs(round_nearest($x2));
+  $y2 = abs(round_nearest($y2));
 
-  return (1, 8 * max(abs($x1),
-                     abs($x2),
-                     abs($y1),
-                     abs($y2)) ** 2);
+  my $x = max($x1,$x2);
+  my $y = max($y1,$y2) + 1;
+  return ($self->n_start, $self->xy_to_n($x,$y));
 }
 
 1;
 __END__
+
+=for stopwords eg Ryde Math-PlanePath Legendre's
+
+=head1 NAME
+
+Math::PlanePath::ToothpickSpiral -- integer points in stair-step diagonal stripes
+
+=head1 SYNOPSIS
+
+ use Math::PlanePath::ToothpickSpiral;
+ my $path = Math::PlanePath::ToothpickSpiral->new;
+ my ($x, $y) = $path->n_to_xy (123);
+
+=head1 DESCRIPTION
+
+This path is made by placing length=2 toothpicks in an anti-clockwise
+spiral.  A single new toothpick is placed at an end of the preceding,
+keeping as close to the origin as possible without toothpicks overlapping.
+(Ends may touch, but no overlapping.)
+
+             |
+             3---2---
+         |   |   |
+         5---4-- 1  ...
+         |   |   |   |
+      ---6---7 -10--11
+             |   |   |
+           --8---9
+                 |
+
+The result is a stair-step diamond spiral starting vertically,
+
+=cut
+
+# math-image --path=ToothpickSpiral --expression='i<=45?i:0' --output=numbers_dash --size=80x25
+
+=pod
+
+             19-18    ...              3
+              |  |     |
+          21-20 17-16 45-44            2
+           |        |     |
+       23-22  3--2 15-14 43-42         1
+        |     |  |     |     |
+    25-24  5--4  1 12-13 40-41    <- Y=0
+     |     |        |     |
+    26-27  6--7 10-11 38-39           -1
+        |     |  |     |
+       28-29  8--9 36-37              -2
+           |        |
+          30-31 34-35                 -3
+              |  |
+             32-33                    -4
+
+                 ^
+    -4 -3 -2 -1 X=0 1  2  3  4
+
+
+X<Hexagonal numbers>N=1,15,45,etc on the X=Y leading diagonal and
+N=6,28,66,etc on the X=Y-1 South-West diagonal are the hexagonal numbers
+k*(2k-1).  The leading diagonal is the odd hexagonals and the South-West is
+the even hexagonals.
+
+The hexagonal numbers of the "second kind" which are k*(2k-1) for k negative
+fall similarly on the X=-Y-1 North-West and X=-Y South-East diagonals.
+
+=head2 N Start
+
+The default is to number points starting N=1 as shown above.  An optional
+C<n_start> can give a different numbering of the same shape.  For example to
+start at 0,
+
+=cut
+
+# math-image --path=ToothpickSpiral,n_start=0 --expression='i<=45?i:0' --output=numbers_dash --size=80x25
+
+=pod
+
+              18-17          n_start => 0 
+              |  |    
+          20-19 16-15 
+           |        |    
+       22-21  2--1 14-13 
+        |     |  |     | 
+    24-23  4--3  0 11-12 
+     |     |        |
+    25-26  5--6  9-10
+        |     |  | 
+       27-28  7--8 
+           |
+          ...
+
+=head1 FUNCTIONS
+
+See L<Math::PlanePath/FUNCTIONS> for behaviour common to all path classes.
+
+=over 4
+
+=item C<$path = Math::PlanePath::ToothpickSpiral-E<gt>new ()>
+
+=item C<$path = Math::PlanePath::ToothpickSpiral-E<gt>new (n_start =E<gt> $n)>
+
+Create and return a new staircase path object.
+
+=back
+
+Entries in Sloane's Online Encyclopedia of Integer Sequences related to
+this path include
+
+    http://oeis.org/A059285  (etc)
+
+    n_start=1 (the default)
+      A014634     N on diagonal X=Y,  odd hexagonals
+      A033567     N on diagonal North-West
+      A185438     N on diagonal South-West
+      A188135     N on diagonal South-East
+    
+    n_start=0
+       A033587    N on diagonal X=Y
+       A014635    N on diagonal South-West, even hexagonals
+       A033585    N on diagonal South-East
+
+
+=head1 SEE ALSO
+
+L<Math::PlanePath>,
+L<Math::PlanePath::Diagonals>,
+L<Math::PlanePath::Corner>
+
+=head1 HOME PAGE
+
+http://user42.tuxfamily.org/math-planepath/index.html
+
+=head1 LICENSE
+
+Copyright 2010, 2011, 2012, 2013 Kevin Ryde
+
+This file is part of Math-PlanePath.
+
+Math-PlanePath is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 3, or (at your option) any later
+version.
+
+Math-PlanePath is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+more details.
+
+You should have received a copy of the GNU General Public License along with
+Math-PlanePath.  If not, see <http://www.gnu.org/licenses/>.
+
+=cut

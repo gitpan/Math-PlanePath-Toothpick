@@ -12,6 +12,7 @@ devel/lcorner-tree.pl
 devel/lib/Math/PlanePath/EToothpickTree-oeis.t
 devel/lib/Math/PlanePath/EToothpickTree.pm
 devel/lib/Math/PlanePath/LCornerSingle.pm
+devel/lib/Math/PlanePath/LCornerTree-bycells.t
 devel/lib/Math/PlanePath/LCornerTreeByCells.pm
 devel/lib/Math/PlanePath/LToothpickTree-oeis.t
 devel/lib/Math/PlanePath/LToothpickTree.pm

@@ -28,7 +28,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 8;
+$VERSION = 9;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -51,8 +51,10 @@ use constant parameter_info_array =>
       display         => 'Parts',
       type            => 'enum',
       default         => '4',
-      choices         => ['4','2','1','octant','octant_up',
-                          'wedge','single',
+      choices         => ['4','2','1',
+                          'octant','octant+1',
+                          'octant_up','octant_up+1',
+                          'wedge','wedge+1','single',
                           'pair',
                           'diagonal','diagonal-1','diagonal-2'],
       description     => 'Which parts of the plane to fill.',
@@ -61,12 +63,15 @@ use constant parameter_info_array =>
 use constant class_x_negative => 1;
 use constant class_y_negative => 1;
 {
-  my %x_negative = (1         => 0,
-                    octant    => 0,
-                    octant_up => 0,
-                    wedge     => 1,
-                    single    => 1,
-                    pair      => 1,
+  my %x_negative = (1             => 0,
+                    octant        => 0,
+                    'octant+1'    => 0,
+                    octant_up     => 0,
+                    'octant_up+1' => 0,
+                    wedge         => 1,
+                    'wedge+1'     => 1,
+                    single        => 1,
+                    pair          => 1,
                    );
   sub x_negative {
     my ($self) = @_;
@@ -74,31 +79,34 @@ use constant class_y_negative => 1;
   }
 }
 {
-  my %y_negative = (4         => 1,
-                    1         => 0,
-                    octant    => 0,
-                    octant_up => 0,
-                    wedge     => 0,
-                    pair      => 1,
+  my %y_negative = (4             => 1,
+                    1             => 0,
+                    octant        => 0,
+                    'octant+1'    => 0,
+                    octant_up     => 0,
+                    'octant_up+1' => 0,
+                    wedge         => 0,
+                    'wedge+1'     => 0,
+                    pair          => 1,
                    );
   sub y_negative {
     my ($self) = @_;
     return $y_negative{$self->{'parts'}};
   }
 }
-{
-  my %y_minimum = (4         => undef,
-                   1         => 0,
-                   octant    => 0,
-                   octant_up => 0,
-                   wedge     => 0,
-                   pair      => undef,
-                  );
-  sub y_minimum {
-    my ($self) = @_;
-    return $y_minimum{$self->{'parts'}};
-  }
-}
+# {
+#   my %y_minimum = (4          => undef,
+#                    1          => 0,
+#                    octant     => 0,
+#                    octant_up  => 0,
+#                    wedge      => 0,
+#                    pair       => undef,
+#                   );
+#   sub y_minimum {
+#     my ($self) = @_;
+#     return $y_minimum{$self->{'parts'}};
+#   }
+# }
 
 sub new {
   my $self = shift->SUPER::new(@_);
@@ -117,11 +125,12 @@ sub new {
     @n_to_x = (0, -1);
     @n_to_y = (0, 0);
     $self->{'endpoints_dir'} = [ 0, 1 ];
-  } elsif ($parts eq '1' || $parts eq 'octant' || $parts eq 'octant_up') {
+  } elsif ($parts eq '1' || $parts eq 'octant' || $parts eq 'octant+1'
+           || $parts eq 'octant_up' || $parts eq 'octant_up+1') {
     @n_to_x = (0);
     @n_to_y = (0);
     $self->{'endpoints_dir'} = [ 0 ];
-  } elsif ($parts eq 'wedge') {
+  } elsif ($parts eq 'wedge' || $parts eq 'wedge+1') {
     @n_to_x = (0, -1);
     @n_to_y = (0, 0);
     $self->{'endpoints_dir'} = [ 0, 1 ];
@@ -240,6 +249,27 @@ sub _extend {
             || $x3 < 0 || $y3 < 0
            ) {
           ### outside first quardrant ...
+          next;
+        }
+      } elsif ($parts eq 'octant+1') {
+        if ($y1 < 0 || $x1<$y1-1
+            || $y2 < 0 || $x2<$y2-1
+            || $y3 < 0 || $x3<$y3-1
+           ) {
+          next;
+        }
+      } elsif ($parts eq 'octant_up+1') {
+        if ($x1 < 0 || $y1<$x1-1
+            || $x2 < 0 || $y2<$x2-1
+            || $x3 < 0 || $y3<$x3-1
+           ) {
+          next;
+        }
+      } elsif ($parts eq 'wedge+1') {
+        if ($y1 < 0 || $x1<-$y1-2 || $x1>$y1+1
+            || $y2 < 0 || $x2<-$y2-2 || $x2>$y2+1
+            || $y3 < 0 || $x3<-$y3-2 || $x3>$y3+1
+           ) {
           next;
         }
       } elsif ($parts eq '2') {

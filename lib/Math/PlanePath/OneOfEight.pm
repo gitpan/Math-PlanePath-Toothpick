@@ -28,7 +28,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 8;
+$VERSION = 9;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -45,7 +45,7 @@ use Math::PlanePath::Base::Digits
 use constant n_start => 0;
 use constant parameter_info_array =>
   [{ name            => 'parts',
-     share_key       => 'parts_surroundoneeight',
+     share_key       => 'parts_oneofeight',
      display         => 'Parts',
      type            => 'enum',
      default         => '4',
@@ -2098,15 +2098,22 @@ sub _depth_to_octant_added {
 
 # no Smart::Comments;
 
-sub tree_n_to_height {
+sub tree_n_to_subheight {
   my ($self, $n) = @_;
   if ($n < 0)          { return undef; }
   if (is_infinite($n)) { return $n; }
   {
     # infinite height on X=Y spines
     my ($x,$y) = $self->n_to_xy($n);
-    if (abs($y) == abs($x)) {
-      return undef;
+    if ($self->{'parts'} eq '3side') {
+      if (($x >= 0 && $x == abs($y))
+          || ($x <=0 && $y == 2-$x)) {
+        return undef;
+      }
+    } else {
+      if (abs($y) == abs($x)) {
+        return undef;
+      }
     }
   }
   my @n = ($n);
@@ -2119,6 +2126,7 @@ sub tree_n_to_height {
 }
 
 
+# return true if $n is a power 2^k for k>=0
 sub _is_pow2 {
   my ($n) = @_;
   my ($pow,$exp) = round_down_pow ($n, 2);
@@ -2162,8 +2170,8 @@ http://www.research.att.com/~njas/doc/tooth.pdf
 
 =back
 
-Points are numbered by growth levels and anti-clockwise around each cell
-within the level.
+Points are numbered by a breadth-first tree traversal and anti-clockwise at
+each node.
 
 =cut
 

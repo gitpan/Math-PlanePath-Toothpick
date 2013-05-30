@@ -30,7 +30,7 @@ use 5.004;
 use strict;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 8;
+$VERSION = 9;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -355,9 +355,9 @@ sub tree_depth_to_n {
   }
 }
 
-sub tree_n_to_height {
+sub tree_n_to_subheight {
   my ($self, $n) = @_;
-  ### ToothpickUpist tree_n_to_height(): $n
+  ### ToothpickUpist tree_n_to_subheight(): $n
 
   $n = $n - $self->{'n_start'};
   if ($n < 0) {
@@ -506,10 +506,10 @@ added at the bottom end of a vertical.
                  0
                  |
 
-Points are numbered by growth depth and then left to right across the row
-within that depth.  This means for example N=6 and N=7 are up toothpicks
-giving N=8 and N=9 in row Y=3, and then those two grow to N=10,11,12,13
-respectively left and right.
+Points are numbered breadth-first tree traversal and left to right across
+the row within a depth level.  This means for example N=6 and N=7 are up
+toothpicks giving N=8 and N=9 in row Y=3, and then those two grow to
+N=10,11,12,13 respectively left and right.
 
 =head2 Sierpinski Triangle
 

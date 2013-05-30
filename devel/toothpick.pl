@@ -27,6 +27,28 @@ use List::Util 'min', 'max';
 
 
 {
+  # two_horiz
+  require Math::PlanePath::ToothpickTree;
+  require Math::PlanePath::ToothpickTreeByCells;
+  my $seq = Math::PlanePath::ToothpickTree->new (parts => 'two_horiz');
+  my $bycells = Math::PlanePath::ToothpickTreeByCells->new (parts => 'two_horiz');
+  my $prev_got = 0;
+  my $prev_want = 0;
+  foreach my $depth (0 .. 43) {
+    my $want = $bycells->tree_depth_to_n($depth) / 4;
+    my $got = $seq->tree_depth_to_n($depth) / 4;
+    my $diff = $got - $want;
+    my $dgot = $got - $prev_got;
+    my $dwant = $want - $prev_want;
+    printf "%2d  %3d %3d %3d   %2d %2d\n",
+      $depth, $want, $got, $diff,
+      $dwant, $dgot;
+    $prev_want = $want;
+    $prev_got = $got;
+  }
+  exit 0;
+}
+{
   # tree_depth_to_n() mod 2
   require Math::PlanePath::ToothpickTree;
   foreach my $parts (1, 2, 3, 4, 'octant', 'wedge') {
@@ -363,15 +385,6 @@ use List::Util 'min', 'max';
   exit 0;
 }
 
-{
-  # tree_depth_to_n() not sorted
-  require Math::PlanePath::ToothpickTree;
-  my $path = Math::PlanePath::ToothpickTree->new (parts => 4);
-  foreach (119 .. 1000) {
-    $path->tree_depth_to_n($_);
-  }
-  exit 0;
-}
 
 
 

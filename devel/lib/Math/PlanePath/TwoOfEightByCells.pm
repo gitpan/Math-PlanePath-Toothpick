@@ -28,7 +28,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 8;
+$VERSION = 9;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -47,7 +47,7 @@ use constant n_start => 0;
 
 use constant parameter_info_array =>
   [ { name      => 'start',
-      share_key => 'start_upstarplus',
+      share_key => 'start_twoofeightbycells',
       display   => 'Start',
       type      => 'enum',
       default   => 'two',

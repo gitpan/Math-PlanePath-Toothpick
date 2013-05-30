@@ -35,6 +35,40 @@ use Math::PlanePath::ToothpickTreeByCells;
 
 my $max_count = undef;
 
+
+#------------------------------------------------------------------------------
+# A160158 - two toothpicks end-to-end
+
+MyOEIS::compare_values
+  (anum => 'A160158',
+   max_count => $max_count,
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::ToothpickTreeByCells->new (parts => 'two_horiz');
+     my @got;
+     my $total = 0;
+     for (my $depth = 0; @got < $count; $depth++) {
+       push @got, $path->tree_depth_to_n($depth);
+     }
+     return \@got;
+   });
+
+# added
+MyOEIS::compare_values
+  (anum => 'A160159',
+   max_count => $max_count,
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::ToothpickTreeByCells->new (parts => 'two_horiz');
+     my @got;
+     my $total = 0;
+     for (my $depth = 0; @got < $count; $depth++) {
+       push @got, $path->tree_depth_to_n($depth+1) - $path->tree_depth_to_n($depth);
+     }
+     return \@got;
+   });
+
+
 #------------------------------------------------------------------------------
 # A160406 - wedge total cells
 # http://www.polprimos.com/imagenespub/poltp406.jpg
@@ -60,23 +94,6 @@ MyOEIS::compare_values
 # }
 # use Memoize;
 # BEGIN { Memoize::memoize('wedge_formula'); }
-
-#------------------------------------------------------------------------------
-# A160158 - two toothpicks end-to-end
-
-MyOEIS::compare_values
-  (anum => 'A160158',
-   max_count => $max_count,
-   func => sub {
-     my ($count) = @_;
-     my $path = Math::PlanePath::ToothpickTreeByCells->new (parts => 'two_horiz');
-     my @got;
-     my $total = 0;
-     for (my $depth = 0; @got < $count; $depth++) {
-       push @got, $path->tree_depth_to_n($depth);
-     }
-     return \@got;
-   });
 
 #------------------------------------------------------------------------------
 # A170890 - unwedge_down_W total cells

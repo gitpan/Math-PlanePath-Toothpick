@@ -21,7 +21,7 @@
 use 5.004;
 use strict;
 use Test;
-plan tests => 4;
+plan tests => 9;
 
 use lib 't','xt';
 use MyTestHelpers;
@@ -45,14 +45,30 @@ sub path_tree_depth_to_width {
 }
 
 #------------------------------------------------------------------------------
+# A162784 - added cells parts=octant
+# cf octant+1 would be A162784+1, no such entry
+
+MyOEIS::compare_values
+  (anum => 'A162784',
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::LCornerTree->new (parts => 'octant');
+     my @got;
+     for (my $depth = 0; @got < $count; $depth++) {
+       push @got, path_tree_depth_to_width($path,$depth);
+     }
+     return \@got;
+   });
+
+#------------------------------------------------------------------------------
 # A151712 - added cells parts=wedge
 
 MyOEIS::compare_values
   (anum => 'A151712',
    func => sub {
      my ($count) = @_;
-     require Math::PlanePath::LCornerTreeByCells;
-     my $path = Math::PlanePath::LCornerTreeByCells->new (parts => 'wedge');
+     require Math::PlanePath::LCornerTree;
+     my $path = Math::PlanePath::LCornerTree->new (parts => 'wedge');
      my @got;
      for (my $depth = 0; @got < $count; $depth++) {
        push @got, path_tree_depth_to_width($path,$depth);
@@ -81,8 +97,8 @@ MyOEIS::compare_values
   (anum => 'A183149',
    func => sub {
      my ($count) = @_;
-     require Math::PlanePath::LCornerTreeByCells;
-     my $path = Math::PlanePath::LCornerTreeByCells->new (parts => 'diagonal-1');
+     require Math::PlanePath::LCornerTree;
+     my $path = Math::PlanePath::LCornerTree->new (parts => 'diagonal-1');
      my @got = (0);
      for (my $depth = 0; @got < $count; $depth++) {
        push @got, path_tree_depth_to_width($path,$depth);
@@ -115,21 +131,6 @@ MyOEIS::compare_values
      my @got;
      for (my $depth = 0; @got < $count; $depth++) {
        push @got, $path->tree_depth_to_n($depth);
-     }
-     return \@got;
-   });
-
-#------------------------------------------------------------------------------
-# A162784 - added cells parts=octant
-
-MyOEIS::compare_values
-  (anum => 'A162784',
-   func => sub {
-     my ($count) = @_;
-     my $path = Math::PlanePath::LCornerTree->new (parts => 'octant');
-     my @got;
-     for (my $depth = 0; @got < $count; $depth++) {
-       push @got, path_tree_depth_to_width($path,$depth);
      }
      return \@got;
    });

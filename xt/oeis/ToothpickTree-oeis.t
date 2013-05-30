@@ -63,6 +63,22 @@ sub path_tree_depth_to_width {
 
 
 #------------------------------------------------------------------------------
+# A160159 - parts=two_horiz added
+
+MyOEIS::compare_values
+  (anum => 'A160159',
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::ToothpickTree->new (parts => 'two_horiz');
+     # my $path = Math::PlanePath::ToothpickTree->new (parts => 'octant');
+     my @got;
+     for (my $depth = 0; @got < $count; $depth++) {
+       push @got, path_tree_depth_to_width($path, $depth);
+     }
+     return \@got;
+   });
+
+#------------------------------------------------------------------------------
 # A160407 - parts=wedge added
 
 MyOEIS::compare_values
