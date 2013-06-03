@@ -21,7 +21,6 @@ devel/lib/Math/PlanePath/OneOfEightByCells.pm
 devel/lib/Math/PlanePath/OneOfSixByCells.pm
 devel/lib/Math/PlanePath/PeninsulaBridge-oeis.t
 devel/lib/Math/PlanePath/PeninsulaBridge.pm
-devel/lib/Math/PlanePath/ToothpickSpiral.pm
 devel/lib/Math/PlanePath/ToothpickTree-bycells.t
 devel/lib/Math/PlanePath/ToothpickTreeByCells-oeis.t
 devel/lib/Math/PlanePath/ToothpickTreeByCells.pm
@@ -36,6 +35,7 @@ lib/Math/PlanePath/LCornerReplicate.pm
 lib/Math/PlanePath/LCornerTree.pm
 lib/Math/PlanePath/OneOfEight.pm
 lib/Math/PlanePath/ToothpickReplicate.pm
+lib/Math/PlanePath/ToothpickSpiral.pm
 lib/Math/PlanePath/ToothpickTree.pm
 lib/Math/PlanePath/ToothpickUpist.pm
 Makefile.PL

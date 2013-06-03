@@ -24,7 +24,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 9;
+$VERSION = 10;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -207,10 +207,10 @@ Math::PlanePath::ToothpickSpiral -- integer points in stair-step diagonal stripe
 
 =head1 DESCRIPTION
 
-This path is made by placing length=2 toothpicks in an anti-clockwise
-spiral.  A single new toothpick is placed at an end of the preceding,
-keeping as close to the origin as possible without toothpicks overlapping.
-(Ends may touch, but no overlapping.)
+This path is length=2 toothpicks placed in an anti-clockwise spiral.
+A single new toothpick is added at an end of the preceding.  Each is as
+close to the origin as possible without toothpicks overlapping.  Ends may
+touch, but no overlapping.
 
              |
              3---2---
@@ -222,7 +222,9 @@ keeping as close to the origin as possible without toothpicks overlapping.
            --8---9
                  |
 
-The result is a stair-step diamond spiral starting vertically,
+The result is a stair-step diamond spiral starting vertically.  As per the
+other toothpick paths the vertical toothpicks are "even" points X=Ymod2 and
+horizontal toothpicks "odd" points X!=Ymod2.
 
 =cut
 
@@ -252,11 +254,12 @@ The result is a stair-step diamond spiral starting vertically,
 
 X<Hexagonal numbers>N=1,15,45,etc on the X=Y leading diagonal and
 N=6,28,66,etc on the X=Y-1 South-West diagonal are the hexagonal numbers
-k*(2k-1).  The leading diagonal is the odd hexagonals and the South-West is
-the even hexagonals.
+k*(2k-1).  The odd hexagonals are to the North-East and the even hexagonals
+to the South-West.
 
-The hexagonal numbers of the "second kind" which are k*(2k-1) for k negative
-fall similarly on the X=-Y-1 North-West and X=-Y South-East diagonals.
+The hexagonal numbers of the "second kind" which are k*(2k-1) for k
+negative.  They fall similarly on the X=-Y-1 North-West and X=-Y South-East
+diagonals.
 
 =head2 N Start
 
@@ -304,7 +307,7 @@ this path include
     http://oeis.org/A059285  (etc)
 
     n_start=1 (the default)
-      A014634     N on diagonal X=Y,  odd hexagonals
+      A014634     N on diagonal X=Y, odd hexagonals
       A033567     N on diagonal North-West
       A185438     N on diagonal South-West
       A188135     N on diagonal South-East
@@ -318,8 +321,8 @@ this path include
 =head1 SEE ALSO
 
 L<Math::PlanePath>,
-L<Math::PlanePath::Diagonals>,
-L<Math::PlanePath::Corner>
+L<Math::PlanePath::Staircase>,
+L<Math::PlanePath::DiamondSpiral>
 
 =head1 HOME PAGE
 
@@ -327,7 +330,7 @@ http://user42.tuxfamily.org/math-planepath/index.html
 
 =head1 LICENSE
 
-Copyright 2010, 2011, 2012, 2013 Kevin Ryde
+Copyright 2013 Kevin Ryde
 
 This file is part of Math-PlanePath.
 

@@ -36,7 +36,7 @@ require Math::PlanePath::ToothpickTree;
 # VERSION
 
 {
-  my $want_version = 9;
+  my $want_version = 10;
   ok ($Math::PlanePath::ToothpickTree::VERSION, $want_version,
       'VERSION variable');
   ok (Math::PlanePath::ToothpickTree->VERSION,  $want_version,

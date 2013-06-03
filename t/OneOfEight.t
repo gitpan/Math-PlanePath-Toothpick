@@ -36,7 +36,7 @@ require Math::PlanePath::OneOfEight;
 # VERSION
 
 {
-  my $want_version = 9;
+  my $want_version = 10;
   ok ($Math::PlanePath::OneOfEight::VERSION, $want_version,
       'VERSION variable');
   ok (Math::PlanePath::OneOfEight->VERSION,  $want_version,

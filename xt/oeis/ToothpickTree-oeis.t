@@ -549,7 +549,8 @@ MyOEIS::compare_values
    });
 
 #------------------------------------------------------------------------------
-# A162794 added opposite to initial
+# A162794 added opposite to initial, being horizontal toothpicks
+# A162796 total opposite to initial
 
 MyOEIS::compare_values
   (anum => 'A162794',
@@ -564,8 +565,24 @@ MyOEIS::compare_values
      return \@got;
    });
 
+MyOEIS::compare_values
+  (anum => 'A162796',
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::ToothpickTree->new (parts => 4);
+     my @got;
+     my $n = $path->n_start;
+     my $total = 0;
+     for (my $depth = 1; @got < $count; $depth+=2) {
+       push @got, $total;
+       $total += path_tree_depth_to_width($path, $depth);
+     }
+     return \@got;
+   });
+
 #------------------------------------------------------------------------------
-# A162793 added parallel to initial
+# A162795 total parallel to initial, being vertical toothpicks
+# A162793 added parallel to initial, being vertical toothpicks
 
 MyOEIS::compare_values
   (anum => 'A162793',
@@ -580,9 +597,6 @@ MyOEIS::compare_values
      return \@got;
    });
 
-#------------------------------------------------------------------------------
-# A162795 total parallel to initial
-
 MyOEIS::compare_values
   (anum => 'A162795',
    func => sub {
@@ -594,24 +608,6 @@ MyOEIS::compare_values
      for (my $depth = 0; @got < $count; $depth+=2) {
        $total += path_tree_depth_to_width($path, $depth);
        push @got, $total;
-     }
-     return \@got;
-   });
-
-#------------------------------------------------------------------------------
-# A162796 total opposite to initial
-
-MyOEIS::compare_values
-  (anum => 'A162796',
-   func => sub {
-     my ($count) = @_;
-     my $path = Math::PlanePath::ToothpickTree->new (parts => 4);
-     my @got;
-     my $n = $path->n_start;
-     my $total = 0;
-     for (my $depth = 1; @got < $count; $depth+=2) {
-       push @got, $total;
-       $total += path_tree_depth_to_width($path, $depth);
      }
      return \@got;
    });

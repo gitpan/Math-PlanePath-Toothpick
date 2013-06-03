@@ -27,6 +27,146 @@ use List::Util 'min', 'max';
 
 
 {
+  # octant = quadhoriz;
+  {
+    require Math::PlanePath::ToothpickTree;
+    my $path = Math::PlanePath::ToothpickTree->new;
+    sub whole_total {
+      my ($depth) = @_;
+      return $path->tree_depth_to_n($depth);
+    }
+    sub whole_added {
+      my ($depth) = @_;
+      return path_tree_depth_to_width($path,$depth);
+    }
+    sub whole_vertical {   # A162794
+      my ($depth) = @_;
+      my $ret = 0;
+      for (my $d = 0; $d < $depth; $d+=2) {
+        $ret += path_tree_depth_to_width($path,$d);
+      }
+      return $ret;
+    }
+    sub whole_horizontal {  # A162796
+      my ($depth) = @_;
+      my $ret = 0;
+      for (my $d = 1; $d < $depth; $d+=2) {
+        $ret += path_tree_depth_to_width($path,$d);
+      }
+      return $ret;
+    }
+  }
+  {
+    require Math::PlanePath::ToothpickTree;
+    my $path = Math::PlanePath::ToothpickTree->new (parts => 'octant');
+    sub oct_total {
+      my ($depth) = @_;
+      return $path->tree_depth_to_n($depth);
+    }
+    sub oct_added {
+      my ($depth) = @_;
+      return path_tree_depth_to_width($path,$depth);
+    }
+  }
+  {
+    require Math::PlanePath::ToothpickTree;
+    my $path = Math::PlanePath::ToothpickTree->new (parts => '1');
+    sub quad_total {
+      my ($depth) = @_;
+      return $path->tree_depth_to_n($depth);
+    }
+    sub quad_vertical {
+      my ($depth) = @_;
+      my $ret = 0;
+      for (my $d = 0; $d < $depth; $d+=2) {
+        $ret += path_tree_depth_to_width($path,$d);
+      }
+      return $ret;
+    }
+    sub quad_horizontal {
+      my ($depth) = @_;
+      my $ret = 0;
+      for (my $d = 1; $d < $depth; $d+=2) {
+        $ret += path_tree_depth_to_width($path,$d);
+      }
+      return $ret;
+    }
+  }
+
+  # oct(d) = floor(d/2) + quad(d) - quad(d-1) + quad(d-2) - quad(d-3) ...
+  # those successive differences being quadhoriz or quadvert for d odd/even
+  sub oct_total_by_quad_sum {
+    my ($depth) = @_;
+    my $sign = 1;
+    my $ret = int($depth/2);
+    for ( ; $depth >= 0; $depth--) {
+      $ret += $sign * quad_total($depth);
+      $sign *= -1;
+    }
+    return $ret;
+  }
+  # oct(d) = quadhoriz(d) + floor(d/2)  if d even
+  #        = quadvert(d)  + floor(d/2)  if d odd
+  sub oct_total_by_quad_vh {
+    my ($depth) = @_;
+    if ($depth & 1) {
+      return quad_vertical($depth) + int($depth/2);
+    } else {
+      return quad_horizontal($depth) + int($depth/2);
+    }
+  }
+
+  sub quad_horizontal_by_whole_horizontal {
+    my ($depth) = @_;
+    return (whole_horizontal($depth+2)-2)/4;
+  }
+  sub quad_vertical_by_whole_vertical {
+    my ($depth) = @_;
+    return (whole_vertical($depth+2)-1)/4;
+  }
+
+  # whole(d) = 4*oct(d) + 4*oct(d-1)
+  #          = 4*quadhoriz + 4*quadvert
+  sub whole_total_by_whole_vh {
+    my ($depth) = @_;
+    return 2*whole_horizontal($depth) - 2*oct_added($depth);
+  }
+
+  # quadvert(d) = quadhoriz(d) + oct_added(d-1)        d odd, vert grew
+  #             = quadhoriz(d) - oct_added(d-1) + 1    d even, vert same
+  #             = quadhoriz(d-1) + oct_added(d-2) + 1    d even
+  # quad_added(d) = oct_added(d) + oct_added(d-1) - 1
+  # interpret as octant growth onto horiz or vert alternately ???
+  #
+  sub quad_vertical_from_horizontal {
+    my ($depth) = @_;
+    if ($depth == 0) { return 0; }
+    if ($depth & 1) {
+      return quad_horizontal($depth) + oct_added($depth-1);
+    } else {
+      return quad_horizontal($depth-1) + oct_added($depth-2);
+      return quad_horizontal($depth) - oct_added($depth-1) + 1;
+    }
+  }
+
+  for (my $depth = 0; $depth < 160; $depth += 1) {
+    my $q = quad_vertical($depth);
+    my $qw = quad_vertical_from_horizontal($depth);
+    my $diff = $qw - $q;
+    print "$depth  $q $qw   $diff\n";
+  }
+
+  for (my $depth = 0; $depth < 60; $depth += 2) {
+    # print quad_horizontal($depth),",";
+    # my $oct = oct_total($depth);
+    # my $osum = oct_total_by_quad_vh($depth);
+    # my $diff = $osum - $oct;
+    # print "$depth  $oct $osum   $diff\n";
+  }
+  exit 0;
+}
+
+{
   # two_horiz
   require Math::PlanePath::ToothpickTree;
   require Math::PlanePath::ToothpickTreeByCells;
@@ -42,7 +182,7 @@ use List::Util 'min', 'max';
     my $dwant = $want - $prev_want;
     printf "%2d  %3d %3d %3d   %2d %2d\n",
       $depth, $want, $got, $diff,
-      $dwant, $dgot;
+        $dwant, $dgot;
     $prev_want = $want;
     $prev_got = $got;
   }

@@ -20,7 +20,7 @@ use 5.004;
 use strict;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 9;
+$VERSION = 10;
 use Math::NumSeq::OEIS::Catalogue::Plugin;
 @ISA = ('Math::NumSeq::OEIS::Catalogue::Plugin');
 
@@ -135,6 +135,53 @@ use constant info_arrayref =>
      class => 'Math::NumSeq::PlanePathN',
      parameters => [ planepath => 'ToothpickUpist',
                      line_type => 'Depth_start',
+                   ],
+   },
+
+   #---------------------------------------------------------------------------
+   # ToothpickSpiral
+
+   { anum => 'A014634',
+     class => 'Math::NumSeq::PlanePathN',
+     parameters => [ planepath => 'ToothpickSpiral',
+                     line_type => 'Diagonal',
+                   ],
+   },
+   { anum => 'A033567',
+     class => 'Math::NumSeq::PlanePathN',
+     parameters => [ planepath => 'ToothpickSpiral',
+                     line_type => 'Diagonal_NW',
+                   ],
+   },
+   { anum => 'A185438',
+     class => 'Math::NumSeq::PlanePathN',
+     parameters => [ planepath => 'ToothpickSpiral',
+                     line_type => 'Diagonal_SW',
+                   ],
+   },
+   { anum => 'A188135',
+     class => 'Math::NumSeq::PlanePathN',
+     parameters => [ planepath => 'ToothpickSpiral',
+                     line_type => 'Diagonal_SE',
+                   ],
+   },
+
+   { anum => 'A033587',
+     class => 'Math::NumSeq::PlanePathN',
+     parameters => [ planepath => 'ToothpickSpiral,n_start=0',
+                     line_type => 'Diagonal',
+                   ],
+   },
+   { anum => 'A014635',
+     class => 'Math::NumSeq::PlanePathN',
+     parameters => [ planepath => 'ToothpickSpiral,n_start=0',
+                     line_type => 'Diagonal_SW',
+                   ],
+   },
+   { anum => 'A033585',
+     class => 'Math::NumSeq::PlanePathN',
+     parameters => [ planepath => 'ToothpickSpiral,n_start=0',
+                     line_type => 'Diagonal_SE',
                    ],
    },
 
