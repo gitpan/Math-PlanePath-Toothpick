@@ -61,8 +61,7 @@ foreach my $parts ('octant_up', 'octant', '3side', 'side', '3mid', '1', '4') {
   my $sq_limit = 0;
 
   for (my $depth = 0; $depth < 1024+10; $depth++) {
-    my $n_depth = $path->tree_depth_to_n($depth);
-    my $n_depth_end = $path->tree_depth_to_n_end($depth);
+    my ($n_depth, $n_depth_end) = $path->tree_depth_to_n_range($depth);
     {
       my $cells_n_depth = $cells->tree_depth_to_n($depth);
       unless ($n_depth == $cells_n_depth) {

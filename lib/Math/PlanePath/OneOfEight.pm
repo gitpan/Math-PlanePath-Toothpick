@@ -28,7 +28,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 10;
+$VERSION = 11;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -134,21 +134,23 @@ use constant class_y_negative => 1;
     return $diffxy_maximum{$self->{'parts'}};
   }
 }
+
 {
-  my %tree_num_children_maximum = (4         => 8,
-                                   1         => 5,
-                                   octant    => 3,
-                                   octant_up => 3,
-                                   wedge     => 3,
-                                   '3mid'    => 5,
-                                   '3side'   => 3,
-                                   side      => 3,
-                                  );
-  sub tree_num_children_maximum {
+  my %tree_num_children_list = (4         => [ 0, 1, 2, 3, 5, 8 ],
+                                1         => [ 0, 1, 2, 3, 5    ],
+                                octant    => [ 0, 1, 2, 3       ],
+                                octant_up => [ 0, 1, 2, 3       ],
+                                wedge     => [ 0, 1, 2, 3       ],
+                                '3mid'    => [ 0, 1, 2, 3, 5    ],
+                                '3side'   => [ 0,    2, 3       ],
+                                side      => [ 0,    2, 3       ],
+                               );
+  sub tree_num_children_list {
     my ($self) = @_;
-    return $tree_num_children_maximum{$self->{'parts'}};
+    return @{$tree_num_children_list{$self->{'parts'}}};
   }
 }
+
 # sub rsquared_minimum {
 #   my ($self) = @_;
 #   return ($self->{'parts'} <= 2   ? 1   # X=0,Y=1
@@ -1446,6 +1448,8 @@ sub rect_to_n_range {
 #------------------------------------------------------------------------------
 # tree
 
+use constant tree_num_roots => 1;
+
 sub tree_n_to_depth {
   my ($self, $n) = @_;
   ### tree_n_to_depth(): "$n"
@@ -2624,18 +2628,21 @@ Return the children of C<$n>, or an empty list if C<$n> has no children
 (including when C<$n E<lt> 1>, ie. before the start of the path).  The way
 points are numbered means the children are always consecutive N values.
 
-The children are the new cells turned "on" adjacent to C<$n> at the next
-depth level.  The possible number of children varies with the parts,
+=item C<@nums = $path-E<gt>tree_num_children_list($n)>
 
-    parts        possible num children
-    -----        ---------------------
-      4          0, 1, 2, 3, 5, 8
-      1          0, 1, 2, 3, 5
-    octant       0, 1, 2, 3
-    octant_up    0, 1, 2, 3
-    wedge        0, 1, 2, 3
-    3mid         0, 1, 2, 3, 5
-    3side        0,    2, 3
+Return a list of the possible number of children at the nodes of C<$path>.
+This is the set of possible return values from C<tree_n_num_children()>.
+This list varies with the pattern parts,
+
+    parts        tree_num_children_list()
+    -----        ------------------------
+      4              0, 1, 2, 3, 5, 8
+      1              0, 1, 2, 3, 5
+    octant           0, 1, 2, 3
+    octant_up        0, 1, 2, 3
+    wedge            0, 1, 2, 3
+    3mid             0, 1, 2, 3, 5
+    3side            0,    2, 3
 
 For parts=4 there's 8 children at the initial N=0 and after that at most 5.
 

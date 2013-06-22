@@ -18,9 +18,10 @@
 package MyOEIS;
 use strict;
 use Carp;
+use File::Spec;
 
 # uncomment this to run the ### lines
-#use Smart::Comments;
+# use Smart::Comments;
 
 my $without;
 
@@ -269,6 +270,129 @@ sub ith_prime {
     }
     $to *= 2;
   }
+}
+
+sub grep_for_values_aref {
+  my ($class, $values_aref) = @_;
+  ### grep_for_values_aref() ...
+  ### $class
+  ### $values_aref
+  return $class->grep_for_values_str(join (',',@$values_aref));
+}
+
+sub grep_for_values_str {
+  my ($class, $values_str) = @_;
+  ### grep_for_values_str() ...
+  ### $class
+  ### $values_str
+
+  if (length($values_str) == 0) {
+    ### empty ...
+    return 'no match empty list of values';
+  }
+
+  # print "grep $values_str\n";
+  # unless (system 'zgrep', '-F', '-e', $values_str, "$ENV{HOME}/OEIS/stripped.gz") {
+  #   print "  match $values_str\n";
+  #   print "  $name\n";
+  #   print "\n"
+  # }
+  # unless (system 'fgrep', '-e', $values_str, "$ENV{HOME}/OEIS/oeis-grep.txt") {
+  #   print "  match $values_str\n";
+  #   print "  $name\n";
+  #   print "\n"
+  # }
+  # unless (system 'fgrep', '-e', $values_str, "$ENV{HOME}/OEIS/stripped") {
+  #   print "  match $values_str\n";
+  #   print "  $name\n";
+  #   print "\n"
+  # }
+  return $class->stripped_grep($values_str);
+}
+
+use constant GREP_MAX_COUNT => 8;
+my $stripped_mmap;
+sub stripped_grep {
+  my ($class, $str) = @_;
+
+  if (! defined $stripped_mmap) {
+    require File::HomeDir;
+    my $home_dir = File::HomeDir->my_home;
+    if (! defined $home_dir) {
+      die 'File::HomeDir says you have no home directory';
+    }
+    my $stripped_filename = File::Spec->catfile($home_dir, 'OEIS', 'stripped');
+    require File::Map;
+    File::Map::map_file ($stripped_mmap, $stripped_filename);
+    print "File::Map stripped file length ",length($stripped_mmap),"\n";
+  }
+
+  my $ret = '';
+  my $count = 0;
+
+  # my $re = $str;
+  # { my $count = ($re =~ s{,}{,(\n|}g);
+  #   $re .= ')'x$count;
+  # }
+  # ### $re
+
+  my $orig_str = $str;
+  my $abs = '';
+  foreach my $mung ('none', 'negate', 'abs') {
+    if ($mung ne 'none') {
+      ### $mung
+      if ($ret) { last; }
+      if ($mung eq 'negate') {
+        $abs = "[NEGATED]\n";
+        $str = $orig_str;
+        $str =~ s{(^|,)(-?)}{$1.($2?'':'-')}ge;
+      } else {
+        # 'abs'
+        $str = $orig_str;
+        if (! ($str =~ s/-//g)) {
+          ### no negatives to absolute ...
+          next;
+        }
+        if ($str =~ /^(\d+)(,\1)*$/) {
+          ### only one value when abs: $1
+          next;
+        }
+        $abs = "[ABSOLUTE VALUES]\n";
+      }
+    }
+    ### $str
+
+    my $pos = 0;
+    for (;;) {
+      $pos = index($stripped_mmap,$str,$pos);
+      last if $pos < 0;
+
+      if ($count >= GREP_MAX_COUNT) {
+        $ret .= "... and more matches\n";
+        return $ret;
+      }
+
+      my $start = rindex($stripped_mmap,"\n",$pos) + 1;
+      my $end = index($stripped_mmap,"\n",$pos);
+      my $line = substr($stripped_mmap,$start,$end-$start);
+      my ($anum) = ($line =~ /^(A\d+)/);
+      $anum || die "oops, A-number not matched in line: ",$line;
+
+      $ret .= $abs; $abs = '';
+      $ret .= $class->anum_to_name($anum);
+      $ret .= "$line\n";
+
+      $pos = $end;
+      $count++;
+    }
+  }
+  return $ret;
+}
+
+sub anum_to_name {
+  my ($class, $anum) = @_;
+  $anum =~ /^A[0-9]+$/ or die "Bad A-number: ", $anum;
+  return `zgrep -e ^$anum $ENV{HOME}/OEIS/names.gz`;
 }
 
 1;

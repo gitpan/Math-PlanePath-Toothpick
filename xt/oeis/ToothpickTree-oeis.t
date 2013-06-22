@@ -44,36 +44,26 @@ use MyTestHelpers;
 MyTestHelpers::nowarnings();
 use MyOEIS;
 
-use Math::PlanePath::Base::Digits 'round_down_pow';
+use Math::PlanePath::Base::Digits
+  'round_down_pow';
 use Math::PlanePath::ToothpickTree;
 
 # uncomment this to run the ### lines
 # use Smart::Comments '###';
 
-# Return the number of points at $depth.
-sub path_tree_depth_to_width {
-  my ($path, $depth) = @_;
-  if (defined (my $n = $path->tree_depth_to_n($depth))
-      && defined (my $n_end = $path->tree_depth_to_n_end($depth))) {
-    return $n_end - $n + 1;
-  } else {
-    return undef;
-  }
-}
-
 
 #------------------------------------------------------------------------------
 # A160159 - parts=two_horiz added
+# cf A160158 total is Depth_start
 
 MyOEIS::compare_values
   (anum => 'A160159',
    func => sub {
      my ($count) = @_;
      my $path = Math::PlanePath::ToothpickTree->new (parts => 'two_horiz');
-     # my $path = Math::PlanePath::ToothpickTree->new (parts => 'octant');
      my @got;
      for (my $depth = 0; @got < $count; $depth++) {
-       push @got, path_tree_depth_to_width($path, $depth);
+       push @got, $path->tree_depth_to_width( $depth);
      }
      return \@got;
    });
@@ -88,7 +78,7 @@ MyOEIS::compare_values
      my $path = Math::PlanePath::ToothpickTree->new (parts => 'wedge');
      my @got;
      for (my $depth = 0; @got < $count; $depth++) {
-       push @got, path_tree_depth_to_width($path, $depth);
+       push @got, $path->tree_depth_to_width( $depth);
      }
      return \@got;
    });
@@ -139,7 +129,7 @@ MyOEIS::compare_values
 # quad(pow) = (4^k-4)/6          # with 4^k = pow*pow
 # quad(pow+1) = quad(pow) + 1   # the "A" toothpick
 # and for rem>=2
-# quad(pow+rem) = quad(rem+1) + 2*quad(rem) + 2
+# quad(pow+rem) = quad(pow) + quad(rem+1) + 2*quad(rem) + 2
 # eg. quad(4+2) = quad(4) + quad(3) + 2*quad(2) + 2
 #               =   2     +   1     + 2*0       + 2  = 5
 # eg. quad(4+3) = quad(4) + quad(4) + 2*quad(3) + 2
@@ -283,7 +273,7 @@ MyOEIS::compare_values
      $depth *= 4;
      my @got;
      for ( ; @got < $count; $depth++) {
-       push @got, path_tree_depth_to_width($path, $depth);
+       push @got, $path->tree_depth_to_width( $depth);
      }
      return \@got;
    });
@@ -411,7 +401,7 @@ MyOEIS::compare_values
      my $path = Math::PlanePath::ToothpickTree->new (parts => 1);
      my @got;
      for (my $depth = 0; @got < $count; $depth++) {
-       push @got, path_tree_depth_to_width($path, $depth);
+       push @got, $path->tree_depth_to_width( $depth);
      }
      return \@got;
    });
@@ -427,7 +417,7 @@ MyOEIS::compare_values
      my $path = Math::PlanePath::ToothpickTree->new (parts => 2);
      my @got;
      for (my $depth = 0; @got < $count; $depth++) {
-       push @got, path_tree_depth_to_width($path, $depth);
+       push @got, $path->tree_depth_to_width( $depth);
      }
      return \@got;
    });
@@ -443,7 +433,7 @@ MyOEIS::compare_values
      my $path = Math::PlanePath::ToothpickTree->new (parts => 3);
      my @got;
      for (my $depth = 0; @got < $count; $depth++) {
-       push @got, path_tree_depth_to_width($path, $depth);
+       push @got, $path->tree_depth_to_width( $depth);
      }
      return \@got;
    });
@@ -459,7 +449,7 @@ MyOEIS::compare_values
      my $path = Math::PlanePath::ToothpickTree->new (parts => 4);
      my @got = (0);
      for (my $depth = 0; @got < $count; $depth++) {
-       push @got, path_tree_depth_to_width($path, $depth);
+       push @got, $path->tree_depth_to_width( $depth);
      }
      return \@got;
    });
@@ -541,8 +531,8 @@ MyOEIS::compare_values
      my @got;
      my $total = 0;
      for (my $depth = 0; @got < $count; $depth+=2) {
-       $total -= path_tree_depth_to_width($path, $depth);
-       $total += path_tree_depth_to_width($path, $depth+1);
+       $total -= $path->tree_depth_to_width( $depth);
+       $total += $path->tree_depth_to_width( $depth+1);
        push @got, $total;
      }
      return \@got;
@@ -560,7 +550,7 @@ MyOEIS::compare_values
      my @got = (0);
      my $n = $path->n_start;
      for (my $depth = 1; @got < $count; $depth+=2) {
-       push @got, path_tree_depth_to_width($path, $depth);
+       push @got, $path->tree_depth_to_width( $depth);
      }
      return \@got;
    });
@@ -575,7 +565,7 @@ MyOEIS::compare_values
      my $total = 0;
      for (my $depth = 1; @got < $count; $depth+=2) {
        push @got, $total;
-       $total += path_tree_depth_to_width($path, $depth);
+       $total += $path->tree_depth_to_width( $depth);
      }
      return \@got;
    });
@@ -592,7 +582,7 @@ MyOEIS::compare_values
      my @got;
      my $n = $path->n_start;
      for (my $depth = 0; @got < $count; $depth+=2) {
-       push @got, path_tree_depth_to_width($path, $depth);
+       push @got, $path->tree_depth_to_width( $depth);
      }
      return \@got;
    });
@@ -605,8 +595,8 @@ MyOEIS::compare_values
      my @got;
      my $n = $path->n_start;
      my $total = 0;
-     for (my $depth = 0; @got < $count; $depth+=2) {
-       $total += path_tree_depth_to_width($path, $depth);
+     for (my $depth = 0; @got < $count; $depth += 2) {
+       $total += $path->tree_depth_to_width( $depth);
        push @got, $total;
      }
      return \@got;

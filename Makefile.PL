@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2012 Kevin Ryde
+# Copyright 2012, 2013 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -27,7 +27,11 @@ WriteMakefile
    VERSION_FROM => 'lib/Math/PlanePath/LCornerTree.pm',
    PREREQ_PM    => {
                     # 'List::Util' => 0,
-                    'Math::PlanePath' => 91,
+
+                    # v.106 for tree_num_children_minimum() calling to
+                    # tree_num_children_list()
+                    'Math::PlanePath' => 106,
+
                     'Math::PlanePath::Base::Digits' => 91,
                     'Math::PlanePath::Base::Generic' => 91,
                     'constant' => '1.02', # 1.02 for leading underscore

@@ -63,7 +63,7 @@ MyOEIS::compare_values
      my @got;
      my $total = 0;
      for (my $depth = 0; @got < $count; $depth++) {
-       push @got, $path->tree_depth_to_n($depth+1) - $path->tree_depth_to_n($depth);
+       push @got, $path->tree_depth_to_width($depth);
      }
      return \@got;
    });

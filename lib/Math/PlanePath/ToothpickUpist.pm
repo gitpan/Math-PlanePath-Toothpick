@@ -30,7 +30,7 @@ use 5.004;
 use strict;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 10;
+$VERSION = 11;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -73,9 +73,7 @@ use constant sumxy_minimum => 0;   # triangular X>=-Y
 use constant diffxy_maximum => 0;  # triangular X<=Y so X-Y<=0
 use constant dy_minimum => 0; # across rows dY=0
 use constant dy_maximum => 1; # then up dY=1 at end
-use constant tree_num_children_maximum => 2;
-# use constant dir4_maximum => 2;          # West dX=-1,dY=0 at N=1
-# use constant dir_maximum_360  => 180;    # West
+use constant tree_num_children_list => (0,1,2);
 use constant dir_maximum_dxdy => (-1,0); # West
 
 
@@ -238,13 +236,18 @@ sub rect_to_n_range {
           _right_xy_to_n($self, $y2,$y2, 1));
 }
 
+
+#------------------------------------------------------------------------------
+use constant tree_num_roots => 1;
+
 sub tree_n_num_children {
   my ($self, $n) = @_;
 
   $n = $n - $self->{'n_start'};   # N=0 basis
-  if ($n < 0) {
+  if (is_infinite($n) || $n < 0) {
     return undef;
   }
+
   my ($depthbits, $lowbit, $ndepth) = _n0_to_depthbits($n);
   $n -= $ndepth;  # Noffset into row
 
@@ -275,7 +278,7 @@ sub tree_n_children {
   ### tree_n_children(): $n
 
   $n = $n - $self->{'n_start'};   # N=0 basis
-  if ($n < 0) {
+  if (is_infinite($n) || $n < 0) {
     return;
   }
 
@@ -329,11 +332,11 @@ sub tree_n_to_depth {
   my ($self, $n) = @_;
   ### ToothpickUpist n_to_depth(): $n
   $n = $n - $self->{'n_start'};
-  if ($n < 0) {
-    return undef;
+  unless ($n >= 0) {
+    return undef;  # negatives, -infinity, NaN
   }
   if (is_infinite($n)) {
-    return $n;
+    return $n;     # +infinity
   }
   my ($depthbits, $lowbit) = _n0_to_depthbits($n);
   unshift @$depthbits, $lowbit;
@@ -360,7 +363,7 @@ sub tree_n_to_subheight {
   ### ToothpickUpist tree_n_to_subheight(): $n
 
   $n = $n - $self->{'n_start'};
-  if ($n < 0) {
+  if (is_infinite($n) || $n < 0) {
     return undef;
   }
   my ($depthbits, $lowbit, $ndepth) = _n0_to_depthbits($n);

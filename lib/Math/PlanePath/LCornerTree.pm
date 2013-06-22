@@ -62,7 +62,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 10;
+$VERSION = 11;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -173,7 +173,6 @@ use constant parameter_info_array =>
     return $diffxy_maximum{$self->{'parts'}};
   }
 }
-use constant tree_num_children_maximum => 3;
 
 # parts=1 Dir4 max 12,-11
 #                 121,-110
@@ -204,6 +203,21 @@ use constant tree_num_children_maximum => 3;
   }
 }
 
+{
+  my %any_num_children_2
+    = (octant        => 1,
+       octant_up     => 1,
+       wedge         => 1,
+       diagonal      => 1,
+      );
+  sub tree_num_children_list {
+    my ($self) = @_;
+    return (0,
+            ($any_num_children_2{$self->{'parts'}} ? (2) : ()),
+            3);
+  }
+}
+
 #------------------------------------------------------------------------------
 
 # how many toplevel root nodes in the tree of given $parts
@@ -220,6 +234,10 @@ my %parts_to_numroots = (4             => 4,
                          diagonal      => 3,
                          'diagonal-1'  => 1,
                         );
+sub tree_num_roots {
+  my ($self) = @_;
+  return $parts_to_numroots{$self->{'parts'}};
+}
 
 sub new {
   my $self = shift->SUPER::new(@_);
@@ -677,6 +695,7 @@ sub rect_to_n_range {
           $self->tree_depth_to_n($depth));
 }
 
+#------------------------------------------------------------------------------
 
 # quad(d) = sum i=0tod 3^count1bits(i)
 # quad(d) = 2*oct(d) + d
@@ -957,16 +976,15 @@ sub tree_n_to_subheight {
     }
 
   } elsif ($parts eq 'octant_up') {
-    # add to second half of parts=1 row
-    $n += $nwidth - 1;
+    $n += $nwidth - 1;   # add to be second half of parts=1 row
 
   } elsif ($parts eq 'octant_up+1') {
-    if ($ndepth > 0 && $n == 0) {
-      return 0;  # first point in each row doesn't grow, except N=0
+    if ($n == 0) {
+      return ($ndepth == 0
+              ? undef  # N=0 is infinite
+              : 0);    # first of any other row doesn't grow at all
     }
-    # add to second half of parts=1 row
-    $n += $nwidth - 1;
-    if ($ndepth > 0) { $n -= 1; }
+    $n += $nwidth - 3;    # add to be second half of parts=1 row
 
   } elsif ($parts eq 'wedge') {
     # swap row halves into style of parts=1
@@ -1773,30 +1791,51 @@ Create and return a new path object.  The C<parts> option (a string) can be
 
 =over
 
-=item C<@n_children = $path-E<gt>tree_n_children($n)>
+=item C<@nums = $path-E<gt>tree_num_children_list($n)>
 
-Return the children of C<$n>, or an empty list if C<$n> has no children
-(including when C<$n E<lt> 0>, ie. before the start of the path).
+Return a list of the possible number of children at the nodes of C<$path>.
+This is the set of possible return values from C<tree_n_num_children()>.
+This list varies with the pattern parts,
 
-The possible number of children under a node is
+           parts               tree_num_children_list()
+           -----               ------------------------
+    4, 3, 2, 1             \
+    octant+1, octant_up+1,  |         0,    3
+    wedge+1, diagonal-1    /
 
-                 parts                    possible num children
-    -------------------------------       ---------------------
-    4, 3, 2, 1                      \ 
-    octant+1, octant_up+1, wedge+1, |            0,    3
-    diagonal-1                      /
-    
-    octant, octant_up, wedge        \            0, 2, 3
-    diagonal                        /
+    octant, octant_up      \          0, 2, 3
+    wedge, diagonal        /
 
 X<3-tree>For parts=4,3,2,etc each point has either 0 or 3 children.  Such a
-tree is sometimes called a "3-tree".  The children of a corner C<$n> are the
+tree is sometimes called a "3-tree".  For a corner cell the children are the
 three cells adjacent to it turned "on" at the next depth.  A non-corner has
 no children.
 
 For parts=octant etc the points on the X=Y diagonal have only 2 children
 since the pattern is confined to on or below that diagonal.  All other
 points have either 0 or 3 as per the full patterns.
+
+=back
+
+=head2 Tree Descriptive Methods
+
+=over
+
+=item C<$num = $path-E<gt>tree_num_roots ()>
+
+Return the number of root nodes in C<$path>.  The various parts forms have
+the following number of roots.
+
+    parts                                     num_roots()
+    -----                                     -----------
+      4                                           4
+      3                                           3
+      2                                           2
+      1                                           1
+    octant, octant+1, octant_up, octant_up+1      1
+    wedge, wedge+1                                2
+    diagonal                                      3
+    diagonal-1                                    1
 
 =back
 

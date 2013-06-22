@@ -17,10 +17,6 @@
 
 
 #------------------------------------------------------------------------------
-# A160158 Toothpick sequence starting from a segment of length 4 formed by two toothpicks.
-#      ---*---o---*---
-#
-#------------------------------------------------------------------------------
 # A160740 toothpick starting from 4 as cross
 #   doesn't maintain XYeven=vertical, XYodd=horizontal
 #             |
@@ -134,7 +130,7 @@ use Carp;
 *min = \&Math::PlanePath::_min;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 10;
+$VERSION = 11;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -155,9 +151,11 @@ use constant parameter_info_array =>
       display   => 'Parts',
       type      => 'enum',
       default   => '4',
-      choices   => ['4','3','2','1','octant','octant_up','wedge'
+      choices   => ['4','3','2','1','octant','octant_up',
+                    'wedge','two_horiz',
                    ],
-      choices_display => ['4','3','2','1','Octant','Octant Up','Wedge',
+      choices_display => ['4','3','2','1','Octant','Octant Up',
+                          'Wedge','Two Horiz',
                          ],
       description => 'Which parts of the pattern to generate.',
     },
@@ -267,7 +265,7 @@ use constant class_y_negative => 1;
     return ($rsquared_minimum{$self->{'parts'}} || 0);
   }
 }
-use constant tree_num_children_maximum => 2;
+use constant tree_num_children_list => (0,1,2);
 
 
 # parts=1 Dir4 max 5,-4
@@ -709,13 +707,6 @@ sub xy_to_n {
     if ($x == -1 && $y == 0) { return 1; }
     if ($x == -2 && $y == 0) { return 3; }
 
-    #   if ($y < 0) { return 0; }  #  X=0,Y=0 N=0
-    #   # otherwise Y=1
-    #   if ($x == 0) { return 1; }
-    #   if ($x == 1) { return 2; }
-    #   if ($x == -1) { return 3; }
-    # }
-
     my $mult = 0;
     my $mult3 = 0;
     if ($x < 0) {
@@ -1077,6 +1068,8 @@ sub rect_to_n_range {
   return (0, (8*$len*$len-5)/3);
 }
 
+#------------------------------------------------------------------------------
+
 # Is it possible to calculate this by the bits of N rather than by X,Y?
 sub tree_n_children {
   my ($self, $n) = @_;
@@ -1104,17 +1097,20 @@ sub tree_n_children {
           (defined $n2 && $n2 > $n ? $n2 : ()));
 }
 
-#use Smart::Comments;
+my %parts_to_numroots = (two_horiz => 2,
+                         # everything else 1 root
+                        );
+sub tree_num_roots {
+  my ($self) = @_;
+  return ($parts_to_numroots{$self->{'parts'}} || 1);
+}
 
-my %parts_numroots = (two_horiz => 2,
-                      # everything else 1 root
-                     );
 sub tree_n_parent {
   my ($self, $n) = @_;
   ### tree_n_parent(): $n
 
   $n = int($n);
-  if ($n < ($parts_numroots{$self->{'parts'}} || 1)) {
+  if ($n < ($parts_to_numroots{$self->{'parts'}} || 1)) {
     return undef;
   }
   my ($x,$y) = $self->n_to_xy($n)
@@ -1263,8 +1259,6 @@ my %tree_depth_to_n = (4         => [ 0, 1, 3 ],
                        'wedge+1' => [ 0, 1    ],
                        two_horiz => [ 0, 2, 4 ],
                       );
-
-#use Smart::Comments;
 
 sub tree_depth_to_n {
   my ($self, $depth) = @_;
@@ -2038,7 +2032,6 @@ Option C<parts =E<gt> 'wedge'> confines the full parts=4 pattern to a wedge
 
     parts => "wedge"
 
-        9
     59 57    56    55    54    53    52    51    50 58        8
        49 39 48    47 38 46    43 35 42    41 34 40           7
           33 29    28 32          31 27    26 30              6
@@ -2067,6 +2060,66 @@ within a wedge -Y-1E<lt>=XE<lt>=Y+1.
                        0                          <- Y=0
                        |
 
+
+=head2 Two Horizontal
+
+Option C<parts =E<gt> 'two_horiz'> starts the pattern from two horizontal
+toothpicks in the style of OEIS A160158 by Omar Pol.  The two initial N=0
+and N=1 are the roots of two trees extending to the right and left.  Points
+are numbered breadth-wise anti-clockwise starting from N=0 on the right.
+
+=cut
+
+# math-image --path=ToothpickTree,parts=two_horiz --all --output=numbers --size=58x9
+
+=pod
+
+    parts => "two_horiz"
+
+                   |               |
+    --53      52--60              59--51      50--           4
+       |       |   |               |   |       |
+      43--32--42  72--92      91--71  41--31--40             3
+           |                               |
+          26--21      20      19      18--25                 2
+           |   |       |       |       |   |
+      44--33  13---6--12      11---5--10  30--39             1
+                   |               |
+                   3---1   .   0---2                    <- Y=0
+                   |               |
+      45--34  14---7--15       8---4---9  29--38            -1
+           |   |       |       |       |   |
+          27--22      23      16      17--24                -2
+           |                               |
+      46--35--47  79-103      80--64  36--28--37            -3
+       |       |   |               |   |       |
+    --54      55--63              56--48      49--          -4
+                   |               |
+                           ^
+      -5  -4  -3  -2  -1  X=0  1   2   3   4   5
+
+The effect is to make octants branching off the central stair-step diagonal
+spine in each quadrant.
+
+                \   oct | oct   /
+                  \     |     /
+    oct 2 behind    \   |   /   oct 2 behind
+                      \ | /
+                --------+--------
+                      / | \
+    oct 2 behind    /   |   \   oct 2 behind
+                  /     |     \
+                /  oct  |  oct  \
+
+The four octants near the Y axis begin immediately.  The N=0 and N=2 points
+are shared by the central octants going up and down on the right, and
+likewise N=1,N=3 on the left.
+
+The four octants near the X axis begin 3 depth levels later.  This is not
+the same as the quadrants of the full pattern (their opposite octants are 1
+depth level offset).  For example the point N=10 at depth=3 is the start of
+the lower octant in that quarter.  A bigger picture than what's shown above
+makes this easier to see.
 
 =head1 FUNCTIONS
 
@@ -2114,16 +2167,40 @@ differs by 2 or 1 respectively from the full pattern at the same point.
 
 =back
 
+=head2 Tree Descriptive Methods
+
+=over
+
+=item C<$num = $path-E<gt>tree_num_roots ()>
+
+Return the number of root nodes in C<$path>.  This is 1 except for
+parts=two_horiz which is 2.
+
+=item C<$num = $path-E<gt>tree_num_children_minimum()>
+
+=item C<$num = $path-E<gt>tree_num_children_maximum()>
+
+Return minimum 0 and maximum 2 since each node has 0, 1 or 2 children.
+
+=back
+
 =head1 FORMULAS
 
 =head2 Depth to N
 
 The first N at given depth is the total count of toothpicks in the preceding
-levels.  The paper by Applegate, Pol and Sloane above has formulas for
-parts=4 and parts=1.  A similar formula can be made for parts=octant,
+levels.  The paper by Applegate, Pol and Sloane above gives formulas for
+parts=4 and parts=1.  A similar formula can be made for parts=octant.
 
-    depth >= 2
-    depth = pow + rem    where pow=2^k and 0 <= rem < 2^k
+The depth in all the following is per the full pattern, which means the
+octant starts at depth=2.  So oct(2)=0 then oct(3)=1.  This reckoning keeps
+the replications on 2^k boundaries and is convenient for relating an octant
+to the full pattern.  Note though that C<tree_depth_to_n()> always counts
+from C<$depth = 0> so an adjustment +1 or +2 is applied there.
+
+    for depth >= 2
+    depth = pow + rem    where pow=2^k the high bit of depth
+                         so 0 <= rem < 2^k
 
     oct(2) = 0
     oct(pow) = (pow*pow - 16)/12 + pow/2
@@ -2131,9 +2208,9 @@ parts=4 and parts=1.  A similar formula can be made for parts=octant,
     oct(pow+rem) = oct(pow) + oct(rem+1) + 2*oct(rem) - rem + 4
                    for rem >= 2
 
-It's convenient to express the other patterns in terms of an octant.  For
-quad(d) the "-d" adjusts for the stairstep diagonal spine being counted
-twice by the oct(d)+oct(d-1).
+The other pattern parts can be expressed in terms of an octant.  It's
+convenient to make an octant the unit and have the others as multiples of
+it.
 
     quad(d)    = oct(d) + oct(d-1) - d + 3
     half(d)    = 2*quad(d) + 1
@@ -2142,28 +2219,31 @@ twice by the oct(d)+oct(d-1).
                 = oct(d+1) + 3*oct(d) + 2*oct(d-1) - 3*d + 10
     wedge(d)   = 2*oct(d-1) + 4
 
-In all these formulas depth is measured as in the full parts=4 pattern.
-This means oct(2)=0 then oct(3)=1 are the start for the octant.
-C<tree_depth_to_n()> always counts from C<$depth = 0> and an adjustment +1
-or +2 is applied.
+In quad(d) the "-d" adjusts for the stairstep diagonal spine being counted
+twice by the oct(d)+oct(d-1).
 
-The oct() recurrence follows the sub-block breakdown shown under L</One
-Octant> above.
+The oct() recurrence corresponds to the sub-block breakdown shown under
+L</One Octant> above.
 
     oct(pow+rem) = oct(pow)        "base"
                  + oct(rem+1)      "lower"
-                 + 2*oct(rem)      "upper","extend
+                 + 2*oct(rem)      "upper" and "extend"
                  - rem + 4         unduplicate diagonal
 
 The stairstep diagonal between the "upper" and "lower" parts is duplicated
 by those two parts, hence "-(rem-1)" to subtract one copy of it.  A further
-+3 is the points in-between the replications.
++3 is the points in-between the replications, ie. the "A", "B" and one
+further toothpick not otherwise counted by the replications.
 
-The oct(rem+1) + 2*oct(rem) is the important part of the formula.  It knocks
-out the high bit of depth and spreads to an adjacent pair of smaller depths
+oct(rem+1) + 2*oct(rem) is the important part of the formula.  It knocks out
+the high bit of depth and spreads rem to an adjacent pair of smaller depths
 rem+1 and rem.  A list of pending depth values can be maintained and
-compared to a pow=2^k.  Any bigger than that pow can be reduced.  Then
-repeat with pow=2^(k-1), etc.
+compared to a pow=2^k.
+
+    for each pending depth
+      if depth == 2^k or 2^k+1 then oct(pow) or oct(pow+1)
+      if depth >= 2^k+2 then reduce by recurrence
+    repeat for 2^(k-1)
 
 rem+1,rem are adjacent so successive reductions make a list growing by one
 further value each time, like
@@ -2172,24 +2252,23 @@ further value each time, like
     d+2, d+1, d
     d+3, d+2, d+1, d
 
-When the list crosses a 2^k boundary some sub-depths are reduced and others
-remain.  When that happens the list is no longer successive values, only
-mostly so.  When accumulating rem+1 and rem it's enough to check whether the
-current rem+1 is equal to the rem of the previous breakdown and if so
-coalesce with that previously entry.
+When the list crosses a 2^k boundary some of these depths are reduced and
+others remain.  When that happens the list is no longer successive values,
+only mostly successive.  When accumulating rem+1 and rem it's enough to
+check whether the current "rem+1" is equal to the "rem" of the previous
+breakdown and if so then coalesce with that previously entry.
 
 The factor of "2" in 2*oct(rem) can be handled by keeping a desired
-multiplier with each pending depth.  oct(rem+1) keeps the current
-multiplier.  2*oct(rem) doubles the current.  If rem+1 coalesces with the
-previous rem then add to its multiplier.  Those additions mean the
+multiplier with each pending depth.  oct(rem+1) is the current multiplier
+unchanged.  2*oct(rem) doubles the current multipler.  If rem+1 coalesces
+with the previous rem then add to its multiplier.  Those additions mean the
 multipliers are not powers-of-2.
 
-While the pending list is successive integers the rem+1,rem breakdown and
+If the pending list is successive integers then them rem+1,rem breakdown and
 coalescing increases that list by just one value for each 1-bit of depth,
-keeping the list to at most log2(depth) many entries.  But as noted above
-that's not so when the list crosses a 2^k boundary.  It then behaves like
-two lists each growing by one entry.  In any case the list doesn't become
-huge.
+keeping the list to at most log2(depth) many entries.  But that's not so
+when the list crosses a 2^k boundary.  It then behaves like two lists each
+growing by one entry per bit.  In any case the list doesn't become huge.
 
 =head2 N to Depth
 
@@ -2261,11 +2340,16 @@ Sequences as follows, and images by Omar Pol.
 
       http://www.polprimos.com/imagenespub/poltp406.jpg
 
-Further A153003, A153004, A153005 are another toothpick form clipped to 3
-quadrants.  They're not the same as the parts=3 corner pattern here.
-A153003 would have its X=1,Y=-1 cell as a 3rd child of X=0,Y=1.  Allowing
-the X=0,Y=0 and X=0,Y=-1 cells to be included would be a joined-up pattern,
-but then the depth totals would be 2 bigger than those OEIS entries.
+    parts=two_horiz
+      A160158   total cells to given depth
+      A160159    added cells at given depth
+
+Further sequences A153003, A153004, A153005 are another toothpick form
+clipped to 3 quadrants.  They're not the same as the parts=3 corner pattern
+here.  A153003 would have its X=1,Y=-1 cell as a 3rd child of X=0,Y=1.
+Allowing the X=0,Y=0 and X=0,Y=-1 cells to be included would be a joined-up
+pattern, but then the depth totals would be 2 bigger than those OEIS
+entries.
 
 =head1 SEE ALSO
 

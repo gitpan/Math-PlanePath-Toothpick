@@ -33,17 +33,6 @@ use Math::PlanePath::LCornerTree;
 # uncomment this to run the ### lines
 #use Smart::Comments '###';
 
-# Return the number of points at $depth.
-sub path_tree_depth_to_width {
-  my ($path, $depth) = @_;
-  if (defined (my $n = $path->tree_depth_to_n($depth))
-      && defined (my $n_end = $path->tree_depth_to_n_end($depth))) {
-    return $n_end - $n + 1;
-  } else {
-    return undef;
-  }
-}
-
 #------------------------------------------------------------------------------
 # A162784 - added cells parts=octant
 # cf octant+1 would be A162784+1, no such entry
@@ -55,7 +44,7 @@ MyOEIS::compare_values
      my $path = Math::PlanePath::LCornerTree->new (parts => 'octant');
      my @got;
      for (my $depth = 0; @got < $count; $depth++) {
-       push @got, path_tree_depth_to_width($path,$depth);
+       push @got, $path->tree_depth_to_width($depth);
      }
      return \@got;
    });
@@ -71,7 +60,7 @@ MyOEIS::compare_values
      my $path = Math::PlanePath::LCornerTree->new (parts => 'wedge');
      my @got;
      for (my $depth = 0; @got < $count; $depth++) {
-       push @got, path_tree_depth_to_width($path,$depth);
+       push @got, $path->tree_depth_to_width($depth);
      }
      return \@got;
    });
@@ -101,7 +90,7 @@ MyOEIS::compare_values
      my $path = Math::PlanePath::LCornerTree->new (parts => 'diagonal-1');
      my @got = (0);
      for (my $depth = 0; @got < $count; $depth++) {
-       push @got, path_tree_depth_to_width($path,$depth);
+       push @got, $path->tree_depth_to_width($depth);
      }
      return \@got;
    });
@@ -118,7 +107,7 @@ MyOEIS::compare_values
      my $path = Math::PlanePath::LCornerTreeByCells->new (parts => 'diagonal-2');
      my @got = (0);
      for (my $depth = 0; @got < $count; $depth++) {
-       push @got, path_tree_depth_to_width($path,$depth);
+       push @got, $path->tree_depth_to_width($depth);
      }
      return \@got;
    });
@@ -145,7 +134,7 @@ MyOEIS::compare_values
      my $path = Math::PlanePath::LCornerTree->new;
      my @got;
      for (my $depth = 0; @got < $count; $depth++) {
-       push @got, path_tree_depth_to_width($path,$depth);
+       push @got, $path->tree_depth_to_width($depth);
      }
      return \@got;
    });
@@ -160,7 +149,7 @@ MyOEIS::compare_values
      my $path = Math::PlanePath::LCornerTree->new (parts => 3);
      my @got;
      for (my $depth = 0; @got < $count; $depth++) {
-       push @got, path_tree_depth_to_width($path,$depth);
+       push @got, $path->tree_depth_to_width($depth);
      }
      return \@got;
    });
@@ -190,7 +179,7 @@ MyOEIS::compare_values
      my $path = Math::PlanePath::LCornerTree->new (parts => 1);
      my @got;
      for (my $depth = 0; @got < $count; $depth++) {
-       push @got, path_tree_depth_to_width($path,$depth);
+       push @got, $path->tree_depth_to_width($depth);
      }
      return \@got;
    });

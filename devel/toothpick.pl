@@ -25,6 +25,78 @@ use List::Util 'min', 'max';
 # use Smart::Comments;
 
 
+# =head2 Octant and Vertical or Horizontal
+# 
+# It's interesting to note an octant corresponds to the vertical or horizontal
+# toothpicks of the quadrant.
+# 
+#     oct(d) = quadrant_verticals(d)    if depth odd
+#              quadrant_horizontals(d)  if depth even
+# 
+# For example an octant up to and not including depth=5
+# 
+#                                              
+#                                                 |   
+#             --5---                              6   
+#               |                     |       |   |   
+#         --3---4                     4       4
+#           |   |                     |   |   |       
+#     --1---2                             2           
+#       |   |   |                     |   |   |       
+#       0 --3---4                     0       4       
+#       |       |                     |       |       
+# 
+# 
+#                                             --7-- 
+#                                                   
+#                                ---5--- ---5---    
+#               |                                   
+#         --4---6                    ---3---  --7-- 
+#           |   |                                   
+#     --1---2                    ---1---            
+#       |   |   |                           
+#       0 --3---5                     --3---
+#       |       |                           
+# 
+# 
+#                 
+#                 
+#               | 
+#         --4---6 
+#           |   | 
+#     --1---2     
+#       |   |   | 
+#       0 --3---5 
+#       |       | 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# , or to odd depth corresponds to the horizontal
+# toothpicks of the quadrant.
+
+
+{
+  # oct(2^k) in binary
+  require Math::PlanePath::ToothpickTree;
+  my $path = Math::PlanePath::ToothpickTree->new (parts => '1');
+  foreach my $k (0 .. 20) {
+    my $n = $path->tree_depth_to_n(2**$k+2);
+    printf "%2d %40b\n", $k,$n;
+  }
+  exit 0;
+}
 
 {
   # octant = quadhoriz;
@@ -37,13 +109,13 @@ use List::Util 'min', 'max';
     }
     sub whole_added {
       my ($depth) = @_;
-      return path_tree_depth_to_width($path,$depth);
+      return $path->tree_depth_to_width($depth);
     }
     sub whole_vertical {   # A162794
       my ($depth) = @_;
       my $ret = 0;
       for (my $d = 0; $d < $depth; $d+=2) {
-        $ret += path_tree_depth_to_width($path,$d);
+        $ret += $path->tree_depth_to_width($d);
       }
       return $ret;
     }
@@ -51,7 +123,7 @@ use List::Util 'min', 'max';
       my ($depth) = @_;
       my $ret = 0;
       for (my $d = 1; $d < $depth; $d+=2) {
-        $ret += path_tree_depth_to_width($path,$d);
+        $ret += $path->tree_depth_to_width($d);
       }
       return $ret;
     }
@@ -65,7 +137,7 @@ use List::Util 'min', 'max';
     }
     sub oct_added {
       my ($depth) = @_;
-      return path_tree_depth_to_width($path,$depth);
+      return $path->tree_depth_to_width($depth);
     }
   }
   {
@@ -79,7 +151,7 @@ use List::Util 'min', 'max';
       my ($depth) = @_;
       my $ret = 0;
       for (my $d = 0; $d < $depth; $d+=2) {
-        $ret += path_tree_depth_to_width($path,$d);
+        $ret += $path->tree_depth_to_width($d);
       }
       return $ret;
     }
@@ -87,7 +159,7 @@ use List::Util 'min', 'max';
       my ($depth) = @_;
       my $ret = 0;
       for (my $d = 1; $d < $depth; $d+=2) {
-        $ret += path_tree_depth_to_width($path,$d);
+        $ret += $path->tree_depth_to_width($d);
       }
       return $ret;
     }
@@ -231,7 +303,7 @@ use List::Util 'min', 'max';
   my $cells = Math::PlanePath::ToothpickTreeByCells->new (parts => 'octant');
   my $path = Math::PlanePath::ToothpickTree->new (parts => 'octant');
   for (my $depth = 0; $depth <= 66; $depth++) {
-    my $c = path_tree_depth_to_width($cells,$depth);
+    my $c = $cells->tree_depth_to_width($depth);
     my $p = Math::PlanePath::ToothpickTree::_depth_to_octant_added
       ([$depth+2], [1], 0);
     my $diff = ($p == $c ? '' : '***');
@@ -240,17 +312,6 @@ use List::Util 'min', 'max';
     print "$depth  $d2  c=$c  p=$p$diff\n";
   }
   exit 0;
-
-  # Return the number of points at $depth.
-  sub path_tree_depth_to_width {
-    my ($path, $depth) = @_;
-    if (defined (my $n = $path->tree_depth_to_n($depth))
-        && defined (my $n_end = $path->tree_depth_to_n_end($depth))) {
-      return $n_end - $n + 1;
-    } else {
-      return undef;
-    }
-  }
 }
 
 {

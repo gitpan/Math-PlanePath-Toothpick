@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Math-PlanePath-Toothpick
-version:            10
+version:            11
 abstract:           Toothpick and other cellular automaton mathematical paths through the 2-D plane.
 author:
     - Kevin Ryde <user42@zip.com.au>
@@ -12,7 +12,7 @@ build_requires:
     ExtUtils::MakeMaker:  0
 requires:
     constant:             1.02
-    Math::PlanePath:      91
+    Math::PlanePath:      106
     Math::PlanePath::Base::Digits:  91
     Math::PlanePath::Base::Generic:  91
     perl:                 5.004

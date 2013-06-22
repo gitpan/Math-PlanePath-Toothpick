@@ -21,7 +21,7 @@
 use 5.004;
 use strict;
 use Test;
-plan tests => 11;
+plan tests => 27;
 
 use lib 't','xt';
 use MyTestHelpers;
@@ -66,17 +66,6 @@ sub log2_floor {
   return $exp;
 }
 
-# Return the number of points at $depth.
-sub path_tree_depth_to_width {
-  my ($path, $depth) = @_;
-  if (defined (my $n = $path->tree_depth_to_n($depth))
-      && defined (my $n_end = $path->tree_depth_to_n_end($depth))) {
-    return $n_end - $n + 1;
-  } else {
-    return undef;
-  }
-}
-
 
 #------------------------------------------------------------------------------
 # A151727 parts=4 added endless row
@@ -93,7 +82,7 @@ MyOEIS::compare_values
      my ($depth,$exp) = round_down_pow($count,2);
      $depth *= 4;
      for ( ; @got < $count; $depth++) {
-       push @got, path_tree_depth_to_width($path,$depth);
+       push @got, $path->tree_depth_to_width($depth);
      }
      return \@got;
    });
@@ -106,7 +95,7 @@ MyOEIS::compare_values
      my $path = make_path('3mid');
      my @got;
      for (my $depth = 0; @got < $count; $depth++) {
-       push @got, 4 * path_tree_depth_to_width($path,$depth);
+       push @got, 4 * $path->tree_depth_to_width($depth);
      }
      return \@got;
    });
@@ -124,7 +113,7 @@ MyOEIS::compare_values
      my ($depth,$exp) = round_down_pow($count,2);
      $depth *= 4;
      for ( ; @got < $count; $depth++) {
-       push @got, (path_tree_depth_to_width($path,$depth)-4) / 8;
+       push @got, ($path->tree_depth_to_width($depth)-4) / 8;
      }
      return \@got;
    });
@@ -137,7 +126,7 @@ MyOEIS::compare_values
      my $path = make_path('3mid');
      my @got;
      for (my $depth = 0; @got < $count; $depth++) {
-       push @got, (path_tree_depth_to_width($path,$depth) - 1) / 2;
+       push @got, ($path->tree_depth_to_width($depth) - 1) / 2;
      }
      return \@got;
    });
@@ -461,7 +450,7 @@ MyOEIS::compare_values
   for (my $depth = 0; $depth < $limit; $depth++) {
     my $n = $depth+1;
     my $v2 = v2_formula($n);
-    my $added = path_tree_depth_to_width($path,$depth);
+    my $added = $path->tree_depth_to_width($depth);
     if ($added != $v2) {
       die "depth=$depth n=$n added=$added v2=$v2";
     }
@@ -477,7 +466,7 @@ MyOEIS::compare_values
   my $path = make_path('1');
   for (my $n = 0; $n < $limit; $n++) {
     my $v2 = v2_formula($n+1);
-    my $added = path_tree_depth_to_width($path,$n+$offset);
+    my $added = $path->tree_depth_to_width($n+$offset);
     if ($added != $v2) {
       die "n=$n added=$added v2=$v2";
     }
@@ -515,7 +504,7 @@ MyOEIS::compare_values
      my $path = make_path('3mid');
      my @got;
      for (my $depth = 0; @got < $count; $depth++) {
-       push @got, path_tree_depth_to_width($path,$depth);
+       push @got, $path->tree_depth_to_width($depth);
      }
      return \@got;
    });
@@ -529,7 +518,7 @@ MyOEIS::compare_values
      my @got;
      my ($offset,$exp) = round_down_pow(2*$count,2);
      for (my $n = 0; @got < $count; $n++) {
-       push @got, path_tree_depth_to_width($path,$offset+$n) / 4;
+       push @got, $path->tree_depth_to_width($offset+$n) / 4;
      }
      return \@got;
    });
@@ -553,7 +542,7 @@ MyOEIS::compare_values
      my $path = make_path('3side');
      my @got = (0);
      for (my $depth = 0; @got < $count; $depth++) {
-       push @got, path_tree_depth_to_width($path,$depth);
+       push @got, $path->tree_depth_to_width($depth);
      }
      return \@got;
    });
@@ -568,7 +557,7 @@ MyOEIS::compare_values
 #      my $n_base = $path->tree_depth_to_n($offset);
 #      my @got = (0,1);
 #      for (my $depth = $offset; @got < $count; $depth++) {
-#        push @got, path_tree_depth_to_width($path,$depth);
+#        push @got, $path->tree_depth_to_width($depth);
 #      }
 #      return \@got;
 #    });
@@ -647,7 +636,7 @@ MyOEIS::compare_values
      my $n_base = $path->tree_depth_to_n($offset);
      my @got;
      for (my $depth = $offset+1; @got < $count; $depth++) {
-       push @got, path_tree_depth_to_width($path,$depth);
+       push @got, $path->tree_depth_to_width($depth);
      }
      return \@got;
    });
@@ -775,7 +764,7 @@ MyOEIS::compare_values
   my $path = make_path('4');
   for (my $n = 1; $n < $limit; $n++) {
     my $v = v_formula($n+1);
-    my $added = path_tree_depth_to_width($path,$n);
+    my $added = $path->tree_depth_to_width($n);
     if ($added != $v) {
       die "n=$n added=$added v=$v";
     }
@@ -816,7 +805,7 @@ MyOEIS::compare_values
      my $path = make_path('1');
      my @got = (1,2);;
      for (my $depth = 2; @got < $count; $depth++) {
-       push @got, path_tree_depth_to_width($path,$depth);
+       push @got, $path->tree_depth_to_width($depth);
      }
      return \@got;
    });
@@ -832,26 +821,10 @@ MyOEIS::compare_values
      my $path = make_path('4');
      my @got = (0);   # extra initial 0
      for (my $depth = 0; @got < $count; $depth++) {
-       push @got, path_tree_depth_to_width($path,$depth);
+       push @got, $path->tree_depth_to_width($depth);
      }
      return \@got;
    });
-
-# # 151726 - 1of8 cells added
-# 
-# MyOEIS::compare_values
-#   (anum => 'A151726',
-#    func => sub {
-#      my ($count) = @_;
-#      my @got = (0);
-#      for (my $depth = 0; @got < $count; $depth++) {
-#        my $added = ($path4->tree_depth_to_n($depth+1)
-#                     - $path4->tree_depth_to_n($depth));
-#        push @got, $added;
-#      }
-#      return \@got;
-#    });
-
 
 if ($class eq 'Math::PlanePath::OneOfEight') {
   MyOEIS::compare_values

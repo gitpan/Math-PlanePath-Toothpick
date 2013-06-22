@@ -16,6 +16,10 @@ You should have received a copy of the GNU General Public License along
 with Math-PlanePath-Toothpick.  If not, see <http://www.gnu.org/licenses/>.
 
 
+Version 11, June 2013
+    - ToothpickTree new parts=two_horiz
+    - new tree_num_children_list()
+
 Version 10, May 2013
     - new ToothpickSpiral
 
@@ -30,7 +34,7 @@ Version 7, May 2013
 
 Version 6, April 2013
     - new sumxy_minimum(),sumxy_maximum(), diffxy_minimum(),diffxy_maximum(),
-    - ToothpickTree parts=octant,octant_up,wedge
+    - ToothpickTree new parts=octant,octant_up,wedge
 
 Version 5, April 2013
     - LCornerTree,OneOfEight new parts=octant_up,wedge
