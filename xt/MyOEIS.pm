@@ -273,23 +273,45 @@ sub ith_prime {
 }
 
 sub grep_for_values_aref {
-  my ($class, $values_aref) = @_;
+  my ($class, $aref) = @_;
+  MyOEIS->grep_for_values(array => $aref);
+}
+sub grep_for_values {
+  my ($class, %h) = @_;
   ### grep_for_values_aref() ...
   ### $class
-  ### $values_aref
-  return $class->grep_for_values_str(join (',',@$values_aref));
-}
 
-sub grep_for_values_str {
-  my ($class, $values_str) = @_;
-  ### grep_for_values_str() ...
-  ### $class
-  ### $values_str
-
-  if (length($values_str) == 0) {
-    ### empty ...
-    return 'no match empty list of values';
+  my $name = $h{'name'};
+  if (defined $name) {
+    $name = "$name: ";
   }
+
+  my $values_aref = $h{'array'};
+  if (@$values_aref == 0) {
+    ### empty ...
+    return "${name}no match empty list of values\n\n";
+  }
+
+  {
+    my $join = $values_aref->[0];
+    for (my $i = 1; $i <= $#$values_aref && length($join) < 20; $i++) {
+      $join .= ','.$values_aref->[$i];
+    }
+    $name .= "match $join\n";
+  }
+  
+  if (defined (my $value = constant_array(@$values_aref))) {
+    return '';
+    if ($value != 0) {
+    return "${name}constant $value\n\n";
+    }
+  }
+
+  if (defined (my $diff = constant_diff(@$values_aref))) {
+    return "${name}constant difference $diff\n\n";
+  }
+
+  my $values_str = join (',',@$values_aref);
 
   # print "grep $values_str\n";
   # unless (system 'zgrep', '-F', '-e', $values_str, "$ENV{HOME}/OEIS/stripped.gz") {
@@ -307,7 +329,9 @@ sub grep_for_values_str {
   #   print "  $name\n";
   #   print "\n"
   # }
-  return $class->stripped_grep($values_str);
+  if (my $str = $class->stripped_grep($values_str)) {
+    return "$name$str\n";
+  }
 }
 
 use constant GREP_MAX_COUNT => 8;
@@ -338,27 +362,35 @@ sub stripped_grep {
 
   my $orig_str = $str;
   my $abs = '';
-  foreach my $mung ('none', 'negate', 'abs') {
-    if ($mung ne 'none') {
-      ### $mung
-      if ($ret) { last; }
-      if ($mung eq 'negate') {
-        $abs = "[NEGATED]\n";
-        $str = $orig_str;
-        $str =~ s{(^|,)(-?)}{$1.($2?'':'-')}ge;
-      } else {
-        # 'abs'
-        $str = $orig_str;
-        if (! ($str =~ s/-//g)) {
-          ### no negatives to absolute ...
-          next;
-        }
-        if ($str =~ /^(\d+)(,\1)*$/) {
-          ### only one value when abs: $1
-          next;
-        }
-        $abs = "[ABSOLUTE VALUES]\n";
+  foreach my $mung ('none', 'negate', 'abs', 'half') {
+    if ($ret) { last; }
+
+    if ($mung eq 'none') {
+
+    }  elsif ($mung eq 'negate') {
+      $abs = "[NEGATED]\n";
+      $str = $orig_str;
+      $str =~ s{(^|,)(-?)}{$1.($2?'':'-')}ge;
+
+    } elsif ($mung eq 'half') {
+      if ($str =~ /[13579](,|$)/) {
+        ### not all even to halve ...
+        next;
       }
+      $str = join (',', map {$_/2} split /,/, $orig_str);
+      $abs = "[HALF]\n";
+
+    } elsif ($mung eq 'abs') {
+      $str = $orig_str;
+      if (! ($str =~ s/-//g)) {
+        ### no negatives to absolute ...
+        next;
+      }
+      if ($str =~ /^(\d+)(,\1)*$/) {
+        ### only one value when abs: $1
+        next;
+      }
+      $abs = "[ABSOLUTE VALUES]\n";
     }
     ### $str
 
@@ -393,6 +425,39 @@ sub anum_to_name {
   my ($class, $anum) = @_;
   $anum =~ /^A[0-9]+$/ or die "Bad A-number: ", $anum;
   return `zgrep -e ^$anum $ENV{HOME}/OEIS/names.gz`;
+}
+
+# constant_diff($a,$b,$c,...)
+# If all the given values have a constant difference then return that amount.
+# Otherwise return undef.
+#
+sub constant_diff {
+  my $diff = shift;
+  my $value = shift;
+  $diff = $value - $diff;
+  while (@_) {
+    my $next_value = shift;
+    if ($next_value - $value != $diff) {
+      return undef;
+    }
+    $value = $next_value;
+  }
+  return $diff;
+}
+
+# constant_array($a,$b,$c,...)
+# If all the given values are all equal then return that value.
+# Otherwise return undef.
+#
+sub constant_array {
+  my $value = shift;
+  while (@_) {
+    my $next_value = shift;
+    if ($next_value != $value) {
+      return undef;
+    }
+  }
+  return $value;
 }
 
 1;

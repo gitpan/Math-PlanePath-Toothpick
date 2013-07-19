@@ -28,8 +28,81 @@ use Math::PlanePath::Base::Digits 'round_down_pow';
 
 
 {
-  # octant path->tree_depth_to_n() vs ByCells
   require Math::PlanePath::OneOfEight;
+  foreach my $depth (2,
+                      0 .. 80
+                    ) {
+    print "\ndepth=$depth\n";
+    my $parts = '3side';
+    my $path = Math::PlanePath::OneOfEight->new (parts => $parts);
+    foreach my $n ($path->tree_depth_to_n($depth)
+                   .. $path->tree_depth_to_n_end($depth)) {
+      my $subheight_search = path_tree_n_to_subheight_by_search($path,$n);
+      my $subheight = $path->tree_n_to_subheight($n);
+      if (! defined $subheight) { $subheight = 'undef'; }
+      if (! defined $subheight_search) { $subheight_search = 'undef'; }
+      my $diff = ($subheight eq $subheight_search ? '' : '  ****');
+      printf "%2d %s %s%s\n", $n, $subheight_search, $subheight, $diff;
+    }
+  }
+  exit 0;
+
+
+  use constant SUBHEIGHT_SEARCH_LIMIT => 90;
+  sub path_tree_n_to_subheight_by_search {
+    my ($path, $n, $limit) = @_;
+
+    if (! defined $limit) { $limit = SUBHEIGHT_SEARCH_LIMIT; }
+    if ($limit <= 0) {
+      return undef;  # presumed infinite
+    }
+    if (! exists $path->{'path_tree_n_to_subheight_by_search__cache'}->{$n}) {
+      my @children = $path->tree_n_children($n);
+      my $height = 0;
+      foreach my $n_child (@children) {
+        my $h = path_tree_n_to_subheight_by_search($path,$n_child,$limit-1);
+        if (! defined $h) {
+          $height = undef;  # infinite
+          last;
+        }
+        $h++;
+        if ($h >= $height) {
+          $height = $h;  # new bigger subheight among the children
+        }
+      }
+      ### maximum is: $height
+      if (defined $height || $limit >= SUBHEIGHT_SEARCH_LIMIT*4/5) {
+        ### set cache: "n=$n  ".($height//'[undef]')
+        $path->{'path_tree_n_to_subheight_by_search__cache'}->{$n} = $height;
+        ### cache: $path->{'path_tree_n_to_subheight_by_search__cache'}
+      }
+    }
+    ### path_tree_n_to_subheight_by_search(): "n=$n"
+    return $path->{'path_tree_n_to_subheight_by_search__cache'}->{$n};
+
+
+    # my @n = ($n);
+    # my $height = 0;
+    # my @pending = ($n);
+    # for (;;) {
+    #   my $n = pop @pending;
+    #   @n = map {} @n
+    #     or return $height;
+    #
+    #   if (defined my $h = $path->{'path_tree_n_to_subheight_by_search__cache'}->{$n}) {
+    #     return $height + $h;
+    #   }
+    #   @n = map {$path->tree_n_children($_)} @n
+    #     or return $height;
+    #   $height++;
+    #   if (@n > 200 || $height > 200) {
+    #     return undef;  # presumed infinite
+    #   }
+    # }
+  }
+}
+{
+  # octant path->tree_depth_to_n() vs ByCells
   require Math::PlanePath::OneOfEightByCells;
   my $parts = 'side';
   my $path = Math::PlanePath::OneOfEight->new (parts => $parts);

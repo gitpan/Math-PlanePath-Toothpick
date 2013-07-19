@@ -58,7 +58,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 11;
+$VERSION = 12;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -81,7 +81,7 @@ use constant parameter_info_array =>
       display   => 'Parts',
       type      => 'enum',
       default   => '4',
-      choices   => ['4','3','2','1','octant','octant_up',
+      choices   => ['4','3w','3','2','1','octant','octant_up',
                     'cross','two_horiz',
                     'wedge','wedge+1',
                     'unwedge_left','unwedge_left+1','unwedge_left_S',
@@ -97,6 +97,7 @@ sub new {
   $self->{'sq'} = Math::PlanePath::SquareSpiral->new (n_start => 0);
 
   my $parts = ($self->{'parts'} ||= '4');
+  $self->{'depth_to_n'} = [0];
   my @n_to_x;
   my @n_to_y;
   my @endpoint_dirs;
@@ -126,6 +127,11 @@ sub new {
     @n_to_x = (0);
     @n_to_y = (0);
     @endpoint_dirs = (0);  # so N=1 is at X=0,Y=-1 
+  } elsif ($parts eq '3w') {
+    @n_to_x = (0,  1,1,-1);
+    @n_to_y = (1, -1,1, 1);
+    @endpoint_dirs = (3,0,2,2);
+    push @{$self->{'depth_to_n'}}, 1;
   } elsif ($parts eq 'cross') {
     @n_to_x = (0, -1, 1, 0);
     @n_to_y = (0, 0, 0, -2);
@@ -139,7 +145,6 @@ sub new {
   }
   $self->{'n_to_x'} = \@n_to_x;
   $self->{'n_to_y'} = \@n_to_y;
-  $self->{'depth_to_n'} = [0];
 
   my @endpoints;
   my @xy_to_n;
@@ -201,6 +206,9 @@ sub _extend {
       }
       if ($parts eq '3') {
         if ($y <= 0 && $x < 0) { next; }
+      }
+      if ($parts eq '3w') {
+        if ($y == 0 || ($y <= 0 && $x <= 0)) { next; }
       }
       if ($parts eq 'octant') {
         if ($y <= 0 || $y > $x+1) { next; }
@@ -405,11 +413,20 @@ sub tree_n_children {
   @n = sort {$a<=>$b}
     grep {defined $_ && $self->tree_n_to_depth($_) == $child_depth}
       @n;
+
+  if ($self->{'parts'} eq '3w' && $n == 0) {
+    unshift @n, 1;
+  }
+
   ### found: @n
   return @n;
 }
 sub tree_n_parent {
   my ($self, $n) = @_;
+
+  if ($self->{'parts'} eq '3w' && $n == 1) {
+    return 0;
+  }
 
   my ($x,$y) = $self->n_to_xy($n)
     or return undef;

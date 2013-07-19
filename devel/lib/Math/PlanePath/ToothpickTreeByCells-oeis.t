@@ -21,7 +21,7 @@
 use 5.004;
 use strict;
 use Test;
-plan tests => 13;
+plan tests => 16;
 
 use lib 't','xt','devel/lib';
 use MyTestHelpers;
@@ -29,12 +29,63 @@ MyTestHelpers::nowarnings();
 use MyOEIS;
 
 use Math::PlanePath::ToothpickTreeByCells;
+use Math::Prime::XS 0.23 'is_prime'; # version 0.23 fix for 1928099
 
 # uncomment this to run the ### lines
 #use Smart::Comments '###';
 
 my $max_count = undef;
 
+
+#------------------------------------------------------------------------------
+# A153003 - 3w total
+# A153004 - 3w added    +1, 3, 3, 3, 6
+
+MyOEIS::compare_values
+  (anum => 'A153003',
+   max_count => $max_count,
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::ToothpickTreeByCells->new (parts => '3w');
+     my @got;
+     my $total = 0;
+     for (my $depth = 0; @got < $count; $depth++) {
+       push @got, $path->tree_depth_to_n($depth);
+     }
+     return \@got;
+   });
+
+# added
+MyOEIS::compare_values
+  (anum => 'A153004',
+   max_count => $max_count,
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::ToothpickTreeByCells->new (parts => '3w');
+     my @got;
+     my $total = 0;
+     for (my $depth = 0; @got < $count; $depth++) {
+       push @got, $path->tree_depth_to_width($depth);
+     }
+     return \@got;
+   });
+
+# A153005 parts=3w total cells which are primes
+MyOEIS::compare_values
+  (anum => 'A153005',
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::ToothpickTreeByCells->new (parts => '3w');
+     my @got;
+     my $total = 0;
+     for (my $depth = 0; @got < $count; $depth++) {
+       my $n = $path->tree_depth_to_n($depth);
+       if (is_prime ($n)) {
+         push @got, $n;
+       }
+     }
+     return \@got;
+   });
 
 #------------------------------------------------------------------------------
 # A160158 - two toothpicks end-to-end

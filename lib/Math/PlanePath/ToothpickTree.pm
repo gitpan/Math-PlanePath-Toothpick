@@ -17,6 +17,23 @@
 
 
 #------------------------------------------------------------------------------
+# cf A153003  total cells  0, 1, 4, 7, 10
+#    A153004  added cells    +1, 3, 3, 3, 6
+#    A153005  total which are primes
+#      clipping parts=4 pattern to 3 quadrants,
+#      X=0,Y=0 as a half toothpick not counted
+#      X=0,Y=-1 as a half toothpick not counted
+#      X=1,Y=-1 "root" would begin at depth=1, or count it as child of 1
+#
+#         |       |
+#         2---1---2
+#         |   |   |
+#             X
+#             |   |
+#          ---X---2
+#                 |
+#
+#------------------------------------------------------------------------------
 # A160740 toothpick starting from 4 as cross
 #   doesn't maintain XYeven=vertical, XYodd=horizontal
 #             |
@@ -35,13 +52,13 @@
 # cf A183004 toothpicks placed at ends, alternately vert,horiz
 #    A183005 added  0,1,4,6,8,8,16,22,16,8,16,
 #
-#    . 4 .   .   . 4 .
-#        3   3   3
-#    . 4 . 2 . 2 . 4 .
-#            1
-#    . 4 . 2 . 2 . 4 .
-#        3   3   3
-#    . 4 .   .   . 4 .
+#    .-4-.-4-.-4-.-4-            middle "3" touch two ends
+#        3       3               counts just once
+#    .   .-2-.-2-.
+#        3   1   3
+#    .   .-2-.-2-.
+#        3       3
+#    .-4-.-4-.-4-.-4-.
 #
 #------------------------------------------------------------------------------
 # cf A160172 T-toothpick sequence
@@ -103,22 +120,6 @@
 #  |     |     |
 #
 #------------------------------------------------------------------------------
-# cf A153003  total cells  0, 1, 4, 7, 10
-#    A153004  added cells    +1, 3, 3, 3, 6
-#    A153005  total which are primes
-#      clipping parts=4 pattern to 3 quadrants,
-#      X=0,Y=0 as a half toothpick not counted
-#      X=0,Y=-1 as a half toothpick not counted
-#      X=1,Y=-1 "root" would begin at depth=1
-#
-#         |       |
-#         2---1---2
-#         |   |   |
-#             X
-#             |   |
-#          ---X---2
-#                 |
-#------------------------------------------------------------------------------
 
 
 package Math::PlanePath::ToothpickTree;
@@ -130,7 +131,7 @@ use Carp;
 *min = \&Math::PlanePath::_min;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 11;
+$VERSION = 12;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -140,6 +141,8 @@ use Math::PlanePath::Base::Generic
 use Math::PlanePath::Base::Digits
   'round_down_pow';
 
+# uncomment this to run the ### lines
+# use Smart::Comments;
 
 
 # Note: some of this shared with ToothpickReplicate
@@ -302,8 +305,8 @@ my %parts_depth_adjust = (4         => 0,
                           1         => 2,
                           octant    => 2,
                           octant_up => 2,
-                          wedge     => 0,
-                          'wedge+1' => 0,
+                          wedge     => -1,
+                          # 'wedge+1' => 0, # not working
                           two_horiz => 2,
                          );
 
@@ -332,7 +335,6 @@ my %initial_n_to_xy
      two_horiz   => [ [1,0],[-1,0],  [2,0],[-2,0],
                       [2,-1],[2,1],[-2,1],[-2,-1] ],
     );
-# use Smart::Comments;
 
 sub n_to_xy {
   my ($self, $n) = @_;
@@ -365,8 +367,6 @@ sub n_to_xy {
       return @{$initial->[$n]};
     }
   }
-
-
 
   (my $depth, $n) = _n0_to_depth_and_rem($self, $n);
   ### $depth
@@ -402,7 +402,6 @@ sub n_to_xy {
     $vdx = 1; $vdy = 0;
 
   } elsif ($parts eq 'wedge') {
-    $depth -= 1;
     $y = 1;
     $hdx = 0; $hdy = 1; $vdy = 0;
     my $add = _depth_to_octant_added([$depth],[1],$zero);
@@ -650,7 +649,6 @@ sub n_to_xy {
   ### n_to_xy() return: "$x,$y  (depth=$depth n=$n)"
   return ($x,$y);
 }
-# use Smart::Comments;
 
 sub xy_to_n {
   my ($self, $x, $y) = @_;
@@ -1144,31 +1142,6 @@ sub tree_n_to_depth {
   return $depth;
 }
 
-sub tree_n_to_subheight {
-  my ($self, $n) = @_;
-  if ($n < 0) {
-    return undef;
-  }
-  if (is_infinite($n)) {
-    return $n;
-  }
-  {
-    # infinite height on X=Y, X=Y-1 spines
-    my ($x,$y) = $self->n_to_xy($n);
-    $x = abs($x);
-    $y = abs($y);
-    if ($x == $y || $x == $y-1) {
-      return undef;
-    }
-  }
-  my @n = ($n);
-  my $height = 0;
-  for (;;) {
-    @n = map {$self->tree_n_children($_)} @n
-      or return $height;
-    $height++;
-  }
-}
 
 # Do a binary search for the bits of depth which give Ndepth <= N.
 #
@@ -1314,7 +1287,7 @@ sub tree_depth_to_n {
 
   } elsif ($parts eq 'wedge') {
     # wedge(depth) = 2*oct(depth-1) + 4
-    @pending = ($depth-1);
+    @pending = ($depth);
     @mult = (2+$zero);
 
   } elsif ($parts eq 'wedge+1') {
@@ -1397,10 +1370,6 @@ sub tree_depth_to_n {
       } elsif ($rem == 1) {
         ### rem==1 "A" ...
         $n += $mult;
-
-        # } elsif ($rem == 2) {
-        #   ### rem==2 "A,B" ...
-        #   $n += 3*$mult;
 
       } else {
         ### rem >= 2, formula ...
@@ -1544,6 +1513,177 @@ sub _depth_to_octant_added {
   ### return: $add
   return $add;
 }
+
+#------------------------------------------------------------------------------
+
+sub tree_n_to_subheight {
+  my ($self, $n) = @_;
+  ### tree_n_to_subheight(): $n
+
+  if ($n < 0)          { return undef; }
+  if (is_infinite($n)) { return $n; }
+
+  my $zero = $n * 0;
+  (my $depth, $n) = _n0_to_depth_and_rem($self, int($n));
+  ### $depth
+  ### $n
+
+  my $parts = $self->{'parts'};
+  $depth += $parts_depth_adjust{$parts};
+  ### depth adjusted to: $depth
+
+  if ($parts eq 'octant') {
+    my $add = _depth_to_octant_added ([$depth],[1], $zero);
+    $n = $add-1 - $n;
+    ### octant mirror numbering to n: $n
+
+  } elsif ($parts eq 'octant_up') {
+
+  } elsif ($parts eq 'wedge' || $parts eq 'wedge+1') {
+    my $add = _depth_to_octant_added ([$depth],[1], $zero);
+    ### wedge half width: $add
+    if ($parts eq 'wedge+1') {
+      # 0, 1 to $add, $add+1 to 2*$add, 2*$add+1
+      if ($n == 0 || $n == 2*$add+1) {
+        return 0;    # first,last toothpicks don't grow
+      }
+      $n -= 1;
+    }
+    ### assert: $n < 2*$add
+    if ($n >= $add) {
+      ### wedge second half
+      $n = 2*$add-1 - $n;   # mirror
+    }
+
+  } elsif ($parts eq 'two_horiz') {
+    ### two_horiz ...
+    my $add = _depth_to_octant_added([$depth,$depth-3],[1,1], $zero) - 1;
+    ### add quad: $add
+    ### assert: $n < 4*$add
+    if ($n >= 2*$add) {
+      ### two_horiz symmetric left,right halves ...
+      $n -= 2*$add;
+      ### $n
+    }
+    if ($n >= $add) {
+      ### two_horiz mirror top,bottom quarters ...
+      $n = 2*$add-1 - $n;
+      ### $n
+    }
+
+    $add = _depth_to_octant_added ([$depth],[1], $zero);
+    ### add oct: $add
+    if ($n < $add) {
+      ### two_horiz first octant, mirror ...
+      $n = $add-1 - $n;
+    } else {
+      ### two_horiz second octant, depth-3 ...
+      $n -= $add-1;
+      $depth -= 3;
+    }
+
+  } else {
+    ### assert: $parts eq '1' || $parts eq '2' || $parts eq '3' || $parts eq '4'
+    if ($parts eq '3') {
+      my $add = _depth_to_octant_added ([$depth+1,$depth],[1,1], $zero)
+        - 1; # undouble spine
+      if ($n < $add) {
+        $depth += 1;
+      } else {
+        $n -= $add;
+        $parts = '2';
+      }
+    }
+
+    if ($parts eq '2' || $parts eq '4') {
+      my $add = _depth_to_octant_added([$depth,$depth-1],[1,1], $zero)
+        - 1; # undouble spine
+      if ($n >= 2*$add) {
+        # parts=4 rotate lower ...
+        $n -= 2*$add;
+      }
+
+      ### add quadrant: $add
+      ### assert: $n < 2*$add
+      if ($n >= $add) {
+        ### parts=2 left half mirror ...
+        $n = 2*$add-1 - $n;
+        ### $n
+      } else {
+        ### parts=2 right half unchanged ...
+      }
+    }
+
+    ### quadrant ...
+    my $add = _depth_to_octant_added ([$depth],[1], $zero);
+    $n -= $add;
+    if ($n < 0) {
+      ### lower octant ...
+      $n = -1-$n;   # mirror
+    } else {
+      ### upper octant ...
+      $depth -= 1;
+      $n += 1;  # undouble spine
+    }
+  }
+
+  if ($depth <= 4) {
+    return undef;  # initial points
+  }
+
+  my $dbase;
+  my ($pow,$exp) = round_down_pow ($depth, 2);
+
+  for ( ; $exp--; $pow /= 2) {
+    ### at: "depth=$depth pow=$pow n=$n   dbase=".($dbase||'inf')
+    ### assert: $n >= 0
+
+    if ($n == 0) {
+      ### n=0 on spine ...
+      last;
+    }
+
+    next if $depth < $pow;
+
+    if (defined $dbase) { $dbase = $pow; }
+    $depth -= $pow;
+    ### depth remaining: $depth
+
+    if ($depth == 1) {
+      ### depth=1 is on upper,lower diagonal spine ...
+      ### assert: $n == 1
+      return $pow-3;
+    }
+    ### assert: $depth >= 2
+
+    my $add = _depth_to_octant_added ([$depth],[1], $zero);
+    ### $add
+
+    if ($n < $add) {
+      ### extend part ...
+    } else {
+      $dbase = $pow;
+      $n -= 2*$add;
+      ### sub 2add to: $n
+
+      if ($n < 0) {
+        ### upper part, mirror to n: -1 - $n
+        $n = -1 - $n;   # mirror,  $n = $add-1 - $n = -($n-$add) - 1
+      } else {
+        ### lower part ...
+        $depth += 1;
+        $n += 1;  # undouble upper,lower spine
+      }
+    }
+
+  }
+
+  ### final ...
+  ### $dbase
+  ### $depth
+  return (defined $dbase ? $dbase - $depth - 2 : undef);
+}
+# no Smart::Comments;
 
 1;
 __END__
@@ -1783,8 +1923,8 @@ four quadrants of the full pattern.
       7 |   36--28--35      34--27--33 -43--45
         |    |   |               |   |       |
       6 |       22--18--  --17--21          ...
-        |        |   |       |   |   |
-      5 | --37--29- 15--12--14 -26--32
+        |    |   |   |       |   |   |
+      5 |   37--29- 15--12--14 -26--32
         |                |   |       |
       4 | ---9--- ---8--10
         |    |       |   |   |       |
@@ -1792,7 +1932,7 @@ four quadrants of the full pattern.
         |        |   |       |   |   |
       2 | ---1---2      19--16--20
         |    |   |   |   |       |   |
-      1 |    0 --3---5  23    --24--30
+      1 |    0 --3---5 -23--  --24--30
         |    |       |               |
     Y=0 |
         +----------------------------------
@@ -2121,6 +2261,143 @@ depth level offset).  For example the point N=10 at depth=3 is the start of
 the lower octant in that quarter.  A bigger picture than what's shown above
 makes this easier to see.
 
+=head2 Octant Vertical or Horizontal
+
+The parts=octant pattern is half a parts=1 quadrant across the diagonal.
+It's also interesting to note that an octant is half a quadrant by taking
+just the vertical or horizontal toothpicks in the quadrant (taking vertical
+or horizontal according to the orientation of the last level in the octant).
+
+    oct(d) = quad_verticals(d) + floor(d/2)    if d odd
+             quad_horizontals(d) + floor(d/2)  if d even
+
+    d = depth starting from 0 per tree_depth_to_n()
+
+This works because in a quadrant the vertical toothpicks above the X=Y
+diagonal can be folded down across the diagonal to become horizontal and
+complete the lower octant.
+
+     quadrant verticals                 octant made by quadrant
+   numbered by depth level            upper verticals fold down
+                                      to become horizontals
+
+    |       |       |       |                                  |
+   12      12      12      12                           ......12
+    |   |   |       |   |   |                              |   |
+       10              10                           ......10
+    |   |   |       |   |   |                          |   |   |
+   12       8       8      12                    ......8 -12--12
+    |       |   |   |       |                      |   |       |
+                6                            ......6
+    |       |   |   |       |                  |   |   |       |
+    4       4       8      12            ......4 --8---8 -12--12
+    |   |   |   |   |   |   |              |   |       |   |   |
+        2      10      10             .....2      10--10--10
+    |   |   |   |       |   |          |   |   |   |       |   |
+    0       4              12          0 --4---4 -12--   -12--12
+    |       |               |          |       |               |
+
+For example the vertical level "4" toothpick which is above the X=Y diagonal
+folds down to become the horizontal "4" in the lower octant.  Similarly the
+block of five 8,10,12,12,12 above the diagonal fold down to make five
+horizontals.  And the final 12 above becomes the horizontal 12.
+
+However the horizontals which are on the central diagonal spine don't have
+corresponding verticals above.  These are marked "....." in the octant shown
+above.  This means 1 toothpick missing at every second depth level and
+therefore the floor(depth/2) in the oct() formula above.
+
+The key is that a quadrant has the upper octant running 1 depth level behind
+the lower.  So the horizontals in the lower correspond to the verticals in
+the upper (and vice-versa).
+
+The correspondence can be seen algebraically in the formula for a quadrant,
+
+    quad(d) = oct(d) + oct(d-1) + d
+
+reversed to
+
+    oct(d) = quad(d) - oct(d-1)
+
+and the oct(d-1) term repeatedly expanded
+
+    oct(d) = quad(d) - (quad(d-1) - oct(d-2) + d-1) + d
+           = quad(d)-quad(d-1)+1 + oct(d-2)
+           = ...
+           = quad(d)-quad(d-1)+1 + quad(d-2)-quad(d-3)+1 + ...
+           = quad(d)-quad(d-1) + quad(d-2)-quad(d-3) + ... + floor(d/2)
+
+The difference quad(d)-quad(d-1) is the number of toothpicks added to make
+depth level d, and similarly quad(d-2)-quad(d-3) the number added to make
+depth d-2.  This means the number added at every second level, so if d is
+even then this counts only the vertical toothpicks added.  Or if d is odd
+then only the horizontals.
+
+The +d, +(d-1), +(d-2) additions from the quad(d) formula have alternating
+signs and so cancel out to be +1 per pair, giving floor(d/2).
+
+The parts=wedge pattern is two octants and therefore the wedge corresponds
+to the horizontals or verticals of parts=2 which is two quadrants.  But
+there's an adjustment to make there though since parts=2 doesn't have a
+toothpick at the origin the way the wedge does.
+
+=head2 Quadrant and 2^k-1 Sums
+
+In OEIS A168002 (L<http://oeis.org/A168002>) Omar Pol observed that the
+quadrant(d) total cells taken mod 2 gives the number of ways d can be
+expressed as a sum of terms 2^k-1.
+
+    d = (2^a - 1) + (2^b - 1) + (2^c - 1) + ...
+    distinct a,b,c,...
+
+There's only ever 0 or 1 way to write d as a sum of 2^k-1 terms, ie. d
+either is or is not such a sum.  For example,
+
+     d      ways
+    ---     ----
+     8       1     8 = 7+1
+     9       0     no sum possible
+     10      1     10 = 7+3
+     11      1     11 = 7+3+1
+     12      0     no sum possible
+
+The sum can be formed by taking the highest possible 2^k-1 from d
+repeatedly.  This works because smaller 2^k-1 terms are not big enough to
+add up to that highest term.  The result is a recurrence
+
+    ways(2^k-1)       = 1
+    ways(2^k-1 + rem) = ways(rem)       1 <= rem < 2^k-1
+    ways(2*(2^k-1))   = 0)
+
+The quadrant total cells follows a similar recurrence when taken mod 2.
+Using the quadrant count Q(d) in the paper by Applegate, Pol, Sloane above
+
+    Q(d) = (T(d) - 3)/4
+
+    numbered same as T,
+    so Q(2)=0 then first quadrant toothpick Q(3)=1
+
+Substituting the recurrences for T in the paper gives
+
+    Q(2^k) = (4^k-4)/6
+    Q(2^k+1) = Q(2^k) + 1
+    Q(2^k + rem) = Q(2^k) + Q(rem+1) + 2*Q(rem) + 2
+       for 2 <= rem < 2^k
+
+Taking these modulo 2
+
+    Q(2^k)   == 0 mod 2     since (4^k-4)/6 always even
+    Q(2^k+1) == 1 mod 2
+    Q(2^k + rem) == Q(rem+1) mod 2       2 <= rem < 2^k
+
+    Q(2^k-1 + rem) == Q(rem) mod 2       1 <= rem < 2^k-1
+
+The last formula is the key, being the same as the ways(2^k-1 + rem)
+recurrence above.  Then Q(2^k)=0 corresponds to ways(2^k-2)=0, and
+Q(2^k+1)=1 corresponding to ways(2^k-1)=1.  And therefore
+
+    Q(d-2) == ways(d) mod 2
+
 =head1 FUNCTIONS
 
 See L<Math::PlanePath/FUNCTIONS> for behaviour common to all path classes.
@@ -2145,9 +2422,10 @@ Return the children of C<$n>, or an empty list if C<$n> has no children
 (including when C<$n E<lt> 0>, ie. before the start of the path).
 
 The children are the new toothpicks added at the ends of C<$n> at the next
-level.  This can be 0, 1 or 2 points.  For example N=24 has no children, N=8
-has a single child N=12, and N=2 has two children N=4,N=5.  The way points
-are numbered means that two children are consecutive N values.
+level.  This can be 0, 1 or 2 points.  For example in the parts=4 default
+N=24 has no children, N=8 has a single child N=12, and N=2 has two children
+N=4,N=5.  The way points are numbered means that if there are two children
+then they're consecutive N values.
 
 =item C<$n_parent = $path-E<gt>tree_n_parent($n)>
 
@@ -2161,9 +2439,9 @@ Return the parent node of C<$n>, or C<undef> if no parent due to C<$n E<lt>=
 Return the depth of point C<$n>, or first C<$n> at given C<$depth>,
 respectively.
 
-The first point N=0 is depth=0 in all the "parts" forms.  The way parts=1
-and parts=2 don't start at the origin means their depth at a given X,Y
-differs by 2 or 1 respectively from the full pattern at the same point.
+The first point N=0 is depth=0 in all "parts" forms.  The way parts=1 and
+parts=2 don't start at the origin means their depth at a given X,Y differs
+by 2 or 1 respectively from the full pattern at the same point.
 
 =back
 
@@ -2199,18 +2477,18 @@ to the full pattern.  Note though that C<tree_depth_to_n()> always counts
 from C<$depth = 0> so an adjustment +1 or +2 is applied there.
 
     for depth >= 2
-    depth = pow + rem    where pow=2^k the high bit of depth
+    depth = pow + rem    where pow=2^k is the high bit of depth
                          so 0 <= rem < 2^k
 
     oct(2) = 0
     oct(pow) = (pow*pow - 16)/12 + pow/2
     oct(pow+1) = oct(pow) + 1
     oct(pow+rem) = oct(pow) + oct(rem+1) + 2*oct(rem) - rem + 4
-                   for rem >= 2
+                   for 2 <= rem < pow
 
-The other pattern parts can be expressed in terms of an octant.  It's
-convenient to make an octant the unit and have the others as multiples of
-it.
+The other parts patterns can be expressed in terms of an octant.  It's
+convenient to make an octant the unit and have the others as multiples and
+depth offsets from it.
 
     quad(d)    = oct(d) + oct(d-1) - d + 3
     half(d)    = 2*quad(d) + 1
@@ -2219,8 +2497,8 @@ it.
                 = oct(d+1) + 3*oct(d) + 2*oct(d-1) - 3*d + 10
     wedge(d)   = 2*oct(d-1) + 4
 
-In quad(d) the "-d" adjusts for the stairstep diagonal spine being counted
-twice by the oct(d)+oct(d-1).
+In quad(d) the "-d" term adjusts for the stairstep diagonal spine being
+counted twice by the oct(d)+oct(d-1).
 
 The oct() recurrence corresponds to the sub-block breakdown shown under
 L</One Octant> above.
@@ -2235,10 +2513,10 @@ by those two parts, hence "-(rem-1)" to subtract one copy of it.  A further
 +3 is the points in-between the replications, ie. the "A", "B" and one
 further toothpick not otherwise counted by the replications.
 
-oct(rem+1) + 2*oct(rem) is the important part of the formula.  It knocks out
+oct(rem+1) + 2*oct(rem) is the important part of the recurrence.  It removes
 the high bit of depth and spreads rem to an adjacent pair of smaller depths
 rem+1 and rem.  A list of pending depth values can be maintained and
-compared to a pow=2^k.
+compared to a pow=2^k for reduction.
 
     for each pending depth
       if depth == 2^k or 2^k+1 then oct(pow) or oct(pow+1)
@@ -2248,20 +2526,21 @@ compared to a pow=2^k.
 rem+1,rem are adjacent so successive reductions make a list growing by one
 further value each time, like
 
+    d
     d+1, d
     d+2, d+1, d
     d+3, d+2, d+1, d
 
-When the list crosses a 2^k boundary some of these depths are reduced and
-others remain.  When that happens the list is no longer successive values,
-only mostly successive.  When accumulating rem+1 and rem it's enough to
-check whether the current "rem+1" is equal to the "rem" of the previous
+But when the list crosses a 2^k boundary some of these depths are reduced
+and others unchanged.  When that happens the list is no longer successive
+values, only mostly successive.  When accumulating rem+1 and rem it's enough
+to check whether the current "rem+1" is equal to the "rem" of the previous
 breakdown and if so then coalesce with that previously entry.
 
-The factor of "2" in 2*oct(rem) can be handled by keeping a desired
-multiplier with each pending depth.  oct(rem+1) is the current multiplier
-unchanged.  2*oct(rem) doubles the current multipler.  If rem+1 coalesces
-with the previous rem then add to its multiplier.  Those additions mean the
+The factor of "2" in 2*oct(rem) is handled by keeping a desired multiplier
+with each pending depth.  oct(rem+1) is the current multiplier unchanged.
+2*oct(rem) doubles the current multiplier.  If rem+1 coalesces with the
+previous rem then add to its multiplier.  Those additions mean the
 multipliers are not powers-of-2.
 
 If the pending list is successive integers then them rem+1,rem breakdown and

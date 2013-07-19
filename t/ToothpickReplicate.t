@@ -33,7 +33,7 @@ require Math::PlanePath::ToothpickReplicate;
 # VERSION
 
 {
-  my $want_version = 11;
+  my $want_version = 12;
   ok ($Math::PlanePath::ToothpickReplicate::VERSION, $want_version,
       'VERSION variable');
   ok (Math::PlanePath::ToothpickReplicate->VERSION,  $want_version,

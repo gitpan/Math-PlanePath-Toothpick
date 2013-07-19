@@ -20,150 +20,150 @@
 use 5.004;
 use strict;
 use List::Util 'min', 'max';
+use Math::PlanePath::Base::Digits 'round_down_pow';
+use Math::PlanePath::ToothpickTree;
 
 # uncomment this to run the ### lines
 # use Smart::Comments;
 
 
-# =head2 Octant and Vertical or Horizontal
-# 
-# It's interesting to note an octant corresponds to the vertical or horizontal
-# toothpicks of the quadrant.
-# 
-#     oct(d) = quadrant_verticals(d)    if depth odd
-#              quadrant_horizontals(d)  if depth even
-# 
-# For example an octant up to and not including depth=5
-# 
-#                                              
-#                                                 |   
-#             --5---                              6   
-#               |                     |       |   |   
-#         --3---4                     4       4
-#           |   |                     |   |   |       
-#     --1---2                             2           
-#       |   |   |                     |   |   |       
-#       0 --3---4                     0       4       
-#       |       |                     |       |       
-# 
-# 
-#                                             --7-- 
-#                                                   
-#                                ---5--- ---5---    
-#               |                                   
-#         --4---6                    ---3---  --7-- 
-#           |   |                                   
-#     --1---2                    ---1---            
-#       |   |   |                           
-#       0 --3---5                     --3---
-#       |       |                           
-# 
-# 
-#                 
-#                 
-#               | 
-#         --4---6 
-#           |   | 
-#     --1---2     
-#       |   |   | 
-#       0 --3---5 
-#       |       | 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# , or to odd depth corresponds to the horizontal
-# toothpicks of the quadrant.
 
 
 {
-  # oct(2^k) in binary
-  require Math::PlanePath::ToothpickTree;
-  my $path = Math::PlanePath::ToothpickTree->new (parts => '1');
-  foreach my $k (0 .. 20) {
-    my $n = $path->tree_depth_to_n(2**$k+2);
-    printf "%2d %40b\n", $k,$n;
+  # tree_depth_to_n() mod 2
+  unshift @INC, 'xt'; require MyOEIS;
+  foreach my $parts (1, 2, 3, 4, 'octant', 'wedge') {
+    my $path = Math::PlanePath::ToothpickTree->new (parts => $parts);
+    my @values = map { $path->tree_depth_to_n($_) % 2 } 4 .. 40;
+    print MyOEIS->grep_for_values(name => "parts=$parts",
+                                  array => \@values);
+    print "\n";
   }
   exit 0;
 }
 
+
+{
+  # count 2^k-1 terms to make n
+  # A079559 ,1,1,0,1,1,0,0,1,1,0,1,1,0,0,0,1,1,0,1,1,0,0,1
+  # A168002   ,1,0,1,1,0,0,1,1,0,1,1,0,0,0,1,1,0,1,1,0,0,1,1
+
+  foreach my $n (1 .. 15) {
+    my @list = list_2ksub1($n);
+    print "$n  ",join('+',@list),"\n";
+  }
+  unshift @INC, 'xt'; require MyOEIS;
+  # my @values = map { count_2ksub1($_)>0?1:0 } 1 .. 35;
+  my @values = map { count_2ksub1($_)||() } 1 .. 35;
+  my $values = join(',',@values);
+  print "seek $values\n";
+  print MyOEIS->grep_for_values_aref(\@values);
+  exit 0;
+
+  # n >= 2^k-1
+  # n+1 >= 2^k
+  sub count_2ksub1 {
+    my ($n) = @_;
+    my @list = list_2ksub1($n);
+    return scalar(@list);
+  }
+  sub list_2ksub1 {
+    my ($n) = @_;
+    my @ret;
+    my $prev = 0;
+    while ($n > 0) {
+      my ($pow,$exp) = round_down_pow($n+1,2);
+      my $term = $pow-1;
+      if ($term == $prev) {
+        return;
+      }
+      push @ret, $term;
+      $n -= $term;
+      $prev = $term;
+    }
+    return @ret;
+  }
+
+  # quad(pow) = (4^k-4)/6  
+  sub Q {
+    my ($n) = @_;
+    die if $n < 2;
+    my ($pow,$exp) = round_down_pow($n,2);
+    my $rem = $n - $pow;
+    if ($rem == 0) {
+      return ($pow*$pow-4)/6;
+    }
+    if ($rem == 1) {
+      return Q($pow) + 1;
+    }
+    return Q($pow) + Q($rem+1) + 2*Q($rem) + 2;
+  }
+}
+
+BEGIN {
+  my $path = Math::PlanePath::ToothpickTree->new;
+  sub whole_total {
+    my ($depth) = @_;
+    return $path->tree_depth_to_n($depth);
+  }
+  sub whole_added {
+    my ($depth) = @_;
+    return $path->tree_depth_to_width($depth);
+  }
+  sub whole_vertical {   # A162794
+    my ($depth) = @_;
+    my $ret = 0;
+    for (my $d = 0; $d < $depth; $d+=2) {
+      $ret += $path->tree_depth_to_width($d);
+    }
+    return $ret;
+  }
+  sub whole_horizontal {  # A162796
+    my ($depth) = @_;
+    my $ret = 0;
+    for (my $d = 1; $d < $depth; $d+=2) {
+      $ret += $path->tree_depth_to_width($d);
+    }
+    return $ret;
+  }
+}
+BEGIN {
+  my $path = Math::PlanePath::ToothpickTree->new (parts => 'octant');
+  sub oct_total {
+    my ($depth) = @_;
+    return $path->tree_depth_to_n($depth);
+  }
+  sub oct_added {
+    my ($depth) = @_;
+    return $path->tree_depth_to_width($depth);
+  }
+}
+BEGIN {
+  my $path = Math::PlanePath::ToothpickTree->new (parts => '1');
+  sub quad_total {
+    my ($depth) = @_;
+    return $path->tree_depth_to_n($depth);
+  }
+  sub quad_vertical {
+    my ($depth) = @_;
+    my $ret = 0;
+    for (my $d = 0; $d < $depth; $d+=2) {
+      $ret += $path->tree_depth_to_width($d);
+    }
+    return $ret;
+  }
+  sub quad_horizontal {
+    my ($depth) = @_;
+    my $ret = 0;
+    for (my $d = 1; $d < $depth; $d+=2) {
+      $ret += $path->tree_depth_to_width($d);
+    }
+    return $ret;
+  }
+}
+
 {
   # octant = quadhoriz;
-  {
-    require Math::PlanePath::ToothpickTree;
-    my $path = Math::PlanePath::ToothpickTree->new;
-    sub whole_total {
-      my ($depth) = @_;
-      return $path->tree_depth_to_n($depth);
-    }
-    sub whole_added {
-      my ($depth) = @_;
-      return $path->tree_depth_to_width($depth);
-    }
-    sub whole_vertical {   # A162794
-      my ($depth) = @_;
-      my $ret = 0;
-      for (my $d = 0; $d < $depth; $d+=2) {
-        $ret += $path->tree_depth_to_width($d);
-      }
-      return $ret;
-    }
-    sub whole_horizontal {  # A162796
-      my ($depth) = @_;
-      my $ret = 0;
-      for (my $d = 1; $d < $depth; $d+=2) {
-        $ret += $path->tree_depth_to_width($d);
-      }
-      return $ret;
-    }
-  }
-  {
-    require Math::PlanePath::ToothpickTree;
-    my $path = Math::PlanePath::ToothpickTree->new (parts => 'octant');
-    sub oct_total {
-      my ($depth) = @_;
-      return $path->tree_depth_to_n($depth);
-    }
-    sub oct_added {
-      my ($depth) = @_;
-      return $path->tree_depth_to_width($depth);
-    }
-  }
-  {
-    require Math::PlanePath::ToothpickTree;
-    my $path = Math::PlanePath::ToothpickTree->new (parts => '1');
-    sub quad_total {
-      my ($depth) = @_;
-      return $path->tree_depth_to_n($depth);
-    }
-    sub quad_vertical {
-      my ($depth) = @_;
-      my $ret = 0;
-      for (my $d = 0; $d < $depth; $d+=2) {
-        $ret += $path->tree_depth_to_width($d);
-      }
-      return $ret;
-    }
-    sub quad_horizontal {
-      my ($depth) = @_;
-      my $ret = 0;
-      for (my $d = 1; $d < $depth; $d+=2) {
-        $ret += $path->tree_depth_to_width($d);
-      }
-      return $ret;
-    }
-  }
 
   # oct(d) = floor(d/2) + quad(d) - quad(d-1) + quad(d-2) - quad(d-3) ...
   # those successive differences being quadhoriz or quadvert for d odd/even
@@ -221,26 +221,35 @@ use List::Util 'min', 'max';
     }
   }
 
-  for (my $depth = 0; $depth < 160; $depth += 1) {
-    my $q = quad_vertical($depth);
-    my $qw = quad_vertical_from_horizontal($depth);
-    my $diff = $qw - $q;
-    print "$depth  $q $qw   $diff\n";
-  }
+  # for (my $depth = 0; $depth < 160; $depth += 1) {
+  #   my $q = quad_vertical($depth);
+  #   my $qw = quad_vertical_from_horizontal($depth);
+  #   my $diff = $qw - $q;
+  #   print "$depth  $q $qw   $diff\n";
+  # }
 
   for (my $depth = 0; $depth < 60; $depth += 2) {
-    # print quad_horizontal($depth),",";
-    # my $oct = oct_total($depth);
-    # my $osum = oct_total_by_quad_vh($depth);
-    # my $diff = $osum - $oct;
-    # print "$depth  $oct $osum   $diff\n";
+    #    print quad_horizontal($depth),",";
+    my $oct = oct_total($depth);
+    my $osum = oct_total_by_quad_vh($depth);
+    my $diff = $osum - $oct;
+    print "$depth  $oct $osum   $diff\n";
+  }
+  exit 0;
+}
+
+{
+  # oct(2^k) in binary
+  my $path = Math::PlanePath::ToothpickTree->new (parts => '1');
+  foreach my $k (0 .. 20) {
+    my $n = $path->tree_depth_to_n(2**$k+2);
+    printf "%2d %40b\n", $k,$n;
   }
   exit 0;
 }
 
 {
   # two_horiz
-  require Math::PlanePath::ToothpickTree;
   require Math::PlanePath::ToothpickTreeByCells;
   my $seq = Math::PlanePath::ToothpickTree->new (parts => 'two_horiz');
   my $bycells = Math::PlanePath::ToothpickTreeByCells->new (parts => 'two_horiz');
@@ -260,44 +269,11 @@ use List::Util 'min', 'max';
   }
   exit 0;
 }
-{
-  # tree_depth_to_n() mod 2
-  require Math::PlanePath::ToothpickTree;
-  foreach my $parts (1, 2, 3, 4, 'octant', 'wedge') {
-    print "parts=$parts\n";
-    my $path = Math::PlanePath::ToothpickTree->new (parts => $parts);
-    my @values = map { $path->tree_depth_to_n($_) % 2 } 4 .. 40;
-    my $values = join(',',@values);
-    print "seek $values\n";
-    grep_for_values("parts=$parts", $values);
-    print "\n";
-  }
-  exit 0;
 
-  sub grep_for_values {
-    my ($name, $values) = @_;
-    # unless (system 'zgrep', '-F', '-e', $values, "$ENV{HOME}/OEIS/stripped.gz") {
-    #   print "  match $values\n";
-    #   print "  $name\n";
-    #   print "\n"
-    # }
-    # unless (system 'fgrep', '-e', $values, "$ENV{HOME}/OEIS/oeis-grep.txt") {
-    #   print "  match $values\n";
-    #   print "  $name\n";
-    #   print "\n"
-    # }
-    unless (system 'fgrep', '-e', $values, "$ENV{HOME}/OEIS/stripped") {
-      print "  match $values\n";
-      print "  $name\n";
-      print "\n"
-    }
-  }
-}
 
 {
   # _depth_to_octant_added()
 
-  require Math::PlanePath::ToothpickTree;
   require Math::PlanePath::ToothpickTreeByCells;
   require Math::BaseCnv;
   my $cells = Math::PlanePath::ToothpickTreeByCells->new (parts => 'octant');
@@ -365,7 +341,6 @@ use List::Util 'min', 'max';
   # 2^(k-1) - 1 + 2^(k-2) - 1 + ... + 2^1 - 1
   #   = 2^k - 1 - k
   #
-  require Math::PlanePath::ToothpickTree;
   require Math::PlanePath::ToothpickTreeByCells;
   require Math::BaseCnv;
   my $cells = Math::PlanePath::ToothpickTreeByCells->new (parts => 'octant');
@@ -429,7 +404,6 @@ use List::Util 'min', 'max';
   # ascii art with toothpick lines
 
   require Image::Base::Text;
-  require Math::PlanePath::ToothpickTree;
 
   my $run = sub {
     my ($path, $n_hi) = @_;
@@ -531,7 +505,7 @@ use List::Util 'min', 'max';
 }
 
 {
-  # http://user42.tuxfamily.org/temporary/ 
+  # http://user42.tuxfamily.org/temporary/
   chdir "$ENV{HOME}/tux/web/temporary" or die;
 
   system ('math-image --path=ToothpickTree,parts=4 --all --scale=5 --size=200x200 --png >toothpick-squares.png') == 0
@@ -546,7 +520,7 @@ use List::Util 'min', 'max';
   exit 0;
 }
 {
-  # http://user42.tuxfamily.org/temporary/ 
+  # http://user42.tuxfamily.org/temporary/
 
   chdir "$ENV{HOME}/tux/web/temporary" or die;
 
@@ -565,7 +539,6 @@ use List::Util 'min', 'max';
 {
   # count including endpoints
 
-  require Math::PlanePath::ToothpickTree;
   my $path = Math::PlanePath::ToothpickTree->new (parts => 2);
   my $prev = -999;
   my $count = 0;
@@ -632,13 +605,13 @@ use List::Util 'min', 'max';
   #   15 16 17 18 19 20 21 22 23 24 25 26  27  28  29  30   31  32  33
   #      +2 +3 +3 +4 +7 +8 +5 +4 +7 +9 +10 +15 +22 +20 +18  +1  +2  +
   #
-  #  43 = 
+  #  43 =
   #  45 = 44 + 1
-  #  48 = 44 + 2*0+1 = +4      
-  #  51 = 44 + 2*2+3 = +7  +3  
-  #  55   44 + 2*3+5 = +11 +4  
-  #  62 = 44   2*5+8 = +18 +7  
-  #  70 = 44 + 2*8+10 = +26 +8 
+  #  48 = 44 + 2*0+1 = +4
+  #  51 = 44 + 2*2+3 = +7  +3
+  #  55   44 + 2*3+5 = +11 +4
+  #  62 = 44   2*5+8 = +18 +7
+  #  70 = 44 + 2*8+10 = +26 +8
   #  75 = 44 + 2*10+11 = +31 +5
   #  79 = 44 + 2*11+13
   # 162 = 44 + 2*38+42
@@ -737,5 +710,3 @@ use List::Util 'min', 'max';
   print join(',',@add);
   exit 0;
 }
-
-

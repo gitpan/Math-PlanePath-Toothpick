@@ -32,7 +32,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 11;
+$VERSION = 12;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -56,7 +56,8 @@ use constant parameter_info_array =>
       type            => 'enum',
       default         => 4,
       choices         => ['4','1','octant','octant_up','wedge',
-                          '3mid','3side','side'],
+                          '3mid','3side',
+                          '1side','1side_up'],
       description     => 'Which parts of the plane to fill.',
     },
     # { name      => 'start',
@@ -122,7 +123,7 @@ use constant class_y_negative => 1;
                    wedge     => 0,
                    '3mid'    => undef,
                    '3side'   => undef,
-                   side      => 1,
+                   side      => 0,
                   );
   sub y_minimum {
     my ($self) = @_;
@@ -138,9 +139,9 @@ sub new {
   my $start = ($self->{'start'} ||= 'one');
   my @n_to_x;
   my @n_to_y;
-  if ($parts eq 'side') {
-    @n_to_x = (0, 1);
-    @n_to_y = (1, 1);
+  if ($parts eq '1side' || $parts eq '1side_up') {
+    @n_to_x = (0);
+    @n_to_y = (0);
     $self->{'endpoints_dir'} = [ 4, 4 ];
   } elsif ($parts eq '3mid') {
     @n_to_x = (0);
@@ -228,8 +229,8 @@ sub _extend {
       if ($parts eq '1') {
         if ($x < 0 || $y < 0) { next; }
       }
-      # if ($parts eq 'side') {
-      #   if ($x < 0 || $y < 0) { next; }
+      # if ($parts eq '1side') {
+      #   if ($x < 0 || $y <= 0) { next; }
       # }
       # } elsif ($parts eq '3side') {
       #   if ($x < 0 && $y < 0) { next; }
@@ -269,13 +270,19 @@ sub _extend {
         if ($parts eq '3side') {
           if ($x < 0 && $y <= 0) { next SURROUND; }
         }
-        if ($parts eq 'side') {
-          if ($x < ($y >= 2 ? 0 : -1) || $y < ($x >= 4 ? 0 : -1)) { next SURROUND; }
-          # if ($x < -2 || $y < -2   # treating rest as occupied
-          #     || ($y > 3 && $x <= 0)
-          #     || ($y > 1 && $x < 0)
-          #     || ($x > 2 && $y < 0)) { next SURROUND; }
-          # if ($x < 0 || $y < 0) { next SURROUND; }
+        if ($parts eq '1side') {
+          if ($y < -1) { next SURROUND; }
+          if ($x < -1) { next SURROUND; }
+          if ($y >= 3 && $x < 0) { next SURROUND; }
+          if ($x >= 2 && $y < 0) { next SURROUND; }
+          if ($x >= 2 && $y == -1) { next SURROUND; }
+        }
+        if ($parts eq '1side_up') {
+          if ($x < -1) { next SURROUND; }
+          if ($y < -1) { next SURROUND; }
+          if ($x >= 3 && $y < 0) { next SURROUND; }
+          if ($y >= 2 && $x < 0) { next SURROUND; }
+          if ($y >= 2 && $x == -1) { next SURROUND; }
         }
         my $sn = $sq->xy_to_n($x,$y);
         ### count: "$x,$y at sn=$sn is ".($xy_to_n->[$sn] // 'undef')

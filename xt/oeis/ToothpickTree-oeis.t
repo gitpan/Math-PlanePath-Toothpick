@@ -53,60 +53,140 @@ use Math::PlanePath::ToothpickTree;
 
 
 #------------------------------------------------------------------------------
-# A160159 - parts=two_horiz added
-# cf A160158 total is Depth_start
+# A162796 total opposite to initial
+# A162794 added opposite to initial, being horizontal toothpicks
+
+# total horizontal = 2*(wedge - depth)
+# A162796(n) = 2*(A160406(2*n+1)-(2*n+1))
+#          n=0     1     2      3       4       5       6       7       8     
+# A162796    0,    2,    6,     14,     22,     30,     42,     70,     86,   
+# A160406 0, 1, 2, 4, 6, 8, 10, 14, 18, 20, 22, 26, 30, 34, 40, 50, 58, 60, 62,
+# eg. 2*(60-(2*8+1)) = 86
 
 MyOEIS::compare_values
-  (anum => 'A160159',
-   func => sub {
-     my ($count) = @_;
-     my $path = Math::PlanePath::ToothpickTree->new (parts => 'two_horiz');
-     my @got;
-     for (my $depth = 0; @got < $count; $depth++) {
-       push @got, $path->tree_depth_to_width( $depth);
-     }
-     return \@got;
-   });
-
-#------------------------------------------------------------------------------
-# A160407 - parts=wedge added
-
-MyOEIS::compare_values
-  (anum => 'A160407',
+  (anum => 'A162796',
    func => sub {
      my ($count) = @_;
      my $path = Math::PlanePath::ToothpickTree->new (parts => 'wedge');
      my @got;
-     for (my $depth = 0; @got < $count; $depth++) {
-       push @got, $path->tree_depth_to_width( $depth);
+     for (my $depth = 1; @got < $count; $depth += 2) {
+       push @got, 2 * ($path->tree_depth_to_n($depth) - $depth);
+     }
+     return \@got;
+   });
+
+# total horizontal = 4*(octant - (depth-1)/2)
+MyOEIS::compare_values
+  (anum => 'A162796',
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::ToothpickTree->new (parts => 'octant');
+     my @got = (0);
+     for (my $depth = 0; @got < $count; $depth += 2) {
+       push @got, 4 * ($path->tree_depth_to_n($depth) - ($depth-1)/2);
+     }
+     return \@got;
+   });
+
+MyOEIS::compare_values
+  (anum => 'A162794',
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::ToothpickTree->new (parts => 4);
+     my @got = (0);
+     my $n = $path->n_start;
+     for (my $depth = 1; @got < $count; $depth+=2) {
+       push @got, $path->tree_depth_to_width($depth);
+     }
+     return \@got;
+   });
+
+MyOEIS::compare_values
+  (anum => 'A162796',
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::ToothpickTree->new (parts => 4);
+     my @got;
+     my $n = $path->n_start;
+     my $total = 0;
+     for (my $depth = 1; @got < $count; $depth+=2) {
+       push @got, $total;
+       $total += $path->tree_depth_to_width($depth);
      }
      return \@got;
    });
 
 #------------------------------------------------------------------------------
-# A168002 - parts=1 total cells mod 2, starting depth=1
+# A162795 total parallel to initial, being vertical toothpicks
+# A162793 added parallel to initial, being vertical toothpicks
+
+# total vertical = 2*wedge
 MyOEIS::compare_values
-  (anum => 'A168002',
+  (anum => 'A162795',
    func => sub {
      my ($count) = @_;
-     my $path = Math::PlanePath::ToothpickTree->new (parts => 1);
+     my $path = Math::PlanePath::ToothpickTree->new (parts => 'wedge');
      my @got;
-     for (my $depth = 1; @got < $count; $depth++) {
-       my $n = $path->tree_depth_to_n($depth);
-       push @got, $n % 2;
+     for (my $depth = 2; @got < $count; $depth += 2) {
+       push @got, 2 * ($path->tree_depth_to_n($depth) - $depth) + 1;
      }
      return \@got;
    });
 
-# T(n) = A139250(n)   OFFSET=0
-# Q(n) = (T(n)-3)/4, n >= 2   paper section 3 end page 12
-#      = A153000(n-2)
-# T(n) = 4*Q(n)+3
-#
-# Q(2^k + rem) = Q(rem+1) + 2*Q(rem) + 2
-# Q(2^k + rem) == Q(rem+1) mod 2
-# Q(2^k-1 + rem) == Q(rem) mod 2
-# for rem>=1
+# total vertical = 4*(octant - (depth-1)/2) + 1
+MyOEIS::compare_values
+  (anum => 'A162795',
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::ToothpickTree->new (parts => 'octant');
+     my @got = (1);
+     for (my $depth = 1; @got < $count; $depth += 2) {
+       push @got, 4 * ($path->tree_depth_to_n($depth) - ($depth-1)/2) + 1;
+     }
+     return \@got;
+   });
+
+MyOEIS::compare_values
+  (anum => 'A162793',
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::ToothpickTree->new (parts => 4);
+     my @got;
+     my $n = $path->n_start;
+     for (my $depth = 0; @got < $count; $depth+=2) {
+       push @got, $path->tree_depth_to_width($depth);
+     }
+     return \@got;
+   });
+
+MyOEIS::compare_values
+  (anum => 'A162795',
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::ToothpickTree->new (parts => 4);
+     my @got;
+     my $n = $path->n_start;
+     my $total = 0;
+     for (my $depth = 0; @got < $count; $depth += 2) {
+       $total += $path->tree_depth_to_width($depth);
+       push @got, $total;
+     }
+     return \@got;
+   });
+
+#------------------------------------------------------------------------------
+# A153000 quadrant total
+
+MyOEIS::compare_values
+  (anum => 'A153000',
+   func => sub {
+     my ($count) = @_;
+     my @got;
+     for (my $n = 2; @got < $count; $n++) {
+       push @got, Q_by_recurrence($n);
+     }
+     return \@got;
+   });
 
 # T(pow+rem) = T(pow) + T(rem+1) + 2*T(rem) - 1
 # Q(pow+rem) = (T(pow+rem)-3)/4
@@ -135,20 +215,23 @@ MyOEIS::compare_values
 # eg. quad(4+3) = quad(4) + quad(4) + 2*quad(3) + 2
 #               = 2 + 2 + 2*1 + 2 = 8
 #
-sub my_A153000 {
+sub Q_by_recurrence {
   my ($n) = @_;
-  ### my_A153000(): $n
-  die "A153000($n)" if $n < 2;
-  if ($n == 2) { return 0; }
-  if ($n == 3) { return 1; }
+  ### Q_by_recurrence(): $n
+  die "A153000($n)" if $n < 2;   # $n==2 start
+
   my ($pow,$exp) = round_down_pow($n,2);
   my $rem = $n - $pow;
   if ($rem == 0) { return ($pow*$pow - 4) / 6; }
-  if ($rem == 1) { return my_A153000($pow) + 1; }
-  return my_A153000($pow) + my_A153000($rem+1) + 2*my_A153000($rem) + 2;
+  if ($rem == 1) { return Q_by_recurrence($pow) + 1; }
+  return (Q_by_recurrence($pow)
+          + Q_by_recurrence($rem+1)
+          + 2*Q_by_recurrence($rem)
+          + 2);
 
-  # my $q1 = my_A153000($rem+1);
-  # my $q2 = 2*my_A153000($rem);
+
+  # my $q1 = Q_by_recurrence($rem+1);
+  # my $q2 = 2*Q_by_recurrence($rem);
   # my $ret = $q1 + 2*$q2 + 2;
   # ### $pow
   # ### $rem
@@ -160,18 +243,70 @@ sub my_A153000 {
 }
 BEGIN {
   use Memoize;
-  Memoize::memoize('my_A153000');
+  Memoize::memoize('Q_by_recurrence');
 }
+
+#------------------------------------------------------------------------------
+# A160159 - parts=two_horiz added
+# cf A160158 total is Depth_start
+
 MyOEIS::compare_values
-  (anum => 'A153000',
+  (anum => 'A160159',
    func => sub {
      my ($count) = @_;
+     my $path = Math::PlanePath::ToothpickTree->new (parts => 'two_horiz');
      my @got;
-     for (my $n = 2; @got < $count; $n++) {
-       push @got, my_A153000($n);
+     for (my $depth = 0; @got < $count; $depth++) {
+       push @got, $path->tree_depth_to_width($depth);
      }
      return \@got;
    });
+
+#------------------------------------------------------------------------------
+# A160407 - parts=wedge added
+
+MyOEIS::compare_values
+  (anum => 'A160407',
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::ToothpickTree->new (parts => 'wedge');
+     my @got;
+     for (my $depth = 0; @got < $count; $depth++) {
+       push @got, $path->tree_depth_to_width($depth);
+     }
+     return \@got;
+   });
+
+#------------------------------------------------------------------------------
+# A168002 - parts=1 total cells mod 2, starting depth=1
+MyOEIS::compare_values
+  (anum => 'A168002',
+   func => sub {
+     my ($count) = @_;
+     my $path = Math::PlanePath::ToothpickTree->new (parts => 1);
+     my @got;
+     for (my $depth = 1; @got < $count; $depth++) {
+       my $n = $path->tree_depth_to_n($depth);
+       push @got, $n % 2;
+     }
+     return \@got;
+   });
+
+# T(n) = A139250(n)   OFFSET=0
+# Q(n) = (T(n)-3)/4, n >= 2   paper section 3 end page 12
+#      = A153000(n-2)
+# T(n) = 4*Q(n)+3
+#
+# Q(2^k + rem) = Q(rem+1) + 2*Q(rem) + 2    1<=rem<2^k
+# Q(2^k + rem) == Q(rem+1) mod 2            1<=rem<2^k
+# Q(2^k-1 + rem) == Q(rem) mod 2            2<=rem<=2^k
+# Q(2^k-1) = ...
+# Q(2^k)   = (4^k - 4)/6  is even, 0 ways
+
+# Q(2^k-1)  pow=2^(k-1) rem=2^(k-1)-1
+#   = Q(pow) + Q(pow) + 2*Q(2^(k-1)-1)) + 2
+#   = even ????
+
 
 # cf A079559
 # fixed point of 0->0 1->110
@@ -273,7 +408,7 @@ MyOEIS::compare_values
      $depth *= 4;
      my @got;
      for ( ; @got < $count; $depth++) {
-       push @got, $path->tree_depth_to_width( $depth);
+       push @got, $path->tree_depth_to_width($depth);
      }
      return \@got;
    });
@@ -401,7 +536,7 @@ MyOEIS::compare_values
      my $path = Math::PlanePath::ToothpickTree->new (parts => 1);
      my @got;
      for (my $depth = 0; @got < $count; $depth++) {
-       push @got, $path->tree_depth_to_width( $depth);
+       push @got, $path->tree_depth_to_width($depth);
      }
      return \@got;
    });
@@ -417,7 +552,7 @@ MyOEIS::compare_values
      my $path = Math::PlanePath::ToothpickTree->new (parts => 2);
      my @got;
      for (my $depth = 0; @got < $count; $depth++) {
-       push @got, $path->tree_depth_to_width( $depth);
+       push @got, $path->tree_depth_to_width($depth);
      }
      return \@got;
    });
@@ -433,7 +568,7 @@ MyOEIS::compare_values
      my $path = Math::PlanePath::ToothpickTree->new (parts => 3);
      my @got;
      for (my $depth = 0; @got < $count; $depth++) {
-       push @got, $path->tree_depth_to_width( $depth);
+       push @got, $path->tree_depth_to_width($depth);
      }
      return \@got;
    });
@@ -449,7 +584,7 @@ MyOEIS::compare_values
      my $path = Math::PlanePath::ToothpickTree->new (parts => 4);
      my @got = (0);
      for (my $depth = 0; @got < $count; $depth++) {
-       push @got, $path->tree_depth_to_width( $depth);
+       push @got, $path->tree_depth_to_width($depth);
      }
      return \@got;
    });
@@ -531,72 +666,8 @@ MyOEIS::compare_values
      my @got;
      my $total = 0;
      for (my $depth = 0; @got < $count; $depth+=2) {
-       $total -= $path->tree_depth_to_width( $depth);
-       $total += $path->tree_depth_to_width( $depth+1);
-       push @got, $total;
-     }
-     return \@got;
-   });
-
-#------------------------------------------------------------------------------
-# A162794 added opposite to initial, being horizontal toothpicks
-# A162796 total opposite to initial
-
-MyOEIS::compare_values
-  (anum => 'A162794',
-   func => sub {
-     my ($count) = @_;
-     my $path = Math::PlanePath::ToothpickTree->new (parts => 4);
-     my @got = (0);
-     my $n = $path->n_start;
-     for (my $depth = 1; @got < $count; $depth+=2) {
-       push @got, $path->tree_depth_to_width( $depth);
-     }
-     return \@got;
-   });
-
-MyOEIS::compare_values
-  (anum => 'A162796',
-   func => sub {
-     my ($count) = @_;
-     my $path = Math::PlanePath::ToothpickTree->new (parts => 4);
-     my @got;
-     my $n = $path->n_start;
-     my $total = 0;
-     for (my $depth = 1; @got < $count; $depth+=2) {
-       push @got, $total;
-       $total += $path->tree_depth_to_width( $depth);
-     }
-     return \@got;
-   });
-
-#------------------------------------------------------------------------------
-# A162795 total parallel to initial, being vertical toothpicks
-# A162793 added parallel to initial, being vertical toothpicks
-
-MyOEIS::compare_values
-  (anum => 'A162793',
-   func => sub {
-     my ($count) = @_;
-     my $path = Math::PlanePath::ToothpickTree->new (parts => 4);
-     my @got;
-     my $n = $path->n_start;
-     for (my $depth = 0; @got < $count; $depth+=2) {
-       push @got, $path->tree_depth_to_width( $depth);
-     }
-     return \@got;
-   });
-
-MyOEIS::compare_values
-  (anum => 'A162795',
-   func => sub {
-     my ($count) = @_;
-     my $path = Math::PlanePath::ToothpickTree->new (parts => 4);
-     my @got;
-     my $n = $path->n_start;
-     my $total = 0;
-     for (my $depth = 0; @got < $count; $depth += 2) {
-       $total += $path->tree_depth_to_width( $depth);
+       $total -= $path->tree_depth_to_width($depth);
+       $total += $path->tree_depth_to_width($depth+1);
        push @got, $total;
      }
      return \@got;

@@ -16,8 +16,9 @@
 # with Math-PlanePath-Toothpick.  If not, see <http://www.gnu.org/licenses/>.
 
 
-# side without log2 from diagonal, and sides of 3side
-# side with log2 from X=3*2^k,Y=2^k down, and middle of 3side
+# '1side' without log2 on lower side, is lower quad of 3mid
+# '1side_up' mirror image, is upper quad of 3mid
+# '1side with log2 from X=3*2^k,Y=2^k down, and middle of 3side
 
 
 package Math::PlanePath::OneOfEight;
@@ -28,7 +29,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 11;
+$VERSION = 12;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -92,13 +93,13 @@ use constant class_y_negative => 1;
   }
 }
 {
-  my %y_minimum = (4         => undef,
+  my %y_minimum = (# 4         => undef,
                    1         => 0,
                    octant    => 0,
                    octant_up => 0,
                    wedge     => 0,
-                   '3mid'    => undef,
-                   '3side'   => undef,
+                   # '3mid'    => undef,
+                   # '3side'   => undef,
                    side      => 1,
                   );
   sub y_minimum {
@@ -151,22 +152,16 @@ use constant class_y_negative => 1;
   }
 }
 
-# sub rsquared_minimum {
-#   my ($self) = @_;
-#   return ($self->{'parts'} <= 2   ? 1   # X=0,Y=1
-#           : 0);                         # origin X=0,Y=0
-# }
-
 # parts=1,3mid dx=2*2^k-3 dy=-2^k, it seems
 # parts=3side  dx=2*2^k-5 dy=-2^k-2, it seems
 my %dir_maximum_dxdy
   = (4         => [0,-1], # South
-     1         => [2,-1], # ESE
+     1         => [2,-1], # ESE, supremum
      octant    => [1,-1], # South-East
      octant_up => [0,-1], # N=12 South
      wedge     => [0,-1], # South
-     '3mid'    => [2,-1], # ESE
-     '3side'   => [2,-1], # ESE
+     '3mid'    => [2,-1], # ESE, supremum
+     '3side'   => [2,-1], # ESE, supremum
     );
 sub dir_maximum_dxdy {
   my ($self) = @_;
@@ -733,8 +728,6 @@ sub _n0_to_depth_and_rem {
 
   return ($depth, $n - $n_depth);
 }
-
-# no Smart::Comments;
 
 #------------------------------------------------------------------------------
 # xy_to_n()
@@ -1398,8 +1391,6 @@ sub xy_to_n {
   return $n;
 }
 
-# no Smart::Comments;
-
 
 #------------------------------------------------------------------------------
 # rect_to_n_range()
@@ -1505,7 +1496,7 @@ sub tree_n_parent {
 
 #------------------------------------------------------------------------------
 # tree_depth_to_n()
-#
+
 #    1        1  1
 #    2        9  1001
 #    4       33  100001
@@ -1807,8 +1798,6 @@ my %tree_depth_to_n_extra_depth_pow = (4         => 0,
                                        '3side'   => 1,
                                        side      => 1);
 
-# use Smart::Comments;
-
 sub tree_depth_to_n {
   my ($self, $depth) = @_;
   ### tree_depth_to_n(): "$depth  parts=$self->{'parts'}"
@@ -1846,39 +1835,35 @@ sub tree_depth_to_n {
   # $exp level, but sometimes it's a bit more and some values not high to
   # low and possibly duplicated.
   #
-  my @pending;
+  my @pending = ($depth);
   my @mult;
 
   if ($parts eq '4') {
-    push @pending, $depth;
-    push @mult, 8;
+    @mult = (8);
     $n -= 4*$depth + 7;
 
   } elsif ($parts eq '1') {
-    push @pending, $depth;
-    push @mult, 2;
+    @mult = (2);
     $n -= $depth;
 
   } elsif ($parts eq 'octant' || $parts eq 'octant_up') {
-    push @pending, $depth;
-    push @mult, 1;
+    @mult = (1);
 
   } elsif ($parts eq 'wedge') {
-    push @pending, $depth;
     push @mult, 2;
     $n -= 2;  # unduplicate centre two
 
   } elsif ($parts eq '3mid') {
-    push @pending, $depth+1, $depth;
-    push @mult, 2, 4;
+    unshift @pending, $depth+1;
+    @mult = (2, 4);
     # Duplicated diagonals, and no log2_extras on two outermost octants.
     # Each log2 at depth=2^k-2, so another log2 decrease when depth=2^k-1.
     # $exp == _log2_floor($depth+1) so at $depth==2*$pow-1 one less.
     $n -= 3*$depth + 2*$exp + 6;
 
   } elsif ($parts eq '3side') {
-    push @pending, $depth+1, $depth, $depth-1;
-    push @mult, 1, 3, 2;
+    @pending = ($depth+1, $depth, $depth-1);
+    @mult = (1, 3, 2);
     # Duplicated diagonals, and no log2_extras on two outermost octants.
     # For plain depth each log2 at depth=2^k-2, so another log2 decrease
     # when depth=2^k-1.
@@ -1888,8 +1873,8 @@ sub tree_depth_to_n {
     $n -= 3*$depth + 2*$exp + ($depth == $pow-1 ? 3 : 4);
 
   } elsif ($parts eq 'side') {
-    push @pending, $depth+1, $depth;
-    push @mult, 1, 1;
+    unshift @pending, $depth+1;
+    @mult = (1, 1);
     # $exp == _log2_floor($depth+1)
     $n -= $depth + 1 + $exp;
   }
@@ -1982,9 +1967,6 @@ sub tree_depth_to_n {
   return $n;
 }
 
-# no Smart::Comments;
-
-#use Smart::Comments;
 
 # _depth_to_octant_added() returns the number of cells added at a given
 # $depth level in parts=octant.  This is the same as
@@ -2100,35 +2082,200 @@ sub _depth_to_octant_added {
   return $added;
 }
 
-# no Smart::Comments;
 
-sub tree_n_to_subheight {
-  my ($self, $n) = @_;
-  if ($n < 0)          { return undef; }
-  if (is_infinite($n)) { return $n; }
-  {
-    # infinite height on X=Y spines
-    my ($x,$y) = $self->n_to_xy($n);
-    if ($self->{'parts'} eq '3side') {
-      if (($x >= 0 && $x == abs($y))
-          || ($x <=0 && $y == 2-$x)) {
-        return undef;
+#------------------------------------------------------------------------------
+# tree_n_to_subheight()
+
+#use Smart::Comments;
+
+{
+  my %tree_n_to_subheight
+    = do {
+      my $depth0 = [ ]; # depth=0
+      (wedge   => [ $depth0,
+                    [ undef, 0 ], # depth=1
+                  ],
+       '3mid'  => [ $depth0,
+                    [ undef, 0, undef, 0 ], # depth=1
+                  ],
+       '3side' => [ $depth0,
+                    [ undef, 0, undef ],           # depth=1
+                    [ 0, undef, undef, 0 ], # depth=2 N=4to8
+                  ],
+      )
+    };
+
+  sub tree_n_to_subheight {
+    my ($self, $n) = @_;
+    ### tree_n_to_subheight(): $n
+
+    if ($n < 0)          { return undef; }
+    if (is_infinite($n)) { return $n; }
+
+    my $zero = $n * 0;
+    (my $depth, $n) = _n0_to_depth_and_rem($self, int($n));
+    ### $depth
+    ### $n
+
+    my $parts = $self->{'parts'};
+    if (my $initial = $tree_n_to_subheight{$parts}->[$depth]) {
+      ### $initial
+      return $initial->[$n];
+    }
+
+    if ($parts eq 'octant') {
+      my $add = _depth_to_octant_added ([$depth],[1], $zero);
+      $n = $add-1 - $n;
+      ### octant mirror numbering to n: $n
+
+    } elsif ($parts eq 'octant_up') {
+
+    } elsif ($parts eq 'wedge') {
+      my $add = _depth_to_octant_added ([$depth],[1], $zero);
+      ### assert: $n < 2*$add
+      if ($n >= $add) {
+        ### wedge second half ...
+        $n = 2*$add-1 - $n;   # mirror
       }
+
+    } elsif ($parts eq '3mid') {
+      my $add = _depth_to_octant_added ([$depth+1],[1], $zero);
+      if (_is_pow2($depth+2)) { $add -= 1; }
+      ### $add
+
+      $n -= $add-1;
+      ### n decrease to: $n
+      if ($n < 0) {
+        ### 3mid first octant, mirror ...
+        $n = - $n;
+        $depth += 1;
+      }
+
+      $add = _depth_to_octant_added ([$depth],[1], $zero);
+      my $end = 4*$add - 2;
+      ### $add
+      ### $end
+      if ($n >= $end) {
+        ### 3mid last octant ...
+        $n -= $end;
+        $depth += 1;
+      } else {
+        $n %= 2*$add-1;
+        if ($n >= $add) {
+          ### 3mid second half, mirror ...
+          $n = 2*$add-1 - $n;
+        }
+      }
+
+    } elsif ($parts eq '3side') {
+      my $add = _depth_to_octant_added ([$depth+1],[1], $zero);
+      if (_is_pow2($depth+2)) { $add -= 1; }
+      ### $add
+
+      $n -= $add-1;
+      ### n decrease to: $n
+      if ($n < 0) {
+        ### 3side first octant, mirror ...
+        $n = - $n;
+        $depth += 1;
+      }
+
+      $add = _depth_to_octant_added ([$depth],[1], $zero);
+      if ($n < 2*$add) {
+        if ($n >= $add) {
+          $n = 2*$add-1 - $n;
+        }
+      } else {
+        $n -= 2*$add-1;
+
+        $add = _depth_to_octant_added ([$depth-1],[1], $zero);
+        if ($n < 2*$add) {
+          $depth -= 1;
+          if ($n >= $add) {
+            $n = 2*$add-1 - $n;
+          }
+        } else {
+          $n -= 2*$add-1;
+        }
+      }
+
     } else {
-      if (abs($y) == abs($x)) {
-        return undef;
+      ### assert: $parts eq '1' || $parts eq '4'
+      if ($depth == 1) {
+        return ($n % 2 ? undef : 0);
+      }
+      my $add = _depth_to_octant_added([$depth],[1], $zero);
+
+      # quadrant rotate ...
+      $n %= 2*$add-1;
+
+      $n -= $add;
+      if ($n < 0) {
+        ### lower octant ...
+        $n = -1-$n;   # mirror
+      } else {
+        ### upper octant ...
+        $n += 1;  # undouble spine
       }
     }
-  }
-  my @n = ($n);
-  my $height = 0;
-  for (;;) {
-    @n = map {$self->tree_n_children($_)} @n
-      or return $height;
-    $height++;
+
+    my $dbase;
+    my ($pow,$exp) = round_down_pow ($depth, 2);
+
+    for ( ; $exp-- >= 0; $pow /= 2) {
+      ### at: "depth=$depth pow=$pow n=$n   dbase=".($dbase||'inf')
+      ### assert: $n >= 0
+
+      if ($n == 0) {
+        ### n=0 on spine ...
+        last;
+      }
+      next if $depth < $pow;
+
+      if (defined $dbase) { $dbase = $pow; }
+      $depth -= $pow;
+      ### depth remaining: $depth
+
+      if ($depth == 1) {
+        ### assert: 1 <= $n && $n <= 2
+        if ($n == 1) {
+          ### depth=1 and n=1 remaining ...
+          return 0;
+        }
+        $n += 1;
+      }
+
+      my $add = _depth_to_octant_added ([$depth],[1], $zero);
+      ### $add
+
+      if ($n < $add) {
+        ### extend part, unchanged ...
+      } else {
+        $dbase = $pow;
+        $n -= 2*$add;
+        ### sub 2*add to: $n
+
+        if ($n < 0) {
+          ### upper part, mirror to n: -1 - $n
+          $n = -1 - $n;   # mirror,  $n = $add-1 - $n = -($n-$add) - 1
+        } else {
+          ### lower part ...
+          $depth += 1;
+          $n += 1;  # undouble upper,lower spine
+        }
+      }
+
+    }
+
+    ### final ...
+    ### $dbase
+    ### $depth
+    return (defined $dbase ? $dbase - $depth - 1 : undef);
   }
 }
 
+
+#------------------------------------------------------------------------------
 
 # return true if $n is a power 2^k for k>=0
 sub _is_pow2 {
@@ -2290,8 +2437,8 @@ full pattern.
 
 =head2 One Octant
 
-Option C<parts =E<gt> 'octant'> confines the pattern to the first octant
-0E<lt>=YE<lt>=X.
+Option C<parts =E<gt> 'octant'> confines the pattern to the first eighth of
+the plane 0E<lt>=YE<lt>=X.
 
 =cut
 

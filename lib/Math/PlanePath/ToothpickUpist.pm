@@ -30,7 +30,7 @@ use 5.004;
 use strict;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 11;
+$VERSION = 12;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
