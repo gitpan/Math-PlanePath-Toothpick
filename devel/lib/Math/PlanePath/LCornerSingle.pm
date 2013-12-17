@@ -45,7 +45,7 @@ use strict;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 12;
+$VERSION = 13;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -547,7 +547,11 @@ at the next depth.  A non-corner has no children.
 This cellular automaton is in Sloane's Online Encyclopedia of Integer
 Sequences as
 
-    http://oeis.org/A160414    (etc)
+=over
+
+L<http://oeis.org/A160414> (etc)
+
+=back
 
     A160414   total cells at given depth (Ndepth)
     A161415   added cells at given depth, 4*3^count1bits(n)

@@ -34,7 +34,7 @@ use strict;
 *min = \&Math::PlanePath::_min;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 12;
+$VERSION = 13;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -504,7 +504,11 @@ the path).
 This cellular automaton is in Sloane's Online Encyclopedia of Integer
 Sequences as
 
-    http://oeis.org/A160720    (etc)
+=over
+
+L<http://oeis.org/A160720> (etc)
+
+=back
 
     A160720   total cells at depth=n
     A160721   added cells at depth=n

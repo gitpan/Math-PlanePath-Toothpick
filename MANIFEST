@@ -6,18 +6,18 @@ debian/copyright
 debian/rules
 debian/source/format
 debian/watch
-devel/haferman-carpet.pl
+devel/htree.pl
 devel/lcorner-single.pl
 devel/lcorner-tree-triplets.pl
 devel/lcorner-tree.pl
 devel/lib/Math/PlanePath/EToothpickTree-oeis.t
 devel/lib/Math/PlanePath/EToothpickTree.pm
+devel/lib/Math/PlanePath/HTreeByCells.pm
 devel/lib/Math/PlanePath/LCornerSingle.pm
 devel/lib/Math/PlanePath/LCornerTree-bycells.t
 devel/lib/Math/PlanePath/LCornerTreeByCells.pm
 devel/lib/Math/PlanePath/LToothpickTree-oeis.t
 devel/lib/Math/PlanePath/LToothpickTree.pm
-devel/lib/Math/PlanePath/OneOfEight-bycells.t
 devel/lib/Math/PlanePath/OneOfEightByCells.pm
 devel/lib/Math/PlanePath/OneOfSixByCells.pm
 devel/lib/Math/PlanePath/PeninsulaBridge-oeis.t
@@ -32,6 +32,7 @@ devel/one-of-eight.pl
 devel/toothpick-upist.pl
 devel/toothpick.pl
 lib/Math/NumSeq/OEIS/Catalogue/Plugin/PlanePathToothpick.pm
+lib/Math/PlanePath/HTree.pm
 lib/Math/PlanePath/LCornerReplicate.pm
 lib/Math/PlanePath/LCornerTree.pm
 lib/Math/PlanePath/OneOfEight.pm
@@ -64,11 +65,11 @@ xt/0-Test-Synopsis.t
 xt/0-Test-YAML-Meta.t
 xt/MyOEIS.pm
 xt/oeis-xrefs.t
+xt/oeis/HTree-oeis.t
 xt/oeis/LCornerReplicate-oeis.t
 xt/oeis/LCornerTree-oeis.t
 xt/oeis/OneOfEight-oeis.t
 xt/oeis/ToothpickReplicate-oeis.t
-xt/oeis/ToothpickTree-oeis.t
 xt/oeis/ToothpickUpist-oeis.t
 xtools/my-check-copyright-years.sh
 xtools/my-check-file-part-of.sh
@@ -77,4 +78,5 @@ xtools/my-deb.sh
 xtools/my-diff-prev.sh
 xtools/my-manifest.sh
 xtools/my-pc.sh
-META.yml                                 Module meta-data (added by MakeMaker)
+META.yml                                 Module YAML meta-data (added by MakeMaker)
+META.json                                Module JSON meta-data (added by MakeMaker)

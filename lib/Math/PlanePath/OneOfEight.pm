@@ -29,7 +29,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 12;
+$VERSION = 13;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -2315,9 +2315,7 @@ part 14 "Square Grid with Eight Neighbours" of
 
 David Applegate, Omar E. Pol, N.J.A. Sloane, "The Toothpick Sequence and
 Other Sequences from Cellular Automata", Congressus Numerantium, volume 206
-(2010), pages 157-191.
-
-http://www.research.att.com/~njas/doc/tooth.pdf
+(2010), pages 157-191.  L<http://www.research.att.com/~njas/doc/tooth.pdf>
 
 =back
 
@@ -2775,11 +2773,17 @@ Return the children of C<$n>, or an empty list if C<$n> has no children
 (including when C<$n E<lt> 1>, ie. before the start of the path).  The way
 points are numbered means the children are always consecutive N values.
 
-=item C<@nums = $path-E<gt>tree_num_children_list($n)>
+=back
+
+=head2 Tree Descriptive Methods
+
+=over
+
+=item C<@nums = $path-E<gt>tree_num_children_list()>
 
 Return a list of the possible number of children at the nodes of C<$path>.
 This is the set of possible return values from C<tree_n_num_children()>.
-This list varies with the pattern parts,
+This varies with the C<parts> option,
 
     parts        tree_num_children_list()
     -----        ------------------------
@@ -2871,7 +2875,11 @@ as noted in the Ndepth part of L</Three Side> above
 This cellular automaton is in Sloane's Online Encyclopedia of Integer
 Sequences as
 
-    http://oeis.org/A151725    (etc)
+=over
+
+L<http://oeis.org/A151725> (etc)
+
+=back
 
     parts=4 (the default)
       A151725   total cells "V", tree_depth_to_n()
@@ -2899,7 +2907,7 @@ L<Math::PlanePath::UlamWarburton>
 
 =head1 HOME PAGE
 
-http://user42.tuxfamily.org/math-planepath/index.html
+L<http://user42.tuxfamily.org/math-planepath/index.html>
 
 =head1 LICENSE
 

@@ -24,7 +24,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 12;
+$VERSION = 13;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -308,7 +308,11 @@ Create and return a new staircase path object.
 Entries in Sloane's Online Encyclopedia of Integer Sequences related to
 this path include
 
-    http://oeis.org/A059285  (etc)
+=over
+
+L<http://oeis.org/A059285> (etc)
+
+=back
 
     n_start=1 (the default)
       A014634     N on diagonal X=Y, odd hexagonals
@@ -330,7 +334,7 @@ L<Math::PlanePath::DiamondSpiral>
 
 =head1 HOME PAGE
 
-http://user42.tuxfamily.org/math-planepath/index.html
+L<http://user42.tuxfamily.org/math-planepath/index.html>
 
 =head1 LICENSE
 

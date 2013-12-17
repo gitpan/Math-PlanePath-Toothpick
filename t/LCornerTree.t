@@ -36,7 +36,7 @@ require Math::PlanePath::LCornerTree;
 # VERSION
 
 {
-  my $want_version = 12;
+  my $want_version = 13;
   ok ($Math::PlanePath::LCornerTree::VERSION, $want_version,
       'VERSION variable');
   ok (Math::PlanePath::LCornerTree->VERSION,  $want_version,

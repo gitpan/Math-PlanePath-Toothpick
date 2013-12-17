@@ -62,7 +62,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 12;
+$VERSION = 13;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -1689,7 +1689,7 @@ by Omar Pol.
 
 =over
 
-http://oeis.org/A183148
+L<http://oeis.org/A183148>
 
 =back
 
@@ -1787,15 +1787,15 @@ Create and return a new path object.  The C<parts> option (a string) can be
 
 =back
 
-=head2 Tree Methods
+=head2 Tree Descriptive Methods
 
 =over
 
-=item C<@nums = $path-E<gt>tree_num_children_list($n)>
+=item C<@nums = $path-E<gt>tree_num_children_list()>
 
 Return a list of the possible number of children at the nodes of C<$path>.
 This is the set of possible return values from C<tree_n_num_children()>.
-This list varies with the pattern parts,
+This varies with the C<parts> option,
 
            parts               tree_num_children_list()
            -----               ------------------------
@@ -1815,16 +1815,10 @@ For parts=octant etc the points on the X=Y diagonal have only 2 children
 since the pattern is confined to on or below that diagonal.  All other
 points have either 0 or 3 as per the full patterns.
 
-=back
-
-=head2 Tree Descriptive Methods
-
-=over
-
 =item C<$num = $path-E<gt>tree_num_roots ()>
 
-Return the number of root nodes in C<$path>.  The various parts forms have
-the following number of roots.
+Return the number of root nodes in C<$path>.  This varies with the C<parts>
+option,
 
     parts                                     num_roots()
     -----                                     -----------
@@ -1844,7 +1838,11 @@ the following number of roots.
 This cellular automaton is in Sloane's Online Encyclopedia of Integer
 Sequences as follows, and drawings by Omar Pol.
 
-    http://oeis.org/A160410    (etc)
+=over
+
+L<http://oeis.org/A160410> (etc)
+
+=back
 
     parts=4 (the default)
       A160410   total cells at given depth, tree_depth_to_n()
@@ -1891,7 +1889,7 @@ L<Math::PlanePath::ToothpickTree>
 
 =head1 HOME PAGE
 
-http://user42.tuxfamily.org/math-planepath/index.html
+L<http://user42.tuxfamily.org/math-planepath/index.html>
 
 =head1 LICENSE
 

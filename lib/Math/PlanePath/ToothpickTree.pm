@@ -131,7 +131,7 @@ use Carp;
 *min = \&Math::PlanePath::_min;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 12;
+$VERSION = 13;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -234,6 +234,18 @@ use constant class_y_negative => 1;
   sub sumxy_minimum {
     my ($self) = @_;
     return $sumxy_minimum{$self->{'parts'}};
+  }
+}
+{
+  my %sumabsxy_minimum = (2         => 1,  # X=1,Y=0
+                          1         => 2,  # X=1,Y=1
+                          octant    => 2,  # X=1,Y=1
+                          octant_up => 3,  # X=1,Y=2
+                          wedge     => 0,  # X=0,Y=0
+                         );
+  sub sumabsxy_minimum {
+    my ($self) = @_;
+    return ($sumabsxy_minimum{$self->{'parts'}} || 0);
   }
 }
 
@@ -1709,9 +1721,7 @@ sequence expanding through the plane by non-overlapping line segments as per
 
 David Applegate, Omar E. Pol, N.J.A. Sloane, "The Toothpick Sequence and
 Other Sequences from Cellular Automata", Congressus Numerantium, volume 206
-(2010), 157-191
-
-http://www.research.att.com/~njas/doc/tooth.pdf
+(2010), 157-191.  L<http://www.research.att.com/~njas/doc/tooth.pdf>
 
 =back
 
@@ -2565,7 +2575,11 @@ so large N can be handled without using a lot of memory.
 This cellular automaton is in Sloane's Online Encyclopedia of Integer
 Sequences as follows, and images by Omar Pol.
 
-    http://oeis.org/A139250    (etc)
+=over
+
+L<http://oeis.org/A139250> (etc)
+
+=back
 
     parts=4
       A139250   total cells to given depth
@@ -2639,7 +2653,7 @@ L<Math::PlanePath::UlamWarburton>
 
 =head1 HOME PAGE
 
-http://user42.tuxfamily.org/math-planepath/index.html
+L<http://user42.tuxfamily.org/math-planepath/index.html>
 
 =head1 LICENSE
 

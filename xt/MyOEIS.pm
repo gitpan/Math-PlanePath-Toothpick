@@ -57,7 +57,7 @@ sub read_values {
     }
   } else {
     my $error = $@;
-    @bvalues = read_stripped($anum);
+    @bvalues = __PACKAGE__->stripped_read_values($anum);
     if (! @bvalues) {
       MyTestHelpers::diag ("$anum not available: ", $error);
       return;
@@ -93,10 +93,24 @@ sub read_values {
   return (\@bvalues, $lo, $seq->{'filename'});
 }
 
+sub oeis_directory {
+  # my ($class) = @_;
+  require File::Spec;
+  require File::HomeDir;
+  return File::Spec->catdir(File::HomeDir->home, 'OEIS');
+}
+
+sub stripped_filename {
+  my ($class) = @_;
+  require File::Spec;
+  require File::HomeDir;
+  return File::Spec->catfile($class->oeis_directory, 'stripped');
+}
+
 # return list of values, or empty list if not found
-sub read_stripped {
-  my ($anum) = @_;
-  open FH, "< $ENV{HOME}/OEIS/stripped"
+sub stripped_read_values {
+  my ($class, $anum) = @_;
+  open FH, "< " . __PACKAGE__->stripped_filename
     or return;
   (my $num = $anum) =~ s/^A//;
   my $line = bsearch_textfile (\*FH, sub {
@@ -121,6 +135,12 @@ sub dxdy_to_direction {
 }
 
 
+# Search for a line in text file handle $fh.
+# $cmpfunc is called &$cmpfunc($line) and it should do a
+# comparison $target <=> $line so
+#     0  if $target == $line
+#    -ve if $target < $line  so $line is after the target
+#    +ve if $target > $line  so $line is before the target
 sub bsearch_textfile {
   my ($fh, $cmpfunc) = @_;
   my $lo = 0;
@@ -149,9 +169,9 @@ sub bsearch_textfile {
       return $line;
     }
     if ($cmp < 0) {
-      $lo = tell($fh);  # after
+      $lo = tell($fh);  # $line is before the target, advance $lo
     } else {
-      $hi = $mid;
+      $hi = $mid;       # $line is after the target, reduce $hi
     }
   }
 
@@ -195,9 +215,13 @@ sub compare_values {
       MyTestHelpers::diag ("got:     ",join_values($got));
     }
   }
-  require Test;
-  local $Test::TestLevel = $Test::TestLevel + 1;
-  Test::skip (! $bvalues, $diff, undef, "$anum");
+  if (defined $Test::TestLevel) {
+    require Test;
+    local $Test::TestLevel = $Test::TestLevel + 1;
+    Test::skip (! $bvalues, $diff, undef, "$anum");
+  } elsif (defined $diff) {
+    print "$diff\n";
+  }
 }
 
 sub join_values {
@@ -294,7 +318,7 @@ sub grep_for_values {
 
   {
     my $join = $values_aref->[0];
-    for (my $i = 1; $i <= $#$values_aref && length($join) < 20; $i++) {
+    for (my $i = 1; $i <= $#$values_aref && length($join) < 50; $i++) {
       $join .= ','.$values_aref->[$i];
     }
     $name .= "match $join\n";

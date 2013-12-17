@@ -23,7 +23,7 @@ use strict;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 12;
+$VERSION = 13;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -342,7 +342,11 @@ dX,dY approach a supremum dX=3,dY=-1.
 Entries in Sloane's Online Encyclopedia of Integer Sequences related to this
 path include
 
-    http://oeis.org/A062880    (etc)
+=over
+
+L<http://oeis.org/A062880> (etc)
+
+=back
 
     A062880    N values on diagonal X=Y (digits 0,2 in base-4)
 
@@ -358,7 +362,7 @@ L<Math::PlanePath::ToothpickReplicate>
 
 =head1 HOME PAGE
 
-http://user42.tuxfamily.org/math-planepath/index.html
+L<http://user42.tuxfamily.org/math-planepath/index.html>
 
 =head1 LICENSE
 

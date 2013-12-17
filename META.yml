@@ -1,41 +1,41 @@
---- #YAML:1.0
-name:               Math-PlanePath-Toothpick
-version:            12
-abstract:           Toothpick and other cellular automaton mathematical paths through the 2-D plane.
+---
+abstract: 'Toothpick and other cellular automaton mathematical paths through the 2-D plane.'
 author:
-    - Kevin Ryde <user42@zip.com.au>
-license:            gpl
-distribution_type:  module
-configure_requires:
-    ExtUtils::MakeMaker:  0
+  - 'Kevin Ryde <user42@zip.com.au>'
 build_requires:
-    ExtUtils::MakeMaker:  0
-requires:
-    constant:             1.02
-    Math::PlanePath:      106
-    Math::PlanePath::Base::Digits:  91
-    Math::PlanePath::Base::Generic:  91
-    perl:                 5.004
-    Test:                 0
-resources:
-    homepage:  http://user42.tuxfamily.org/math-planepath/index.html
-    license:   http://www.gnu.org/licenses/gpl.html
-no_index:
-    directory:
-        - t
-        - inc
-        - devel
-        - xt
-generated_by:       ExtUtils::MakeMaker version 6.57_05
+  ExtUtils::MakeMaker: 0
+configure_requires:
+  ExtUtils::MakeMaker: 0
+dynamic_config: 1
+generated_by: 'ExtUtils::MakeMaker version 6.66, CPAN::Meta::Converter version 2.132830'
+license: open_source
 meta-spec:
-    url:      http://module-build.sourceforge.net/META-spec-v1.4.html
-    version:  1.4
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: Math-PlanePath-Toothpick
+no_index:
+  directory:
+    - t
+    - inc
+    - devel
+    - xt
 optional_features:
-    maximum_tests:
-        description:  Have "make test" do as much as possible.
-        requires:
-            Data::Float:         0
-            Math::BigFloat:      1.993
-            Math::BigInt:        0
-            Math::BigInt::Lite:  0
-            Math::BigRat:        0
+  maximum_tests:
+    description: "Have \"make test\" do as much as possible."
+    requires:
+      Data::Float: 0
+      Math::BigFloat: 1.993
+      Math::BigInt: 0
+      Math::BigInt::Lite: 0
+      Math::BigRat: 0
+requires:
+  Math::PlanePath: 106
+  Math::PlanePath::Base::Digits: 91
+  Math::PlanePath::Base::Generic: 91
+  Test: 0
+  constant: 1.02
+  perl: 5.004
+resources:
+  homepage: http://user42.tuxfamily.org/math-planepath/index.html
+  license: http://www.gnu.org/licenses/gpl.html
+version: 13

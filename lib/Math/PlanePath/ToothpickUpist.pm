@@ -30,7 +30,7 @@ use 5.004;
 use strict;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 12;
+$VERSION = 13;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -249,13 +249,10 @@ sub tree_n_num_children {
   }
 
   my ($depthbits, $lowbit, $ndepth) = _n0_to_depthbits($n);
-  $n -= $ndepth;  # Noffset into row
-
   if (! $lowbit) {
     return 1;
   }
-
-  unless (shift @$depthbits) {  # low bit after $lowbit doubling
+  unless (shift @$depthbits) {  # low bit above $lowbit doubling
     # Depth even (or zero), two children under every point.
     return 2;
   }
@@ -264,6 +261,7 @@ sub tree_n_num_children {
   # When depth==1mod4 it's all points, when depth has more than one
   # trailing 1-bit then it's only some points.
   #
+  $n -= $ndepth;  # Noffset into row
   my $repbit = _divrem_mutate($n,2);
   while (shift @$depthbits) {  # low to high
     if (_divrem_mutate($n,2) != $repbit) {
@@ -387,6 +385,53 @@ sub tree_n_to_subheight {
   return undef; # first or last of row, infinite
 }
 
+sub _EXPERIMENTAL__tree_n_to_leafdist {
+  my ($self, $n) = @_;
+  ### _EXPERIMENTAL__tree_n_to_leafdist(): $n
+
+  $n = $n - $self->{'n_start'};   # N=0 basis
+  if (is_infinite($n) || $n < 0) {
+    return undef;
+  }
+
+  # depth bits leafdist
+  #   0     0,0    7
+  #   1     0,1    6
+  #   2     1,0    5
+  #   3     1,1    4
+  #   4   1,0,0    3
+  #   5   1,0,1    2
+  #   6   1,1,0    1 or 9
+  #   7   1,1,1    0 or 8
+  # ignore $lowbit until last, bits above same as SierpinskiTriangle
+  #
+  my ($depthbits, $lowbit, $ndepth) = _n0_to_depthbits($n);
+  $lowbit = 1-$lowbit;
+
+  my $ret = 6 - 2*((shift @$depthbits)||0);
+  if (shift @$depthbits) { $ret -= 4; }
+  ### $ret
+  if ($ret) {
+    return $ret + $lowbit;
+  }
+
+  $n -= $ndepth;
+  ### Noffset into row: $n
+
+  # Low bits of Nrem unchanging while trailing 1-bits in @depthbits,
+  # to distinguish between leaf or non-leaf.  Same as tree_n_children().
+  #
+  my $repbit = _divrem_mutate($n,2); # low bit of $n
+  ### $repbit
+  do {
+    ### next bit: $n%2
+    if (_divrem_mutate($n,2) != $repbit) {  # bits of $n offset low to high
+      return $lowbit;  # is a leaf
+    }
+  } while (shift @$depthbits);
+  return 8+$lowbit; # is a non-leaf
+}
+
 # Ndepth = 2 * (        3^a      first N at this depth
 #               +   2 * 3^b
 #               + 2^2 * 3^c
@@ -454,8 +499,8 @@ Math::PlanePath::ToothpickUpist -- self-similar triangular tree traversal
 
 =head1 DESCRIPTION
 
-X<Applegate, David>X<Pol, Omar E.>X<Sloane, Neil>This is toothpick variation
-where a vertical toothpick may only extend upwards.
+This is toothpick variation where a vertical toothpick may only extend
+upwards.
 
 =cut
 
@@ -477,16 +522,14 @@ where a vertical toothpick may only extend upwards.
 
     X= -9 -8 -7 -6 -5 -4 -3 -2 -1  0  1  2  3  4  5  6  7  8  9 10 ...
 
-This is a 90-degree rotated version of the "leftist" pattern from part 7
-"Leftist Toothpicks" of
+X<Applegate, David>X<Pol, Omar E.>X<Sloane, Neil>This is a 90-degree rotated
+version of the "leftist" pattern from part 7 "Leftist Toothpicks" of
 
 =over
 
 David Applegate, Omar E. Pol, N.J.A. Sloane, "The Toothpick Sequence and
 Other Sequences from Cellular Automata", Congressus Numerantium, volume 206
-(2010), pages 157-191.
-
-http://www.research.att.com/~njas/doc/tooth.pdf
+(2010), pages 157-191.  L<http://www.research.att.com/~njas/doc/tooth.pdf>
 
 =back
 
@@ -602,7 +645,11 @@ so X=-Y+1,Y=ceil(depth/2).
 Entries in Sloane's Online Encyclopedia of Integer Sequences related to this
 path include,
 
-    http://oeis.org/A151566    etc
+=over
+
+L<http://oeis.org/A151566> (etc)
+
+=back
 
     A151566    total cells at depth=n, tree_depth_to_n()
     A060632     cells added, 2^count1bits(floor(n/2))
@@ -622,7 +669,7 @@ L<Math::PlanePath::ToothpickTree>
 
 =head1 HOME PAGE
 
-http://user42.tuxfamily.org/math-planepath/index.html
+L<http://user42.tuxfamily.org/math-planepath/index.html>
 
 =head1 LICENSE
 
