@@ -1,4 +1,4 @@
-# Copyright 2012, 2013 Kevin Ryde
+# Copyright 2012, 2013, 2014 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -14,6 +14,10 @@
 #
 # You should have received a copy of the GNU General Public License along
 # with Math-PlanePath-Toothpick.  If not, see <http://www.gnu.org/licenses/>.
+
+
+# parts=2 row total X = 3^count1bits(depth) = A048883
+# parts=wedge row total X = (3^count1bits(depth) + 1) / 2
 
 
 # A147562 U-W
@@ -62,7 +66,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 13;
+$VERSION = 14;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -137,6 +141,46 @@ use constant parameter_info_array =>
     return $y_negative{$self->{'parts'}};
   }
 }
+
+{
+  my %x_negative_at_n = (4             => 1,
+                         3             => 2,
+                         2             => 1,
+                         1             => undef,
+                         octant        => undef,
+                         'octant+1'    => undef,
+                         octant_up     => undef,
+                         'octant_up+1' => undef,
+                         wedge         => 1,
+                         'wedge+1'     => 1,
+                         diagonal      => 2,
+                         'diagonal-1'  => 11,
+                        );
+  sub x_negative_at_n {
+    my ($self) = @_;
+    return $x_negative_at_n{$self->{'parts'}};
+  }
+}
+{
+  my %y_negative_at_n = (4             => 2,
+                         3             => 1,
+                         2             => undef,
+                         1             => undef,
+                         octant        => undef,
+                         'octant+1'    => undef,
+                         octant_up     => undef,
+                         'octant_up+1' => undef,
+                         wedge         => undef,
+                         'wedge+1'     => undef,
+                         diagonal      => 0,
+                         'diagonal-1'  => 4,
+                        );
+  sub y_negative_at_n {
+    my ($self) = @_;
+    return $y_negative_at_n{$self->{'parts'}};
+  }
+}
+
 {
   my %sumxy_minimum = (1             => 0,
                        octant        => 0,
@@ -1893,7 +1937,7 @@ L<http://user42.tuxfamily.org/math-planepath/index.html>
 
 =head1 LICENSE
 
-Copyright 2012, 2013 Kevin Ryde
+Copyright 2012, 2013, 2014 Kevin Ryde
 
 This file is part of Math-PlanePath-Toothpick.
 

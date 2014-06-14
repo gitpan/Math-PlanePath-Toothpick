@@ -1,4 +1,4 @@
-# Copyright 2012, 2013 Kevin Ryde
+# Copyright 2012, 2013, 2014 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -29,7 +29,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 13;
+$VERSION = 14;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -107,6 +107,38 @@ use constant class_y_negative => 1;
     return $y_minimum{$self->{'parts'}};
   }
 }
+
+{
+  my %x_negative_at_n = (4         => 4,
+                         1         => undef,
+                         octant    => undef,
+                         octant_up => undef,
+                         wedge     => 3,
+                         '3mid'    => 5,
+                         '3side'   => 15,
+                         side      => undef,
+                        );
+  sub x_negative_at_n {
+    my ($self) = @_;
+    return $x_negative_at_n{$self->{'parts'}};
+  }
+}
+{
+  my %y_negative_at_n = (4         => 6,
+                         1         => undef,
+                         octant    => undef,
+                         octant_up => undef,
+                         wedge     => undef,
+                         '3mid'    => 1,
+                         '3side'   => 1,
+                         side      => undef,
+                        );
+  sub y_negative_at_n {
+    my ($self) = @_;
+    return $y_negative_at_n{$self->{'parts'}};
+  }
+}
+
 {
   my %sumxy_minimum = (1         => 0,
                        octant    => 0,
@@ -1408,7 +1440,7 @@ sub rect_to_n_range {
   ($y1,$y2) = ($y2,$y1) if $y1 > $y2;
   my $parts = $self->{'parts'};
 
-  my $extra = ($parts eq '3side' ? 1 : 0);
+  my $extra = ($parts eq '3side' ? 2 : 0);
   my ($pow,$exp) = round_down_pow (max(1,
                                        abs($x1),
                                        abs($x2)+$extra,
@@ -2314,8 +2346,8 @@ part 14 "Square Grid with Eight Neighbours" of
 =over
 
 David Applegate, Omar E. Pol, N.J.A. Sloane, "The Toothpick Sequence and
-Other Sequences from Cellular Automata", Congressus Numerantium, volume 206
-(2010), pages 157-191.  L<http://www.research.att.com/~njas/doc/tooth.pdf>
+Other Sequences from Cellular Automata", Congressus Numerantium, volume 206,
+2010, pages 157-191.  L<http://www.research.att.com/~njas/doc/tooth.pdf>
 
 =back
 
@@ -2911,7 +2943,7 @@ L<http://user42.tuxfamily.org/math-planepath/index.html>
 
 =head1 LICENSE
 
-Copyright 2012, 2013 Kevin Ryde
+Copyright 2012, 2013, 2014 Kevin Ryde
 
 This file is part of Math-PlanePath-Toothpick.
 

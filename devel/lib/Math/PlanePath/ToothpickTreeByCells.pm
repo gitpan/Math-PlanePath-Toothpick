@@ -58,7 +58,7 @@ use Carp;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 13;
+$VERSION = 14;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 

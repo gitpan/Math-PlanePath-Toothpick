@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2013 Kevin Ryde
+# Copyright 2013, 2014 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -48,7 +48,7 @@ use Smart::Comments;
   shift @values;
   shift @values;
   use lib 'xt'; require MyOEIS;
-  print MyOEIS->grep_for_values(array => \@values);
+  Math::OEIS::Grep->search(array => \@values);
   exit 0;
 }
 
@@ -71,7 +71,7 @@ use Smart::Comments;
     print "$depth  $count[$depth]\n";
   }
   use lib 'xt'; require MyOEIS;
-  print MyOEIS->grep_for_values(array => \@values);
+  Math::OEIS::Grep->search(array => \@values);
   exit 0;
 }
 
@@ -86,7 +86,7 @@ use Smart::Comments;
   @values = reverse @values;
   print join(',',@values),"\n";
   use lib 'xt'; require MyOEIS;
-  print MyOEIS->grep_for_values(array => \@values);
+  Math::OEIS::Grep->search(array => \@values);
   exit 0;
 }
 

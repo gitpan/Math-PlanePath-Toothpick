@@ -1,4 +1,4 @@
-# Copyright 2012, 2013 Kevin Ryde
+# Copyright 2012, 2013, 2014 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -30,7 +30,7 @@ use 5.004;
 use strict;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 13;
+$VERSION = 14;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -69,6 +69,7 @@ use Math::PlanePath::Base::Digits
 use constant default_n_start => 0;
 use constant class_x_negative => 1;
 use constant class_y_negative => 0;
+use constant x_negative_at_n => 2;
 use constant sumxy_minimum => 0;   # triangular X>=-Y
 use constant diffxy_maximum => 0;  # triangular X<=Y so X-Y<=0
 use constant dy_minimum => 0; # across rows dY=0
@@ -673,7 +674,7 @@ L<http://user42.tuxfamily.org/math-planepath/index.html>
 
 =head1 LICENSE
 
-Copyright 2012, 2013 Kevin Ryde
+Copyright 2012, 2013, 2014 Kevin Ryde
 
 Math-PlanePath-Toothpick is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License as published by

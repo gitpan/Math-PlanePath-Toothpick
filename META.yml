@@ -1,17 +1,17 @@
 ---
 abstract: 'Toothpick and other cellular automaton mathematical paths through the 2-D plane.'
 author:
-  - 'Kevin Ryde <user42@zip.com.au>'
+  - 'Kevin Ryde <user42_kevin@yahoo.com.au>'
 build_requires:
-  ExtUtils::MakeMaker: 0
+  ExtUtils::MakeMaker: '0'
 configure_requires:
-  ExtUtils::MakeMaker: 0
+  ExtUtils::MakeMaker: '0'
 dynamic_config: 1
-generated_by: 'ExtUtils::MakeMaker version 6.66, CPAN::Meta::Converter version 2.132830'
-license: open_source
+generated_by: 'ExtUtils::MakeMaker version 6.66, CPAN::Meta::Converter version 2.141520'
+license: gpl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
-  version: 1.4
+  version: '1.4'
 name: Math-PlanePath-Toothpick
 no_index:
   directory:
@@ -21,21 +21,22 @@ no_index:
     - xt
 optional_features:
   maximum_tests:
-    description: "Have \"make test\" do as much as possible."
+    description: 'Have "make test" do as much as possible.'
     requires:
-      Data::Float: 0
-      Math::BigFloat: 1.993
-      Math::BigInt: 0
-      Math::BigInt::Lite: 0
-      Math::BigRat: 0
+      Data::Float: '0'
+      Math::BigFloat: '1.993'
+      Math::BigInt: '0'
+      Math::BigInt::Lite: '0'
+      Math::BigRat: '0'
 requires:
-  Math::PlanePath: 106
-  Math::PlanePath::Base::Digits: 91
-  Math::PlanePath::Base::Generic: 91
-  Test: 0
-  constant: 1.02
-  perl: 5.004
+  Math::PlanePath: '106'
+  Math::PlanePath::Base::Digits: '91'
+  Math::PlanePath::Base::Generic: '91'
+  Math::PlanePath::Base::NSEW: '116'
+  Test: '0'
+  constant: '1.02'
+  perl: '5.004'
 resources:
   homepage: http://user42.tuxfamily.org/math-planepath/index.html
   license: http://www.gnu.org/licenses/gpl.html
-version: 13
+version: '14'

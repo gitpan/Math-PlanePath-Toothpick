@@ -2,7 +2,7 @@
 
 # 0-Test-YAML-Meta.t -- run Test::CPAN::Meta::YAML if available
 
-# Copyright 2009, 2010, 2011, 2013 Kevin Ryde
+# Copyright 2009, 2010, 2011, 2013, 2014 Kevin Ryde
 
 # 0-Test-YAML-Meta.t is shared by several distributions.
 #
@@ -36,6 +36,7 @@ SKIP: {
     or skip "due to CPAN::Meta::Validator not available -- $@";
   eval { require YAML; 1 }
     or skip "due to YAML module not available -- $@", 1;
+  diag "CPAN::Meta::Validator version ", CPAN::Meta::Validator->VERSION;
 
   my $struct = YAML::LoadFile ($meta_filename);
   my $cmv = CPAN::Meta::Validator->new($struct);

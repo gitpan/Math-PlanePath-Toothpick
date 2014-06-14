@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2012, 2013 Kevin Ryde
+# Copyright 2012, 2013, 2014 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -31,12 +31,12 @@ use Math::PlanePath::ToothpickTree;
 
 {
   # tree_depth_to_n() mod 2
-  unshift @INC, 'xt'; require MyOEIS;
+  require Math::OEIS::Grep;
   foreach my $parts (1, 2, 3, 4, 'octant', 'wedge') {
     my $path = Math::PlanePath::ToothpickTree->new (parts => $parts);
     my @values = map { $path->tree_depth_to_n($_) % 2 } 4 .. 40;
-    print MyOEIS->grep_for_values(name => "parts=$parts",
-                                  array => \@values);
+    Math::OEIS::Grep->search(name => "parts=$parts",
+                             array => \@values);
     print "\n";
   }
   exit 0;
@@ -57,7 +57,7 @@ use Math::PlanePath::ToothpickTree;
   my @values = map { count_2ksub1($_)||() } 1 .. 35;
   my $values = join(',',@values);
   print "seek $values\n";
-  print MyOEIS->grep_for_values_aref(\@values);
+  Math::OEIS::Grep->search(array=>\@values);
   exit 0;
 
   # n >= 2^k-1

@@ -1,4 +1,4 @@
-# Copyright 2013 Kevin Ryde
+# Copyright 2013, 2014 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -34,7 +34,7 @@ use Math::PlanePath::LCornerTree;
 *_divrem = \&Math::PlanePath::LCornerTree::_divrem;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 13;
+$VERSION = 14;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -793,11 +793,11 @@ L<Math::PlanePath::UlamWarburton>
 
 =head1 HOME PAGE
 
-http://user42.tuxfamily.org/math-planepath/index.html
+L<http://user42.tuxfamily.org/math-planepath/index.html>
 
 =head1 LICENSE
 
-Copyright 2013 Kevin Ryde
+Copyright 2013, 2014 Kevin Ryde
 
 This file is part of Math-PlanePath-Toothpick.
 

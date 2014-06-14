@@ -1,4 +1,4 @@
-# Copyright 2012, 2013 Kevin Ryde
+# Copyright 2012, 2013, 2014 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -25,14 +25,14 @@ Source: libmath-planepath-toothpick-perl
 Section: perl
 Priority: optional
 Build-Depends: cdbs, debhelper (>= 5)
-Maintainer: Kevin Ryde <user42@zip.com.au>
-Standards-Version: 3.9.4
+Maintainer: Kevin Ryde <user42_kevin@yahoo.com.au>
+Standards-Version: 3.9.5
 Homepage: http://user42.tuxfamily.org/math-planepath/index.html
-Bugs: mailto:user42@zip.com.au
+Bugs: mailto:user42_kevin@yahoo.com.au
 
 Package: libmath-planepath-toothpick-perl
 Architecture: all
-Depends: perl (>= 5.004), libconstant-perl (>= 1.02) | perl (>= 5.6), libscalar-list-utils-perl | perl (>= 5.8), ${perl:Depends}, ${misc:Depends}
-Description: Mathematical paths through the plane
+Depends: perl (>= 5.004), libconstant-perl (>= 1.02) | perl (>= 5.6), libscalar-list-utils-perl | perl (>= 5.8), libmath-planepath-perl (>= 116), ${perl:Depends}, ${misc:Depends}
+Description: Mathematical paths of toothpicks through the plane
  Perl code to generate some toothpick and cellular automaton paths
  through the 2-D X,Y plane.

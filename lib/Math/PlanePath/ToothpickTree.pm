@@ -1,4 +1,4 @@
-# Copyright 2012, 2013 Kevin Ryde
+# Copyright 2012, 2013, 2014 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -131,7 +131,7 @@ use Carp;
 *min = \&Math::PlanePath::_min;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 13;
+$VERSION = 14;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -220,6 +220,39 @@ use constant class_y_negative => 1;
   sub y_minimum {
     my ($self) = @_;
     return $y_minimum{$self->{'parts'}};
+  }
+}
+
+{
+  my %x_negative_at_n = (4         => 4,
+                         3         => 5,
+                         2         => 2,
+                         1         => undef,
+                         octant    => undef,
+                         octant_up => undef,
+                         wedge     => 3,
+                         'wedge+1' => 1,
+                         two_horiz => 1,
+                        );
+  sub x_negative_at_n {
+    my ($self) = @_;
+    return $x_negative_at_n{$self->{'parts'}};
+  }
+}
+{
+  my %y_negative_at_n = (4         => 2,
+                         3         => 1,
+                         2         => undef,
+                         1         => undef,
+                         octant    => undef,
+                         octant_up => undef,
+                         wedge     => undef,
+                         'wedge+1' => 1,
+                         two_horiz => 4,
+                        );
+  sub y_negative_at_n {
+    my ($self) = @_;
+    return $y_negative_at_n{$self->{'parts'}};
   }
 }
 
@@ -2657,7 +2690,7 @@ L<http://user42.tuxfamily.org/math-planepath/index.html>
 
 =head1 LICENSE
 
-Copyright 2012, 2013 Kevin Ryde
+Copyright 2012, 2013, 2014 Kevin Ryde
 
 This file is part of Math-PlanePath-Toothpick.
 

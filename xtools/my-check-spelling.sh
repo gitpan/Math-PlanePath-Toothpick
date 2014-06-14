@@ -2,7 +2,7 @@
 
 # my-check-spelling.sh -- grep for spelling errors
 
-# Copyright 2009, 2010, 2011, 2012, 2013 Kevin Ryde
+# Copyright 2009, 2010, 2011, 2012, 2013, 2014 Kevin Ryde
 
 # my-check-spelling.sh is shared by several distributions.
 #

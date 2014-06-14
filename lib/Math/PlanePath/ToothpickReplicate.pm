@@ -1,4 +1,4 @@
-# Copyright 2012, 2013 Kevin Ryde
+# Copyright 2012, 2013, 2014 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -33,7 +33,7 @@ use strict;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 13;
+$VERSION = 14;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -89,6 +89,31 @@ use constant parameter_info_array =>
 use constant n_start => 0;
 use constant class_x_negative => 1;
 use constant class_y_negative => 1;
+
+{
+  my @x_negative_at_n = (undef,
+                         undef,  # 1
+                         3,      # 2
+                         6,      # 3
+                         5,      # 4
+                        );
+  sub x_negative_at_n {
+    my ($self) = @_;
+    return $x_negative_at_n[$self->{'parts'}];
+  }
+}
+{
+  my @y_negative_at_n = (undef,
+                         undef,  # 1
+                         undef,  # 2
+                         2,      # 3
+                         2,      # 4
+                        );
+  sub y_negative_at_n {
+    my ($self) = @_;
+    return $y_negative_at_n[$self->{'parts'}];
+  }
+}
 
 # parts=1 same as parts=4
 # parts=2 same as parts=4
@@ -829,7 +854,7 @@ L<http://user42.tuxfamily.org/math-planepath/index.html>
 
 =head1 LICENSE
 
-Copyright 2012, 2013 Kevin Ryde
+Copyright 2012, 2013, 2014 Kevin Ryde
 
 This file is part of Math-PlanePath-Toothpick.
 

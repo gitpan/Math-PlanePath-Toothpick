@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2012, 2013 Kevin Ryde
+# Copyright 2012, 2013, 2014 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -26,21 +26,21 @@ WriteMakefile
    ABSTRACT     => 'Toothpick and other cellular automaton mathematical paths through the 2-D plane.',
    VERSION_FROM => 'lib/Math/PlanePath/LCornerTree.pm',
    PREREQ_PM    => {
+                    'constant' => '1.02', # 1.02 for leading underscore
                     # 'List::Util' => 0,
 
                     # v.106 for tree_num_children_minimum() calling to
                     # tree_num_children_list()
                     'Math::PlanePath' => 106,
-
+                    'Math::PlanePath::Base::NSEW' => 116, # new in v.116
                     'Math::PlanePath::Base::Digits' => 91,
                     'Math::PlanePath::Base::Generic' => 91,
-                    'constant' => '1.02', # 1.02 for leading underscore
 
                     # only for testing
                     'Test' => 0,
                    },
-   AUTHOR       => 'Kevin Ryde <user42@zip.com.au>',
-   LICENSE      => 'gpl',
+   AUTHOR       => 'Kevin Ryde <user42_kevin@yahoo.com.au>',
+   LICENSE      => 'gpl_3',
    SIGN         => 1,
    MIN_PERL_VERSION => '5.004',
 
