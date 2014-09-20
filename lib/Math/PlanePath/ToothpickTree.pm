@@ -125,13 +125,13 @@
 package Math::PlanePath::ToothpickTree;
 use 5.004;
 use strict;
-use Carp;
+use Carp 'croak';
 #use List::Util 'max','min';
 *max = \&Math::PlanePath::_max;
 *min = \&Math::PlanePath::_min;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 14;
+$VERSION = 15;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -1728,8 +1728,41 @@ sub tree_n_to_subheight {
   ### $depth
   return (defined $dbase ? $dbase - $depth - 2 : undef);
 }
-# no Smart::Comments;
 
+#------------------------------------------------------------------------------
+# levels
+
+#                                      level=0 level=1 level=2 level=3
+# parts=4 level depths 0, 3, 7           4-1=3,  8-1=7, 16-1=15
+# parts=1 level depths 1  5, 13  2-3=-1  4-3=1,  8-3=5, 16-3=13
+# parts=two_horiz                        4-1=3,  8-3=7, 16-4=15
+my %level_depth_offset = (4         => 1,
+                          3         => 1,
+                          2         => 2,
+                          1         => 3,  #
+                          octant    => 4,  # sans upper
+                          octant_up => 4,  #
+                          wedge     => 1,  #
+                          two_horiz => 1,  # like parts=4
+                         );
+
+sub level_to_n_range {
+  my ($self, $level) = @_;
+  return (0,
+          $self->tree_depth_to_n_end(2**($level+2)
+                                     - $level_depth_offset{$self->{'parts'}}));
+}
+sub n_to_level {
+  my ($self, $n) = @_;
+  my $depth = $self->tree_n_to_depth($n);
+  if (! defined $depth) { return undef; }
+  my ($pow, $exp) = round_down_pow
+    ($depth + $level_depth_offset{$self->{'parts'}},
+     2);
+  return max(0, $exp - 2);
+}
+
+#------------------------------------------------------------------------------
 1;
 __END__
 
@@ -1737,7 +1770,7 @@ __END__
 
 =head1 NAME
 
-Math::PlanePath::ToothpickTree -- toothpick pattern by growth levels
+Math::PlanePath::ToothpickTree -- toothpick pattern by rows
 
 =head1 SYNOPSIS
 
@@ -1748,7 +1781,8 @@ Math::PlanePath::ToothpickTree -- toothpick pattern by growth levels
 =head1 DESCRIPTION
 
 X<Applegate, David>X<Pol, Omar E.>X<Sloane, Neil>This is the "toothpick"
-sequence expanding through the plane by non-overlapping line segments as per
+sequence pattern expanding through the plane by non-overlapping line
+segments as per
 
 =over
 
@@ -1817,9 +1851,9 @@ The end of a new toothpick is allowed to touch an existing toothpick.  The
 first time this happens is N=15 where its left end touches N=3.
 
 The way each toothpick is perpendicular to the previous means that at even
-depth the toothpicks are all vertical and on "even" points X==Y mod 2.
-Conversely at odd depth all toothpicks are horizontal and on "odd" points
-X!=Y mod 2.  (The initial N=0 is depth=0.)
+depth the toothpicks are all vertical and are on "even" points X==Y mod 2.
+Conversely at odd depth all toothpicks are horizontal and are on "odd"
+points X!=Y mod 2.  (The initial N=0 is depth=0.)
 
 The children at a given depth are numbered in order of their parents, and
 anti-clockwise around when there's two children.
@@ -1838,7 +1872,7 @@ N=3 and then the left for N=4.
 =head2 Cellular Automaton
 
 The toothpick rule can also be expressed as growing into a cell which has
-just one of its two vertical or horizontal neighbours "ON", using either
+just one of its two vertical or horizontal neighbours "ON", going to either
 vertical or horizontal neighbours according to X+Y odd or even.
 
           Point            Grow
@@ -1902,7 +1936,7 @@ with an extra two toothpicks "A" and "B" in the middle.
 
 Toothpick "A" is at a power-of-2 position X=2^k,Y=2^k and toothpick "B" is
 above it.  The B toothpick leading to blocks 2 and 3 means block 1 is one
-growth level ahead of blocks 2 and 3.
+growth row ahead of blocks 2 and 3.
 
 In the first quadrant of the diagram above, N=3,N=7 is block 0 and those two
 repeat as N=15,N=23 block 1, and N=24,N=35 block 2, and N=25,36 block 3.
@@ -1914,9 +1948,9 @@ The initial N=3,N=7 can be thought of as an "A,B" middle pair with empty
 blocks before and surrounding.
 
 See L<Math::PlanePath::ToothpickReplicate> for a digit-based replication
-instead of by growth levels.
+instead of by rows.
 
-=head2 Level Ranges
+=head2 Row Ranges
 
 Each "A" toothpick is at a power-of-2 position,
 
@@ -1931,7 +1965,7 @@ N=222..223 in base-4 arises from the replication described above.  Each
 replication is 4*N+2 of the previous, after the initial N=0,1,2.
 
 The "A" toothpick coming out of corner of block 2 is the only growth from a
-depth=4^k level.  The sides of blocks 1 and 2 and blocks 2 and 3 have all
+depth=4^k row.  The sides of blocks 1 and 2 and blocks 2 and 3 have all
 endpoints meeting and so stop by the no-overlap rule, as can be seen for
 example N=35,36,37,38 across the top above.
 
@@ -2086,7 +2120,7 @@ right of parts=4.  But the two upper parts are the same as in parts=4 and
 parts=2.
 
 As noted by David Applegate and Omar Pol in OEIS A153006, the three parts
-replication means that N at the last level of a power-of-2 block is a
+replication means that N at the last row of a power-of-2 block is a
 triangular number,
 
     depth=2^k-1
@@ -2155,17 +2189,17 @@ The octant is self similar in blocks
       --          |           --|
     -----------------------------
 
-"Upper" and "extend" are mirror images vertically.  "Lower" is one depth
-level ahead of the other parts.
+"Upper" and "extend" are mirror images across the horizontal separating
+them.  "Lower" is one growth row ahead of the upper and extend parts.
 
 In the sample points shown above N=9 is the start of the "lower" copy of
-N=0.  N=11 is the "upper" copy, which is 1 depth level later.  Then N=12 is
+N=0.  N=11 is the "upper" copy, which is 1 row depth later.  Then N=12 is
 the "extend" copy.  The points N=7,8,10 are extras in between the
 replications.
 
 "Upper" and "lower" together make a square the same as the parts=1 style
 quadrant, though here it stops at the X axis to be just a 2^k size block.
-A quadrant consists of two octants with 1 depth level offset.
+A quadrant consists of two octants with 1 row depth offset.
 
 =head2 Upper Octant
 
@@ -2298,9 +2332,9 @@ The four octants near the Y axis begin immediately.  The N=0 and N=2 points
 are shared by the central octants going up and down on the right, and
 likewise N=1,N=3 on the left.
 
-The four octants near the X axis begin 3 depth levels later.  This is not
-the same as the quadrants of the full pattern (their opposite octants are 1
-depth level offset).  For example the point N=10 at depth=3 is the start of
+The four octants near the X axis begin 3 row depth levels later.  This is
+not the same as the quadrants of the full pattern (their opposite octants
+are 1 depth offset).  For example the point N=10 at depth=3 is the start of
 the lower octant in that quarter.  A bigger picture than what's shown above
 makes this easier to see.
 
@@ -2309,7 +2343,7 @@ makes this easier to see.
 The parts=octant pattern is half a parts=1 quadrant across the diagonal.
 It's also interesting to note that an octant is half a quadrant by taking
 just the vertical or horizontal toothpicks in the quadrant (taking vertical
-or horizontal according to the orientation of the last level in the octant).
+or horizontal according to the orientation of the last row in the octant).
 
     oct(d) = quad_verticals(d) + floor(d/2)    if d odd
              quad_horizontals(d) + floor(d/2)  if d even
@@ -2321,7 +2355,7 @@ diagonal can be folded down across the diagonal to become horizontal and
 complete the lower octant.
 
      quadrant verticals                 octant made by quadrant
-   numbered by depth level            upper verticals fold down
+   numbered by row depth              upper verticals fold down
                                       to become horizontals
 
     |       |       |       |                                  |
@@ -2340,17 +2374,17 @@ complete the lower octant.
     0       4              12          0 --4---4 -12--   -12--12
     |       |               |          |       |               |
 
-For example the vertical level "4" toothpick which is above the X=Y diagonal
+For example the vertical depth "4" toothpick which is above the X=Y diagonal
 folds down to become the horizontal "4" in the lower octant.  Similarly the
 block of five 8,10,12,12,12 above the diagonal fold down to make five
 horizontals.  And the final 12 above becomes the horizontal 12.
 
 However the horizontals which are on the central diagonal spine don't have
 corresponding verticals above.  These are marked "....." in the octant shown
-above.  This means 1 toothpick missing at every second depth level and
-therefore the floor(depth/2) in the oct() formula above.
+above.  This means 1 toothpick missing at every second row and therefore the
+floor(depth/2) in the oct() formula above.
 
-The key is that a quadrant has the upper octant running 1 depth level behind
+The key is that a quadrant has the upper octant running 1 growth row behind
 the lower.  So the horizontals in the lower correspond to the verticals in
 the upper (and vice-versa).
 
@@ -2371,10 +2405,10 @@ and the oct(d-1) term repeatedly expanded
            = quad(d)-quad(d-1) + quad(d-2)-quad(d-3) + ... + floor(d/2)
 
 The difference quad(d)-quad(d-1) is the number of toothpicks added to make
-depth level d, and similarly quad(d-2)-quad(d-3) the number added to make
-depth d-2.  This means the number added at every second level, so if d is
-even then this counts only the vertical toothpicks added.  Or if d is odd
-then only the horizontals.
+depth d, and similarly quad(d-2)-quad(d-3) the number added to make depth
+d-2.  This means the number added at every second row, so if d is even then
+this counts only the vertical toothpicks added.  Or if d is odd then only
+the horizontals.
 
 The +d, +(d-1), +(d-2) additions from the quad(d) formula have alternating
 signs and so cancel out to be +1 per pair, giving floor(d/2).
@@ -2449,9 +2483,18 @@ See L<Math::PlanePath/FUNCTIONS> for behaviour common to all path classes.
 
 =item C<$path = Math::PlanePath::ToothpickTree-E<gt>new ()>
 
-=item C<$path = Math::PlanePath::ToothpickTree-E<gt>new (parts =E<gt> $integer)>
+=item C<$path = Math::PlanePath::ToothpickTree-E<gt>new (parts =E<gt> $str)>
 
-Create and return a new path object.  C<parts> can be 1, 2, 3 or 4.
+Create and return a new path object.  C<parts> can be
+
+    "4"              full pattern (the default)
+    "3"              three quadrants
+    "2"              half plane
+    "1"              single quadrant
+    "octant"         single eighth
+    "octant_up"      single eighth upper
+    "wedge"          V-shaped wedge
+    "two_horiz"      starting two horizontal toothpicks
 
 =back
 
@@ -2465,8 +2508,8 @@ Return the children of C<$n>, or an empty list if C<$n> has no children
 (including when C<$n E<lt> 0>, ie. before the start of the path).
 
 The children are the new toothpicks added at the ends of C<$n> at the next
-level.  This can be 0, 1 or 2 points.  For example in the parts=4 default
-N=24 has no children, N=8 has a single child N=12, and N=2 has two children
+row.  This can be 0, 1 or 2 points.  For example in the parts=4 default N=24
+has no children, N=8 has a single child N=12, and N=2 has two children
 N=4,N=5.  The way points are numbered means that if there are two children
 then they're consecutive N values.
 
@@ -2505,12 +2548,44 @@ Return minimum 0 and maximum 2 since each node has 0, 1 or 2 children.
 
 =back
 
+=head2 Level Methods
+
+=over
+
+=item C<($n_lo, $n_hi) = $path-E<gt>level_to_n_range($level)>
+
+Return C<(0, tree_depth_to_n_end($depth)> where the depth for a completed
+level is
+
+    parts               depth
+    -----               -----
+     4            \
+     3            |  4*2^level - 1  = 3, 7, 15, 31, ...
+     wedge        |
+     two_horiz    /
+     2               4*2^level - 2  = 2, 6, 14, 30, ...
+     1               4*2^level - 3  = 1, 5, 13, 29, ...
+     octant       \  4*2^level - 4  = 0, 4, 12, 28, ...
+     octant_up    /
+
+parts=octant is one depth less than parts=1 because the lower eighth is one
+row ahead of the upper, so parts=1 finishes one later.
+
+parts=octant_up is the upper eighth of parts=1 but one depth less because
+the octant starts at X=0,Y=1 which is one row later than parts=1.
+
+In each case the depth is reckoned by the slowest eighth in the parts
+pattern.  For example parts=two_horiz completes levels of the eighths
+nearest the X axis (the "oct 2 behind" shown in L</Two Horizontal> above).
+
+=back
+
 =head1 FORMULAS
 
 =head2 Depth to N
 
 The first N at given depth is the total count of toothpicks in the preceding
-levels.  The paper by Applegate, Pol and Sloane above gives formulas for
+rows.  The paper by Applegate, Pol and Sloane above gives formulas for
 parts=4 and parts=1.  A similar formula can be made for parts=octant.
 
 The depth in all the following is per the full pattern, which means the

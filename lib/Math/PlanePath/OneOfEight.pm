@@ -24,12 +24,12 @@
 package Math::PlanePath::OneOfEight;
 use 5.004;
 use strict;
-use Carp;
+use Carp 'croak';
 #use List::Util 'max';
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 14;
+$VERSION = 15;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -2306,6 +2306,22 @@ sub _depth_to_octant_added {
   }
 }
 
+#------------------------------------------------------------------------------
+# levels
+
+sub level_to_n_range {
+  my ($self, $level) = @_;
+  my $depth = 2**$level;
+  unless ($self->{'parts'} eq '3side') { $depth -= 1; }
+  return (0, $self->tree_depth_to_n_end($depth));
+}
+sub n_to_level {
+  my ($self, $n) = @_;
+  my $depth = $self->tree_n_to_depth($n);
+  if (! defined $depth) { return undef; }
+  my ($pow, $exp) = round_down_pow ($depth, 2);
+  return $exp + 1;
+}
 
 #------------------------------------------------------------------------------
 
@@ -2404,7 +2420,7 @@ the direction of the node's parent.  For example N=9 has it's parent
 south-west and so points around N=9 are numbered anti-clockwise around from
 the south-west to give N=13 through N=17.
 
-=head2 Level Ranges
+=head2 Depth Ranges
 
 The pattern always extends along the X=+/-Y diagonals and grows into the
 sides in power-of-2 blocks.  So for example in the part shown above N=33 at
@@ -2412,7 +2428,7 @@ X=4,Y=4 is the only cell growing out of the 4x4 block X=0..3,Y=0..3 at the
 origin, and likewise N=34,35,36 in the other quadrants.  Then N=121 at
 X=8,Y=8 is the only growth out of the 8x8 block, etc.
 
-In general the first N at a power-of-2 level is
+In general the first N at a power-of-2 depth is
 
     depth=2^k  for k>=0
     Ndepth(2^k) = (16*4^k + 24*k - 7) / 9
@@ -2420,7 +2436,7 @@ In general the first N at a power-of-2 level is
     eg. k=3 Ndepth=121
 
 Because points are numbered from N=0 this Ndepth is how many cells are "on"
-in the pattern up to this depth level (and not including it).  The cells are
+in the pattern up to this depth (and not including it).  The cells are
 within -2^k E<lt> X,Y E<lt> 2^k and so the fraction of the plane covered is
 
     density = Ndepth(2^k) / (2*2^k - 1)^2
@@ -2558,7 +2574,7 @@ leaf nodes of the pattern (one level of leaf nodes).
           * *
          *   *   *
         *     * *      <- upper,lower parts
-       *     * *          branch off lower is 1 level sooner
+       *     * *          branch off lower is 1 row sooner
       * *   *   *
      *   *       *
     *
@@ -2787,8 +2803,8 @@ Create and return a new path object.  The C<parts> option (a string) can be
 
     "4"           full pattern (the default)
     "1"           single quadrant
-    "octant"      single octant
-    "octant_up"   single octant upper
+    "octant"      single eighth
+    "octant_up"   single eighth upper
     "wedge"       V-shaped wedge
     "3mid"        three quadrants, middle symmetric style
     "3side"       three quadrants, side style
@@ -2835,6 +2851,19 @@ diagonal corner X=2^k,Y=2^k and for parts=3side there's no such corner.
 parts=4,1,3mid have 5 children growing out of the 1-child of the X=2^k,Y=2^k
 corner.  In an parts=octant, octant_up, and wedge there's only 3 children
 around that point since that pattern doesn't go above the X=Y diagonal.
+
+=back
+
+=head2 Level Methods
+
+=over
+
+=item C<($n_lo, $n_hi) = $path-E<gt>level_to_n_range($level)>
+
+Return C<(0, tree_depth_to_n_end(2**$level - 1)>, or for parts=3side
+C<tree_depth_to_n_end(2**$level)>.
+
+parts=3side
 
 =back
 

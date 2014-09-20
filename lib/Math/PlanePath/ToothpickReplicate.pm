@@ -33,7 +33,7 @@ use strict;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 14;
+$VERSION = 15;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -564,6 +564,55 @@ sub xy_to_n {
   return undef;
 }
 
+#------------------------------------------------------------------------------
+# levels
+
+# parts=1
+# LevelPoints[k] = 4*LevelPoints[k] + 2  starting LevelPoints[0] = 2
+# LevelPoints[k] = 2 + 2*4 + 2*4^2 + ... + 2*4^(k-1) + 4^k*LevelPoints[0]
+# LevelPoints[k] = 2 + 2*4 + 2*4^2 + ... + 2*4^(k-1) + 2*4^k
+# LevelPoints[k] = 2*(4^(k+1) - 1)/3
+
+my %level_to_n_range = (4 => -2,
+                        3 => -3,
+                        2 => -4,
+                        1 => -5,
+                       );
+sub level_to_n_range {
+  my ($self, $level) = @_;
+  return (0,
+          (4**($level+1) * (2*$self->{'parts'})
+           + $level_to_n_range{$self->{'parts'}}) / 3);
+}
+sub n_to_level {
+  my ($self, $n) = @_;
+  if ($n < 0) { return undef; }
+  if (is_infinite($n)) { return $n; }
+  $n = round_nearest($n) + 1;
+  _divrem_mutate ($n, 2*$self->{'parts'});
+  my ($pow, $exp) = round_down_pow (4*$n - $level_to_n_range{$self->{'parts'}}, 2);
+  return $exp + 1;
+}
+
+# return $remainder, modify $n
+# the scalar $_[0] is modified, but if it's a BigInt then a new BigInt is made
+# and stored there, the bigint value is not changed
+sub _divrem_mutate {
+  my $d = $_[1];
+  my $rem;
+  if (ref $_[0] && $_[0]->isa('Math::BigInt')) {
+    ($_[0], $rem) = $_[0]->copy->bdiv($d);  # quot,rem in array context
+    if (! ref $d || $d < 1_000_000) {
+      return $rem->numify;  # plain remainder if fits
+    }
+  } else {
+    $rem = $_[0] % $d;
+    $_[0] = int(($_[0]-$rem)/$d); # exact division stays in UV
+  }
+  return $rem;
+}
+
+#------------------------------------------------------------------------------
 1;
 __END__
 
@@ -821,7 +870,62 @@ See L<Math::PlanePath/FUNCTIONS> for behaviour common to all path classes.
 
 =item C<$path = Math::PlanePath::ToothpickTree-E<gt>new (parts =E<gt> $integer)>
 
-Create and return a new path object.  C<parts> can be 1, 2, 3 or 4.
+Create and return a new path object.  C<parts> can be
+
+    4    whole plane (the default)
+    3    three quadrants
+    2    half plane
+    1    quadrant
+
+=back
+
+=head2 Level Methods
+
+=over
+
+=item C<($n_lo, $n_hi) = $path-E<gt>level_to_n_range($level)>
+
+Return C<$n_lo = 0> and
+
+    parts    $n_hi
+    -----    -----
+      4      (4*8 * 4**$level - 2) / 3
+      3      (3*8 * 4**$level - 3) / 3
+      2      (2*8 * 4**$level - 4) / 3
+      1      (  8 * 4**$level - 5) / 3
+
+% Test-Pari-DEFINE  Level4(k) = (4*8 * 4^k - 2)/3
+
+% Test-Pari-DEFINE  Level3(k) = (3*8 * 4^k - 3)/3
+
+% Test-Pari-DEFINE  Level2(k) = (2*8 * 4^k - 4)/3
+
+% Test-Pari-DEFINE  Level1(k) = (  8 * 4^k - 5)/3
+
+% Test-Pari  Level4(0) == 10
+
+% Test-Pari  Level4(1) == 42
+
+% Test-Pari  Level1(0) == 1
+
+% Test-Pari  Level1(1) == 9
+
+% Test-Pari  Level1(2) == 41
+
+% Test-Pari  Level2(0) == 4
+
+% Test-Pari  Level2(1) == 20
+
+% Test-Pari  Level3(0) == 7
+
+% Test-Pari  Level3(1) == 31
+
+It can be noted that parts=3 finishes one N point sooner than the
+corresponding parts=3 pattern of the C<ToothpickTree> form.  This is because
+the Replicate form here finishes the upper quadrants before continuing the
+lower quadrant, whereas C<ToothpickTree> is by rows so continues to grow the
+lower quadrant at the same time as the last row of the upper two quadrants.
+That lower quadrant growth is a single point.
 
 =back
 

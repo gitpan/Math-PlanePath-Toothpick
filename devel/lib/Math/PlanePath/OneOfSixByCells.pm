@@ -29,12 +29,12 @@
 package Math::PlanePath::OneOfSixByCells;
 use 5.004;
 use strict;
-use Carp;
+use Carp 'croak';
 #use List::Util 'max';
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 14;
+$VERSION = 15;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 

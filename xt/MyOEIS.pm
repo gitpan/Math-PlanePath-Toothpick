@@ -17,7 +17,7 @@
 
 package MyOEIS;
 use strict;
-use Carp;
+use Carp 'croak';
 use File::Spec;
 use List::Util 'sum';
 
@@ -39,12 +39,13 @@ sub import {
 
 sub read_values {
   my ($anum, %option) = @_;
+  ### read_values() ...
 
   if ($without) {
     return;
   }
 
-  my $lo;
+  my $i_start;
   my $filename;
   my $next;
   if (my $seq = eval { require Math::NumSeq::OEIS::File;
@@ -55,6 +56,7 @@ sub read_values {
       return $value;
     };
     $filename = $seq->{'filename'};
+    $i_start = $seq->i_start;
   } else {
     require Math::OEIS::Stripped;
     my @values = Math::OEIS::Stripped->anum_to_values($anum);
@@ -89,7 +91,7 @@ sub read_values {
   }
 
   MyTestHelpers::diag ($desc);
-  return (\@bvalues, $lo, $filename);
+  return (\@bvalues, $i_start, $filename);
 }
 
 # with Y reckoned increasing downwards

@@ -17,6 +17,9 @@ with Math-PlanePath-Toothpick.  If not, see <http://www.gnu.org/licenses/>.
 
 
 
+Version 15, September 2014
+    - new methods n_to_level(), level_to_n_range()
+
 Version 14, June 2014
     - new methods x_negative_at_n(), y_negative_at_n()
 

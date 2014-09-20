@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2011, 2012, 2013 Kevin Ryde
+# Copyright 2011, 2012, 2013, 2014 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -20,7 +20,7 @@
 use 5.004;
 use strict;
 use Test;
-plan tests => 337;;
+plan tests => 355;;
 
 use lib 't';
 use MyTestHelpers;
@@ -33,7 +33,7 @@ require Math::PlanePath::ToothpickReplicate;
 # VERSION
 
 {
-  my $want_version = 14;
+  my $want_version = 15;
   ok ($Math::PlanePath::ToothpickReplicate::VERSION, $want_version,
       'VERSION variable');
   ok (Math::PlanePath::ToothpickReplicate->VERSION,  $want_version,
@@ -75,6 +75,50 @@ require Math::PlanePath::ToothpickReplicate;
     Math::PlanePath::ToothpickReplicate->parameter_info_list;
   ok (join(',',@pnames), 'parts');
 }
+
+#------------------------------------------------------------------------------
+# level_to_n_range()
+
+{
+  my $path = Math::PlanePath::ToothpickReplicate->new;
+  { my ($n_lo,$n_hi) = $path->level_to_n_range(0);
+    ok ($n_lo, 0);
+    ok ($n_hi, 10); }
+  { my ($n_lo,$n_hi) = $path->level_to_n_range(1);
+    ok ($n_lo, 0);
+    ok ($n_hi, 42); }
+}
+{
+  my $path = Math::PlanePath::ToothpickReplicate->new (parts => 1);
+  { my ($n_lo,$n_hi) = $path->level_to_n_range(0);
+    ok ($n_lo, 0);
+    ok ($n_hi, 1); }
+  { my ($n_lo,$n_hi) = $path->level_to_n_range(1);
+    ok ($n_lo, 0);
+    ok ($n_hi, 9); }
+  { my ($n_lo,$n_hi) = $path->level_to_n_range(2);
+    ok ($n_lo, 0);
+    ok ($n_hi, 41); }
+}
+{
+  my $path = Math::PlanePath::ToothpickReplicate->new (parts => 2);
+  { my ($n_lo,$n_hi) = $path->level_to_n_range(0);
+    ok ($n_lo, 0);
+    ok ($n_hi, 4); }
+  { my ($n_lo,$n_hi) = $path->level_to_n_range(1);
+    ok ($n_lo, 0);
+    ok ($n_hi, 20); }
+}
+{
+  my $path = Math::PlanePath::ToothpickReplicate->new (parts => 3);
+  { my ($n_lo,$n_hi) = $path->level_to_n_range(0);
+    ok ($n_lo, 0);
+    ok ($n_hi, 7); }
+  { my ($n_lo,$n_hi) = $path->level_to_n_range(1);
+    ok ($n_lo, 0);
+    ok ($n_hi, 31); }
+}
+
 
 #------------------------------------------------------------------------------
 # first few points

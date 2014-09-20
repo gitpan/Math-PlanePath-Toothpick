@@ -1,4 +1,4 @@
-# Copyright 2012, 2013 Kevin Ryde
+# Copyright 2012, 2013, 2014 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -35,7 +35,7 @@ use Math::PlanePath::Base::Digits
   'digit_join_lowtohigh';
 
 use vars '$VERSION', '@ISA';
-$VERSION = 14;
+$VERSION = 15;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 

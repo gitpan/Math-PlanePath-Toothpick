@@ -34,12 +34,31 @@ use Math::PlanePath::LCornerTree;
 *_divrem = \&Math::PlanePath::LCornerTree::_divrem;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 14;
+$VERSION = 15;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
 # uncomment this to run the ### lines
 # use Smart::Comments;
+
+
+# return $remainder, modify $n
+# the scalar $_[0] is modified, but if it's a BigInt then a new BigInt is made
+# and stored there, the bigint value is not changed
+sub _divrem_mutate {
+  my $d = $_[1];
+  my $rem;
+  if (ref $_[0] && $_[0]->isa('Math::BigInt')) {
+    ($_[0], $rem) = $_[0]->copy->bdiv($d);  # quot,rem in array context
+    if (! ref $d || $d < 1_000_000) {
+      return $rem->numify;  # plain remainder if fits
+    }
+  } else {
+    $rem = $_[0] % $d;
+    $_[0] = int(($_[0]-$rem)/$d); # exact division stays in UV
+  }
+  return $rem;
+}
 
 
 use constant n_start => 1;
@@ -498,6 +517,25 @@ sub tree_n_to_subheight {
   return $exp - $exp2 - 1;
 }
 
+
+#------------------------------------------------------------------------------
+# levels
+
+sub level_to_n_range {
+  my ($self, $level) = @_;
+  return (1, 2**(2*$level+1) - 1);
+}
+sub n_to_level {
+  my ($self, $n) = @_;
+  if ($n < 1) { return undef; }
+  if (is_infinite($n)) { return $n; }
+  $n = round_nearest($n);
+  _divrem_mutate ($n, 2);
+  my ($pow, $exp) = round_down_pow ($n, 4);
+  return $exp + 1;
+}
+
+#------------------------------------------------------------------------------
 1;
 __END__
 
@@ -585,7 +623,7 @@ above or right terminate at sub-depth k.
 
 Within a sub-block the points are a binary tree traversed breadth first and
 anti-clockwise.  So for example N=20,21,22,23 go anti-clockwise, then the
-next level N=24 to N=31 similarly anti-clockwise.
+next row N=24 to N=31 similarly anti-clockwise.
 
 Notice the pattern made by the blocks is symmetric around the N=2^k spine,
 so for example at N=64 the preceding parts on the left are the same pattern
@@ -595,19 +633,23 @@ shape is the same.
 =head2 Infinitely Smaller
 
 The H-tree is usually conceived as an initial H shape growing four smaller
-H's at each endpoint.  That could be had here using a suitable size "up"
-block such as N=33.
+H's at each endpoint.  The N=1 start is not like this, it begins at a corner
+and grows across.
 
-    N = 2*4^k+1 to 4*4^k-1        eg. k=2  N=33 to N=63
-    being 2*4^k-1 many points         31 points
-    and 2k tree levels                4 levels
-    beginning X=4^k/2                 X=8
+A central growth can be had here by beginning at a suitable sized "up"
+direction block.  For example N=33 in the samples above.  "H" shaped parts
+grow symmetrically around such a start.
 
-A "right" sub-part such as N=65 could be used in a similar way if a 2-high
-1-wide portion was wanted.
+    Nmid = 2*4^k+1 to 4*4^k-1        eg. k=2  N=33 to N=63
+    being 2*4^k-1 many points            31 points
+    and 2k tree rows                     4 rows
+    beginning X=4^k/2                    X=8
 
-The tree is also often conceived as the branch lengths decreasing by factor
-sqrt(2) each time.  That could be had by X*sqrt(2) to widen all the
+A "right" side sub-part such as N=65 could be used in a similar way if a
+2-high 1-wide portion was wanted.
+
+The tree is also often conceived as branch lengths decreasing by factor
+sqrt(2) each time.  That could be had here using X*sqrt(2) to widen all the
 horizontals.
 
 =head1 FUNCTIONS
@@ -650,6 +692,17 @@ the path).
 
 Return list 0,1,2 since there are nodes with 0, 1 and 2 children in the
 tree.  N=1 has 1 child and thereafter each point has 0 or 2.
+
+=back
+
+=head2 Level Methods
+
+=over
+
+=item C<($n_lo, $n_hi) = $path-E<gt>level_to_n_range($level)>
+
+Return C<(1, 2*4**$level - 1)>.  This is a square block of points X,Y E<lt>=
+2*(2^level-1).
 
 =back
 
@@ -724,8 +777,8 @@ are not contiguous runs of N.
 
 =head2 N Children
 
-For C<tree_n_children()>, on a spine point N=2^k the children are N+1 for
-the first of the sub-tree and 2N for the next spine point N=2^(k+1),
+For C<tree_n_children()>, a spine point N=2^k has two children, begin N+1
+for the first of the sub-tree and 2N for the next spine point N=2^(k+1),
 
     spine point N=2^k   children N+1
                                  2N

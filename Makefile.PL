@@ -22,7 +22,7 @@ use strict;
 use ExtUtils::MakeMaker;
 
 WriteMakefile
-  (NAME         => 'Math-PlanePath-Toothpick',
+  (NAME         => 'Math::PlanePath::Toothpick',
    ABSTRACT     => 'Toothpick and other cellular automaton mathematical paths through the 2-D plane.',
    VERSION_FROM => 'lib/Math/PlanePath/LCornerTree.pm',
    PREREQ_PM    => {

@@ -1,4 +1,4 @@
-# Copyright 2012, 2013 Kevin Ryde
+# Copyright 2012, 2013, 2014 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -23,7 +23,7 @@ use strict;
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 14;
+$VERSION = 15;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -244,6 +244,15 @@ sub rect_to_n_range {
           digit_join_lowtohigh (\@n_max_digits, 4, $zero));
 }
 
+#------------------------------------------------------------------------------
+# levels
+
+sub level_to_n_range {
+  my ($self, $level) = @_;
+  return (1, 4**$level - 1);
+}
+
+#------------------------------------------------------------------------------
 1;
 __END__
 
@@ -315,6 +324,16 @@ Create and return a new path object.
 
 =back
 
+=head2 Level Methods
+
+=over
+
+=item C<($n_lo, $n_hi) = $path-E<gt>level_to_n_range($level)>
+
+Return C<(0, 4**$level - 1)>.
+
+=back
+
 =head1 FORMULAS
 
 =head2 Direction Maximum
@@ -337,6 +356,23 @@ The pattern N=3233..333 [base4] probably has a geometric interpretation in
 the sub-blocks described above, but in any case the angles made by steps
 dX,dY approach a supremum dX=3,dY=-1.
 
+=head2 Level End
+
+The last point in each level is N=4^k-1 and is located at
+
+    X(k) = binary 00110011001100... take first k many bits
+         = 0, 0, 0, 1, 3, 6, 12, 25, 51, 102, 204, 409, ...   (A077854)
+         = binary: empty, 0, 00, 001, 0011, 00110, 001100, 0011001, ...
+
+    Y(k) = binary 10011001100110... take first k many bits
+         = 0, 1, 2, 4, 9, 19, 38, 76, 153, 307, 614, 1228, ...
+         = binary: empty, 1, 10, 100, 1001, 10011, 100110, 1001100, ...
+
+N=4^k-1 is 333...3 in base-4 and so is part 3 each time.  Each part 3 is a
+transformation (H,L)-E<gt>(~L,H), where ~ is a ones-complement reversal
+0E<lt>-E<gt>1.  Applying that transform down each digit of N gives a
+repeating pattern 1,1,0,0.
+
 =head1 OEIS
 
 Entries in Sloane's Online Encyclopedia of Integer Sequences related to this
@@ -348,10 +384,12 @@ L<http://oeis.org/A062880> (etc)
 
 =back
 
-    A062880    N values on diagonal X=Y (digits 0,2 in base-4)
+    A062880    N values on diagonal X=Y,
+                 being base-4 digits 0,2 only
 
-    A048647    permutation N at transpose Y,X
-                 base-4 digit change 1<->3
+    A077854    level last X(k), per bit pattern above
+    A048647    permutation N at transpose Y,X,
+                 being base-4 digit change 1<->3
 
 =head1 SEE ALSO
 
@@ -366,7 +404,7 @@ L<http://user42.tuxfamily.org/math-planepath/index.html>
 
 =head1 LICENSE
 
-Copyright 2012, 2013 Kevin Ryde
+Copyright 2012, 2013, 2014 Kevin Ryde
 
 This file is part of Math-PlanePath-Toothpick.
 

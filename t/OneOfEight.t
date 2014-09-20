@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2011, 2012, 2013 Kevin Ryde
+# Copyright 2011, 2012, 2013, 2014 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -20,7 +20,7 @@
 use 5.004;
 use strict;
 use Test;
-plan tests => 98;
+plan tests => 203;
 
 use lib 't';
 use MyTestHelpers;
@@ -36,7 +36,7 @@ require Math::PlanePath::OneOfEight;
 # VERSION
 
 {
-  my $want_version = 14;
+  my $want_version = 15;
   ok ($Math::PlanePath::OneOfEight::VERSION, $want_version,
       'VERSION variable');
   ok (Math::PlanePath::OneOfEight->VERSION,  $want_version,
@@ -61,6 +61,34 @@ require Math::PlanePath::OneOfEight;
       "VERSION object check $check_version");
 }
 
+
+
+#------------------------------------------------------------------------------
+# level_to_n_range()
+
+foreach my $elem ([ '4',         [ 0,8,32,120,464 ], [0,1,3,7,15] ],
+                  [ '1',         [ 0,3, 9, 31,117 ], [0,1,3,7,15] ],
+                  [ 'octant',    [ 0,2, 6, 19, 66 ], [0,1,3,7,15] ],
+                  [ 'octant_up', [ 0,2, 6, 19, 66 ], [0,1,3,7,15] ],
+                  [ 'wedge',     [ 0,3,11, 37,131 ], [0,1,3,7,15] ],
+                  [ '3mid',      [ 0,5,21, 85,341 ], [0,1,3,7,15] ],
+                  [ '3side',     [ 3,8,25, 89,345 ], [1,2,4,8,16] ],
+                 ) {
+  my ($parts, $want_aref, $depth_aref) = @$elem;
+  my $path = Math::PlanePath::OneOfEight->new (parts => $parts);
+  foreach my $level (0 .. $#$want_aref) {
+    my $want = $want_aref->[$level];
+    my ($n_lo,$n_hi) = $path->level_to_n_range($level);
+    ok ($n_lo, 0);
+    ok ($n_hi, $want, "parts=$parts level=$level");
+  }
+  foreach my $level (0 .. $#$depth_aref) {
+    my $depth = $depth_aref->[$level];
+    my $n_end = $path->tree_depth_to_n_end($depth);
+    my ($n_lo,$n_hi) = $path->level_to_n_range($level);
+    ok ($n_hi, $n_end);
+  }
+}
 
 
 #------------------------------------------------------------------------------

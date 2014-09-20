@@ -61,12 +61,12 @@
 package Math::PlanePath::LCornerTree;
 use 5.004;
 use strict;
-use Carp;
+use Carp 'croak';
 #use List::Util 'max';
 *max = \&Math::PlanePath::_max;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 14;
+$VERSION = 15;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -1137,6 +1137,22 @@ sub _divrem_mutate {
   return $rem;
 }
 
+#------------------------------------------------------------------------------
+# levels
+
+sub level_to_n_range {
+  my ($self, $level) = @_;
+  return (0, $self->tree_depth_to_n_end(2**$level-1));
+}
+sub n_to_level {
+  my ($self, $n) = @_;
+  my $depth = $self->tree_n_to_depth($n);
+  if (! defined $depth) { return undef; }
+  my ($pow, $exp) = round_down_pow ($depth, 2);
+  return $exp + 1;
+}
+
+#------------------------------------------------------------------------------
 1;
 __END__
 
@@ -1286,7 +1302,7 @@ cells surrounding that corner.  So
 each.  Then for the "b" cells only the corner ones are exposed corners and
 they grow to the "c" cells.  Those "c" cells are then all exposed corners
 and give a set of 36 "d" cells.  Of those "d"s only the corners are exposed
-corners for the next "e" level.
+corners for the next "e" row.
 
 Grouping the three children of each corner shows the pattern
 
@@ -1314,7 +1330,7 @@ Grouping the three children of each corner shows the pattern
     |     |     |     |     |
     +-----------------------+
 
-In general the number of cells gained in each level is
+In general the number of cells gained in each row is
 
     Nwidth = 4 * 3^count1bits(depth)
 
@@ -1363,7 +1379,7 @@ and growing at exposed endpoints.
          X=0   1   2
 
 Point N=0 is reckoned as a diagonal toothpick and the three N=1,2,3 grow
-from its exposed end.  At the next level another three grow from the exposed
+from its exposed end.  At the next row another three grow from the exposed
 end of N=2.  Only an exposed end grows.  If two toothpick ends touch then
 they don't grow.
 
@@ -1471,7 +1487,7 @@ pattern.
 
 The points are numbered in the same sequence as the parts=1 quadrant, but
 with those above the X=Y diagonal omitted.  This means each N on the X=Y
-diagonal is the last of the depth level.
+diagonal is the last of the row.
 
 =head2 One Octant Plus One
 
@@ -1525,7 +1541,7 @@ of the first quadrant.
 
 The points are numbered in the same sequence as the parts=1 quadrant, but
 with those below the X=Y diagonal omitted.  This means each N on the X=Y
-diagonal is the first of the depth level.
+diagonal is the first of the row.
 
 =head2 Upper Octant Plus One
 
@@ -1581,8 +1597,8 @@ E<lt>= Y and YE<gt>=0.
 
 The points are numbered in the same sequence as the full parts=4 pattern,
 but restricted to the wedge portion.  This means each N on the right-hand
-X=Y diagonal is the first of the depth level and each N on the X=-1-Y
-left-hand diagonal is the last of the depth level.
+X=Y diagonal is the first of the row and each N on the X=-1-Y left-hand
+diagonal is the last of the row.
 
 In this arrangement even N falls on "even" points X=Y mod 2.  Odd N falls on
 "odd" points X!=Y mod 2.
@@ -1596,7 +1612,7 @@ In this arrangement even N falls on "even" points X=Y mod 2.  Odd N falls on
     -4 -3 -2 -1 X=0 1  2  3
 
 The odd/even is true of N=0 and N=1 and then for further points it's true
-due to the way the pattern repeats in 2^k depth levels.
+due to the way the pattern repeats in 2^k rows.
 
     --------------   \  Y=2*2^k-1
      \ 3 /  \ 1 /    |
@@ -1726,7 +1742,7 @@ confined to a diagonal half-plane XE<gt>=Y,
 In this pattern the edge points such as N=1,5,14 all have 3 children, so
 there's always 0 or 3 children as per the full pattern.  The square section
 beginning N=2 corresponds to the origin in the full pattern, so the initial
-single point here makes it one depth level later.
+single point here makes it one row later.
 
 As toothpicks this pattern is OEIS A183148 half-plane of toothpick triplets
 by Omar Pol.
@@ -1874,6 +1890,16 @@ option,
     wedge, wedge+1                                2
     diagonal                                      3
     diagonal-1                                    1
+
+=back
+
+=head2 Level Methods
+
+=over
+
+=item C<($n_lo, $n_hi) = $path-E<gt>level_to_n_range($level)>
+
+Return C<(0, tree_depth_to_n_end(2**$level - 1)>.
 
 =back
 

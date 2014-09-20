@@ -30,7 +30,7 @@ use 5.004;
 use strict;
 
 use vars '$VERSION', '@ISA';
-$VERSION = 14;
+$VERSION = 15;
 use Math::PlanePath;
 @ISA = ('Math::PlanePath');
 
@@ -483,10 +483,28 @@ sub _n0_to_depthbits {
   return (\@depthbits, $lowbit, $ndepth, $nwidth);
 }
 
+#------------------------------------------------------------------------------
+# levels
+
+sub level_to_n_range {
+  my ($self, $level) = @_;
+  return (0, 2* 3**$level - 1);
+}
+sub n_to_level {
+  my ($self, $n) = @_;
+  if ($n < 0) { return undef; }
+  if (is_infinite($n)) { return $n; }
+  $n = round_nearest($n);
+  _divrem_mutate ($n, 2);
+  my ($pow, $exp) = round_down_pow ($n, 3);
+  return $exp + 1;
+}
+
+#------------------------------------------------------------------------------
 1;
 __END__
 
-=for stopwords eg Ryde Sierpinski Nlevel ie Ymin Ymax OEIS Online rowpoints Nleft Math-PlanePath-Toothpick Gould's Nend bitand Noffset Applegate Automata Congressus Numerantium
+=for stopwords eg Ryde Sierpinski ie Ymin Ymax OEIS Online rowpoints Nleft Math-PlanePath-Toothpick Gould's Nend bitand Noffset Applegate Automata Congressus Numerantium
 
 =head1 NAME
 
@@ -554,9 +572,9 @@ added at the bottom end of a vertical.
                  |
 
 Points are numbered breadth-first tree traversal and left to right across
-the row within a depth level.  This means for example N=6 and N=7 are up
-toothpicks giving N=8 and N=9 in row Y=3, and then those two grow to
-N=10,11,12,13 respectively left and right.
+the row.  This means for example N=6 and N=7 are up toothpicks giving N=8
+and N=9 in row Y=3, and then those two grow to N=10,11,12,13 respectively
+left and right.
 
 =head2 Sierpinski Triangle
 
@@ -632,12 +650,23 @@ depth=2, so depth=ceil(Y/2).
 
 =item C<$n = $path-E<gt>tree_depth_to_n_end($depth)>
 
-Return the first or last N at tree level C<$depth>.  The start of the tree
-is depth=0 at the origin X=0,Y=0.
+Return the first or last N of tree row C<$depth>.  The start of the tree is
+depth=0 at the origin X=0,Y=0.
 
 For even C<$depth> this is the N at the left end of each row X=-Y,Y=depth/2.
 For odd C<$depth> it's the point above there, one cell in from the left end,
 so X=-Y+1,Y=ceil(depth/2).
+
+=back
+
+=head2 Level Methods
+
+=over
+
+=item C<($n_lo, $n_hi) = $path-E<gt>level_to_n_range($level)>
+
+Return C<(0, 2 * 3**$level - 1)>.  There are 3^level pairs of points making
+up a level, numbered starting from 0.
 
 =back
 

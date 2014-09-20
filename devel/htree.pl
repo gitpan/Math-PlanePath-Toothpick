@@ -47,7 +47,7 @@ use Smart::Comments;
   shift @values;
   shift @values;
   shift @values;
-  use lib 'xt'; require MyOEIS;
+  require Math::OEIS::Grep;
   Math::OEIS::Grep->search(array => \@values);
   exit 0;
 }
@@ -70,7 +70,7 @@ use Smart::Comments;
     push @values, $count[$depth];
     print "$depth  $count[$depth]\n";
   }
-  use lib 'xt'; require MyOEIS;
+  require Math::OEIS::Grep;
   Math::OEIS::Grep->search(array => \@values);
   exit 0;
 }
@@ -85,7 +85,7 @@ use Smart::Comments;
   }
   @values = reverse @values;
   print join(',',@values),"\n";
-  use lib 'xt'; require MyOEIS;
+  require Math::OEIS::Grep;
   Math::OEIS::Grep->search(array => \@values);
   exit 0;
 }

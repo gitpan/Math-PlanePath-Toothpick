@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2011, 2012, 2013 Kevin Ryde
+# Copyright 2011, 2012, 2013, 2014 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -20,7 +20,7 @@
 use 5.004;
 use strict;
 use Test;
-plan tests => 499;
+plan tests => 573;
 
 use lib 't';
 use MyTestHelpers;
@@ -36,7 +36,7 @@ require Math::PlanePath::ToothpickTree;
 # VERSION
 
 {
-  my $want_version = 14;
+  my $want_version = 15;
   ok ($Math::PlanePath::ToothpickTree::VERSION, $want_version,
       'VERSION variable');
   ok (Math::PlanePath::ToothpickTree->VERSION,  $want_version,
@@ -61,6 +61,35 @@ require Math::PlanePath::ToothpickTree;
       "VERSION object check $check_version");
 }
 
+
+
+#------------------------------------------------------------------------------
+# level_to_n_range()
+
+foreach my $elem ([ '4',         [10,42         ], [3,7,15] ],
+                  [ '3',         [ 8,32         ], [3,7,15] ],
+                  [ '2',         [ 4,20         ], [2,6,14,30] ],
+                  [ '1',         [ 1, 9, 41     ], [1,5,13,29] ],
+                  [ 'octant',    [ 0, 6, 26     ], [0,4,12,28] ],
+                  [ 'octant_up', [ 0, 6, 26     ], [0,4,12,28] ],
+                  [ 'wedge',     [ 5,17, 57,201 ], [3,7,15,31] ],
+                  [ 'two_horiz', [15,47,175     ], [3,7,15,31] ],
+                 ) {
+  my ($parts, $want_aref, $depth_aref) = @$elem;
+  my $path = Math::PlanePath::ToothpickTree->new (parts => $parts);
+  foreach my $level (0 .. $#$want_aref) {
+    my $want = $want_aref->[$level];
+    my ($n_lo,$n_hi) = $path->level_to_n_range($level);
+    ok ($n_lo, 0);
+    ok ($n_hi, $want, "parts=$parts level=$level");
+  }
+  foreach my $level (0 .. $#$depth_aref) {
+    my $depth = $depth_aref->[$level];
+    my $n_end = $path->tree_depth_to_n_end($depth);
+    my ($n_lo,$n_hi) = $path->level_to_n_range($level);
+    ok ($n_hi, $n_end);
+  }
+}
 
 
 #------------------------------------------------------------------------------

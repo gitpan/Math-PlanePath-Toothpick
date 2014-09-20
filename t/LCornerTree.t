@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# Copyright 2011, 2012, 2013 Kevin Ryde
+# Copyright 2011, 2012, 2013, 2014 Kevin Ryde
 
 # This file is part of Math-PlanePath-Toothpick.
 #
@@ -20,7 +20,7 @@
 use 5.004;
 use strict;
 use Test;
-plan tests => 220;
+plan tests => 234;
 
 use lib 't';
 use MyTestHelpers;
@@ -36,7 +36,7 @@ require Math::PlanePath::LCornerTree;
 # VERSION
 
 {
-  my $want_version = 14;
+  my $want_version = 15;
   ok ($Math::PlanePath::LCornerTree::VERSION, $want_version,
       'VERSION variable');
   ok (Math::PlanePath::LCornerTree->VERSION,  $want_version,
@@ -61,6 +61,37 @@ require Math::PlanePath::LCornerTree;
       "VERSION object check $check_version");
 }
 
+
+#------------------------------------------------------------------------------
+# level_to_n_range()
+
+{
+  my $path = Math::PlanePath::LCornerTree->new;
+  { my ($n_lo,$n_hi) = $path->level_to_n_range(0);
+    ok ($n_lo, 0);
+    ok ($n_hi, 3); }
+  { my ($n_lo,$n_hi) = $path->level_to_n_range(1);
+    ok ($n_lo, 0);
+    ok ($n_hi, 15); }
+  { my ($n_lo,$n_hi) = $path->level_to_n_range(2);
+    ok ($n_lo, 0);
+    ok ($n_hi, 63); }
+}
+{
+  my $path = Math::PlanePath::LCornerTree->new (parts => 'octant');
+  { my ($n_lo,$n_hi) = $path->level_to_n_range(0);
+    ok ($n_lo, 0);
+    ok ($n_hi, 0); }
+  { my ($n_lo,$n_hi) = $path->level_to_n_range(1);
+    ok ($n_lo, 0);
+    ok ($n_hi, 2); }
+  { my ($n_lo,$n_hi) = $path->level_to_n_range(2);
+    ok ($n_lo, 0);
+    ok ($n_hi, 9); }
+  { my ($n_lo,$n_hi) = $path->level_to_n_range(3);
+    ok ($n_lo, 0);
+    ok ($n_hi, 35); }
+}
 
 #------------------------------------------------------------------------------
 # tree_depth_to_n()
